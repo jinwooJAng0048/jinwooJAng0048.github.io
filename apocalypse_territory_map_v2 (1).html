@@ -1,0 +1,385 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap');
+:root{
+  --paper:#f5f0e8;--paper-dark:#e8e0cc;--ink:#1a1510;--ink-faded:#4a3f30;
+  --ink-light:#7a6a55;--gold:#8B6914;--gold-light:#c9a84c;--red-warn:#6b1a1a;--divider:#c4b08a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrapper{background:var(--paper);max-width:680px;margin:0 auto;padding:40px 44px 52px;font-family:'Noto Sans KR',sans-serif;color:var(--ink);position:relative;border:1px solid var(--paper-dark);}
+.wrapper::before{content:'';position:absolute;inset:8px;border:1px solid var(--divider);pointer-events:none;opacity:0.5;}
+.corner{position:absolute;width:18px;height:18px;border-color:var(--gold);border-style:solid;opacity:0.7;}
+.corner-tl{top:18px;left:18px;border-width:2px 0 0 2px;}
+.corner-tr{top:18px;right:18px;border-width:2px 2px 0 0;}
+.corner-bl{bottom:18px;left:18px;border-width:0 0 2px 2px;}
+.corner-br{bottom:18px;right:18px;border-width:0 2px 2px 0;}
+.header-emblem{text-align:center;margin-bottom:10px;}
+.emblem-line{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;}
+.emblem-rule{flex:1;max-width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.emblem-icon{font-size:20px;color:var(--gold);}
+.doc-title{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:600;color:var(--ink);letter-spacing:5px;text-align:center;}
+.doc-sub{font-size:10px;letter-spacing:4px;color:var(--ink-light);text-align:center;margin-top:5px;text-transform:uppercase;}
+.main-divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--divider) 20%,var(--divider) 80%,transparent);margin:16px 0;}
+.map-frame{border:1px solid var(--divider);position:relative;overflow:hidden;background:#ede8dc;}
+.map-note{font-size:10px;letter-spacing:2px;color:var(--ink-light);text-align:center;margin-top:12px;font-style:italic;}
+.legend-row{display:flex;gap:0;border:1px solid var(--divider);margin-top:12px;flex-wrap:wrap;}
+.legend-cell{flex:1;min-width:76px;padding:8px 6px;border-right:1px solid var(--divider);text-align:center;}
+.legend-cell:last-child{border-right:none;}
+.legend-dot{width:10px;height:10px;border-radius:50%;margin:0 auto 4px;}
+.legend-label{font-size:9px;letter-spacing:1px;color:var(--ink-light);}
+.legend-name{font-family:'Noto Serif KR',serif;font-size:10px;color:var(--ink-faded);margin-top:2px;}
+
+/* 마커 */
+.lm{position:absolute;cursor:pointer;transform:translate(-50%,-50%);z-index:10;text-align:center;}
+.lm-dot{width:11px;height:11px;border-radius:50%;border:2px solid rgba(245,240,232,0.85);margin:0 auto 3px;transition:transform 0.15s;}
+.lm:hover .lm-dot{transform:scale(1.45);}
+.lm-label{font-size:8.5px;letter-spacing:0.3px;white-space:nowrap;color:#1a1510;background:rgba(245,240,232,0.88);padding:1px 4px;border-radius:2px;font-family:'Noto Sans KR',sans-serif;}
+.lm-sub{font-size:7.5px;text-align:center;color:#7a6a55;white-space:nowrap;}
+
+/* 패널 */
+.panel-wrap{margin-top:14px;min-height:140px;}
+.panel{background:var(--paper);border:1px solid var(--divider);border-top:2px solid var(--gold-light);padding:14px 18px;display:none;}
+.panel.active{display:block;}
+.panel-hint{font-size:11px;color:var(--ink-light);text-align:center;padding:30px 0;letter-spacing:1px;font-style:italic;}
+.panel-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--divider);}
+.panel-icon{width:30px;height:30px;border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:var(--gold);}
+.panel-name{font-family:'Noto Serif KR',serif;font-size:14px;font-weight:600;color:var(--ink);}
+.panel-zone{font-size:10px;letter-spacing:1px;color:var(--ink-light);margin-top:2px;}
+.panel-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.ptag{font-size:9px;padding:2px 7px;border:1px solid var(--divider);color:var(--ink-light);letter-spacing:0.5px;}
+.panel-desc{font-size:11.5px;color:var(--ink-faded);line-height:1.9;}
+
+.stamp{position:absolute;bottom:40px;right:44px;width:52px;height:52px;border:2px solid var(--red-warn);border-radius:50%;display:flex;align-items:center;justify-content:center;transform:rotate(-14deg);opacity:0.3;}
+.stamp-text{font-size:7px;letter-spacing:1px;color:var(--red-warn);text-align:center;font-weight:600;line-height:1.5;}
+</style>
+
+<div class="wrapper">
+  <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+
+  <div class="header-emblem">
+    <div class="emblem-line"><div class="emblem-rule"></div><div class="emblem-icon">✦</div><div class="emblem-rule"></div></div>
+    <div class="doc-title">근 처 약 도</div>
+    <div class="doc-sub">Territory Map — Current Status Unknown</div>
+  </div>
+  <div class="main-divider"></div>
+
+  <div class="map-frame" style="position:relative;">
+    <svg width="100%" viewBox="0 0 592 480" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="cross-gray" patternUnits="userSpaceOnUse" width="10" height="10">
+          <line x1="0" y1="0" x2="10" y2="10" stroke="#9a8f7a" stroke-width="0.5" stroke-opacity="0.2"/>
+          <line x1="10" y1="0" x2="0" y2="10" stroke="#9a8f7a" stroke-width="0.5" stroke-opacity="0.2"/>
+        </pattern>
+        <pattern id="hatch-dead" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#5a1a10" stroke-width="1.2" stroke-opacity="0.45"/>
+        </pattern>
+        <pattern id="hatch-cult" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(40)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#3a1a5a" stroke-width="0.9" stroke-opacity="0.4"/>
+        </pattern>
+        <pattern id="hatch-scav" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(35)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#5a3a10" stroke-width="0.8" stroke-opacity="0.35"/>
+        </pattern>
+      </defs>
+
+      <!-- 배경: 회색지대 -->
+      <rect x="0" y="0" width="592" height="480" fill="#d8d0c0" opacity="0.4"/>
+      <rect x="0" y="0" width="592" height="480" fill="url(#cross-gray)"/>
+      <text x="10" y="26" font-family="'Noto Serif KR',serif" font-size="9" fill="#5a4a38" opacity="0.5" letter-spacing="3">GRAY ZONE</text>
+      <text x="470" y="472" font-family="'Noto Serif KR',serif" font-size="9" fill="#5a4a38" opacity="0.5" letter-spacing="3">GRAY ZONE</text>
+
+      <!-- 데드존 -->
+      <polygon points="16,16 240,16 260,130 220,230 80,260 16,180"
+               fill="#5a1a10" opacity="0.18"/>
+      <polygon points="16,16 240,16 260,130 220,230 80,260 16,180"
+               fill="url(#hatch-dead)"/>
+      <polygon points="16,16 240,16 260,130 220,230 80,260 16,180"
+               fill="none" stroke="#5a1a10" stroke-width="2" stroke-dasharray="4 2" opacity="0.65"/>
+      <text x="88" y="175" font-family="'Noto Serif KR',serif" font-size="10" fill="#5a1a10" opacity="0.75" font-weight="600" letter-spacing="2">DEAD ZONE</text>
+      <text x="92" y="188" font-family="'Noto Sans KR',sans-serif" font-size="8" fill="#5a1a10" opacity="0.6" letter-spacing="1">데드존</text>
+
+      <!-- 융합교단 (데드존 내부) -->
+      <polygon points="42,38 110,38 118,78 98,110 52,115 36,88"
+               fill="#2a1a3a" opacity="0.38"/>
+      <polygon points="42,38 110,38 118,78 98,110 52,115 36,88"
+               fill="url(#hatch-cult)"/>
+      <polygon points="42,38 110,38 118,78 98,110 52,115 36,88"
+               fill="none" stroke="#3a1a5a" stroke-width="1.5" opacity="0.8"/>
+
+      <!-- 군벌 구역 (우상단) -->
+      <polygon points="400,16 576,16 576,210 480,230 378,178 358,78"
+               fill="#3a2010" opacity="0.16"/>
+      <polygon points="400,16 576,16 576,210 480,230 378,178 358,78"
+               fill="none" stroke="#5a3010" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.5"/>
+      <text x="450" y="68" font-family="'Noto Serif KR',serif" font-size="11" fill="#3a1a05" opacity="0.8" font-weight="600" letter-spacing="1">군벌 세력</text>
+      <text x="454" y="82" font-family="'Noto Sans KR',sans-serif" font-size="8" fill="#4a2a10" opacity="0.6" letter-spacing="1">WARLORD</text>
+
+      <!-- 스캐빈저 SCV-1 좌하단 -->
+      <polygon points="16,355 82,334 104,398 70,432 16,428"
+               fill="#3a2a08" opacity="0.2"/>
+      <polygon points="16,355 82,334 104,398 70,432 16,428"
+               fill="url(#hatch-scav)"/>
+      <polygon points="16,355 82,334 104,398 70,432 16,428"
+               fill="none" stroke="#5a4010" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+
+      <!-- 스캐빈저 SCV-2 우하단 -->
+      <polygon points="478,374 542,354 564,408 530,443 472,438"
+               fill="#3a2a08" opacity="0.2"/>
+      <polygon points="478,374 542,354 564,408 530,443 472,438"
+               fill="url(#hatch-scav)"/>
+      <polygon points="478,374 542,354 564,408 530,443 472,438"
+               fill="none" stroke="#5a4010" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+
+      <!-- 스캐빈저 SCV-3 상단중앙 -->
+      <polygon points="278,16 342,16 352,52 310,68 270,52"
+               fill="#3a2a08" opacity="0.2"/>
+      <polygon points="278,16 342,16 352,52 310,68 270,52"
+               fill="url(#hatch-scav)"/>
+      <polygon points="278,16 342,16 352,52 310,68 270,52"
+               fill="none" stroke="#5a4010" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+
+      <!-- 스캐빈저 SCV-4 우측중단 -->
+      <polygon points="542,238 578,226 582,282 552,294 532,272"
+               fill="#3a2a08" opacity="0.2"/>
+      <polygon points="542,238 578,226 582,282 552,294 532,272"
+               fill="url(#hatch-scav)"/>
+      <polygon points="542,238 578,226 582,282 552,294 532,272"
+               fill="none" stroke="#5a4010" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+
+      <!-- 그린존 -->
+      <ellipse cx="296" cy="358" rx="132" ry="98" fill="#2a4a10" opacity="0.14"/>
+      <ellipse cx="296" cy="358" rx="132" ry="98" fill="none" stroke="#3a6010" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.5"/>
+      <text x="348" y="314" font-family="'Noto Serif KR',serif" font-size="10" fill="#1a4008" opacity="0.7" font-weight="600" letter-spacing="1">그린존</text>
+      <text x="350" y="327" font-family="'Noto Sans KR',sans-serif" font-size="8" fill="#2a5010" opacity="0.6" letter-spacing="1.5">GREEN ZONE</text>
+
+      <!-- 아그리파머 -->
+      <ellipse cx="238" cy="368" rx="72" ry="58" fill="#1a3a08" opacity="0.18"/>
+      <ellipse cx="238" cy="368" rx="72" ry="58" fill="none" stroke="#2a5010" stroke-width="1" opacity="0.45"/>
+
+      <!-- 로드맨 루트 점선 -->
+      <path d="M70 430 Q180 380 296 408 Q380 368 510 258" fill="none" stroke="#4a3a28" stroke-width="1" stroke-dasharray="9 5" opacity="0.45"/>
+      <text x="152" y="434" font-family="'Noto Sans KR',sans-serif" font-size="7.5" fill="#4a3a28" opacity="0.6" letter-spacing="0.8" transform="rotate(-8 152 434)">로드맨 루트</text>
+
+      <!-- 방위 -->
+      <g opacity="0.55">
+        <polygon points="558,26 554,37 558,35 562,37" fill="#6a5a40"/>
+        <line x1="558" y1="26" x2="558" y2="37" stroke="#6a5a40" stroke-width="1"/>
+        <text x="558" y="52" font-family="'Noto Sans KR',sans-serif" font-size="9" fill="#6a5a40" text-anchor="middle">N</text>
+      </g>
+
+      <!-- 격자선 -->
+      <line x1="296" y1="0" x2="296" y2="480" stroke="#8a7a60" stroke-width="0.3" stroke-dasharray="2 6" opacity="0.3"/>
+      <line x1="0" y1="240" x2="592" y2="240" stroke="#8a7a60" stroke-width="0.3" stroke-dasharray="2 6" opacity="0.3"/>
+      <line x1="148" y1="0" x2="148" y2="480" stroke="#8a7a60" stroke-width="0.3" stroke-dasharray="2 6" opacity="0.2"/>
+      <line x1="444" y1="0" x2="444" y2="480" stroke="#8a7a60" stroke-width="0.3" stroke-dasharray="2 6" opacity="0.2"/>
+
+      <!-- 외곽 테두리 -->
+      <rect x="1" y="1" width="590" height="478" fill="none" stroke="#8a7a60" stroke-width="0.8" opacity="0.35"/>
+    </svg>
+
+    <!-- 랜드마크 마커 -->
+    <!-- 융합교단 -->
+    <div class="lm" style="left:13%;top:17%;" onclick="showPanel('cult')">
+      <div class="lm-dot" style="background:#534AB7;"></div>
+      <div class="lm-label">융합교단</div>
+      <div class="lm-sub">(구)메트로코프</div>
+    </div>
+    <!-- AI 병기 -->
+    <div class="lm" style="left:30%;top:43%;" onclick="showPanel('dead_ai')">
+      <div class="lm-dot" style="background:#A32D2D;"></div>
+      <div class="lm-label">AI 병기 거점</div>
+      <div class="lm-sub">폐군수창고</div>
+    </div>
+    <!-- 마력 균열지 -->
+    <div class="lm" style="left:30%;top:58%;" onclick="showPanel('dead_rift')">
+      <div class="lm-dot" style="background:#993556;"></div>
+      <div class="lm-label">마력 균열지</div>
+      <div class="lm-sub">출입 경고구역</div>
+    </div>
+    <!-- 통합 병영 -->
+    <div class="lm" style="left:73%;top:22%;" onclick="showPanel('mil_base')">
+      <div class="lm-dot" style="background:#5F5E5A;"></div>
+      <div class="lm-label">통합 병영</div>
+      <div class="lm-sub">구 정부 기지</div>
+    </div>
+    <!-- 방송탑 -->
+    <div class="lm" style="left:82%;top:38%;" onclick="showPanel('mil_tower')">
+      <div class="lm-dot" style="background:#5F5E5A;"></div>
+      <div class="lm-label">방송탑</div>
+      <div class="lm-sub">통신 장악거점</div>
+    </div>
+    <!-- 아그리파머 돔 -->
+    <div class="lm" style="left:42%;top:74%;" onclick="showPanel('agri')">
+      <div class="lm-dot" style="background:#3B6D11;"></div>
+      <div class="lm-label">아그리파머 돔</div>
+      <div class="lm-sub">수경재배 온실</div>
+    </div>
+    <!-- 호텔 -->
+    <div class="lm" style="left:56%;top:80%;" onclick="showPanel('hotel')">
+      <div class="lm-dot" style="background:#8B6914;"></div>
+      <div class="lm-label">호텔</div>
+      <div class="lm-sub">그린존 랜드마크</div>
+    </div>
+    <!-- SCV-1 -->
+    <div class="lm" style="left:10%;top:77%;" onclick="showPanel('scv1')">
+      <div class="lm-dot" style="background:#854F0B;"></div>
+      <div class="lm-label">SCV-1</div>
+      <div class="lm-sub">폐쇼핑몰</div>
+    </div>
+    <!-- SCV-2 -->
+    <div class="lm" style="left:88%;top:85%;" onclick="showPanel('scv2')">
+      <div class="lm-dot" style="background:#854F0B;"></div>
+      <div class="lm-label">SCV-2</div>
+      <div class="lm-sub">고가도로 캠프</div>
+    </div>
+    <!-- SCV-3 -->
+    <div class="lm" style="left:52%;top:7%;" onclick="showPanel('scv3')">
+      <div class="lm-dot" style="background:#854F0B;"></div>
+      <div class="lm-label">SCV-3</div>
+      <div class="lm-sub">폐역사</div>
+    </div>
+    <!-- SCV-4 -->
+    <div class="lm" style="left:95%;top:57%;" onclick="showPanel('scv4')">
+      <div class="lm-dot" style="background:#854F0B;"></div>
+      <div class="lm-label">SCV-4</div>
+      <div class="lm-sub">정수탑</div>
+    </div>
+    <!-- 무명 시장 -->
+    <div class="lm" style="left:62%;top:51%;" onclick="showPanel('road')">
+      <div class="lm-dot" style="background:#185FA5;"></div>
+      <div class="lm-label">무명 시장</div>
+      <div class="lm-sub">로드맨 교차점</div>
+    </div>
+  </div>
+
+  <div class="map-note">※ 경계선은 고정되지 않았으며, 각 구역의 위험도는 매일 변동될 수 있습니다</div>
+
+ 
+  <!-- 클릭 패널 -->
+  <div class="panel-wrap">
+    <div class="panel active" id="panel-default">
+      <div class="panel-hint">지도의 마커를 클릭하면 랜드마크 정보를 확인할 수 있습니다</div>
+    </div>
+
+    <div class="panel" id="panel-hotel">
+      <div class="panel-header">
+        <div class="panel-icon">◈</div>
+        <div><div class="panel-name">호텔</div><div class="panel-zone">그린존 — 중심 랜드마크</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">숙박</span><span class="ptag">식당</span><span class="ptag">카지노</span><span class="ptag">온천</span><span class="ptag">24h 운영</span></div>
+      <div class="panel-desc">세상이 무너진 뒤에도 불을 끄지 않은 곳. 그린존의 상징이자 중립 지점으로, 어느 세력에도 속하지 않고 문을 열어두고 있다. 전기와 식수, 식사가 제공되며 아그리파머 돔과 인접해 식량 수급이 안정적이다. 투숙객의 안전을 최우선으로 하며, 세력과 무관하게 입장이 가능하다.</div>
+    </div>
+
+    <div class="panel" id="panel-agri">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#3B6D11;">✿</div>
+        <div><div class="panel-name">아그리파머 돔</div><div class="panel-zone">그린존 — 식량 생산 거점</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">수경재배</span><span class="ptag">마법 농업</span><span class="ptag">식량 공급</span><span class="ptag">연구소</span></div>
+      <div class="panel-desc">거대한 유리 돔 구조물 안에 수경재배 시설이 집약된 곳. 죽은 땅 위에서 살아있는 흙을 만드는 마법과 과학의 결합체다. 그린존 식량 공급의 핵심이며, 멀리서도 보이는 돔의 불빛은 이 구역이 살아있다는 신호이기도 하다. 군벌에게 식량을 공급하는 대가로 군사적 보호를 받고 있다.</div>
+    </div>
+
+    <div class="panel" id="panel-cult">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#534AB7;">✶</div>
+        <div><div class="panel-name">(구)메트로코프 사옥</div><div class="panel-zone">데드존 내 — 융합교단 거점</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">마기공학</span><span class="ptag">신앙 시설</span><span class="ptag">실험실</span><span class="ptag">접근 금지</span></div>
+      <div class="panel-desc">내전 이전 통일국가 최대 기업이었던 메트로코프의 본사 건물. 현재는 융합교단이 점거하여 내부를 완전히 개조했다. 외관은 원형을 유지하고 있으나 내부는 마기공학 실험실과 신앙 공간이 공존한다. 데드존과 경계를 맞댄 위치 덕분에 AI 병기 잔해와 마력 결정체를 수거하기 용이하다. 타 세력의 접근은 원칙적으로 거부된다.</div>
+    </div>
+
+    <div class="panel" id="panel-dead_ai">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#A32D2D;">⚙</div>
+        <div><div class="panel-name">AI 병기 거점</div><div class="panel-zone">데드존 — 구 정부 병기 집결지</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">자율 교전 중</span><span class="ptag">접근 최위험</span><span class="ptag">폐군수창고</span></div>
+      <div class="panel-desc">내전 당시 군수 물자를 보관하던 창고 단지. 교전 해제 명령을 받지 못한 구 정부 AI 병기들이 이 일대를 거점 삼아 순찰한다. 내부에는 아직 작동 가능한 무기와 부품이 남아 있어 고위험 스캐빈저들이 목숨을 걸고 잠입을 시도하는 곳이기도 하다. 융합교단이 이 병기들의 코어를 노린다는 소문이 있다.</div>
+    </div>
+
+    <div class="panel" id="panel-dead_rift">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#993556;">◈</div>
+        <div><div class="panel-name">마력 균열지</div><div class="panel-zone">데드존 — 출입 경고구역</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">마물 자연발생</span><span class="ptag">방향감각 상실</span><span class="ptag">마법 불안정</span></div>
+      <div class="panel-desc">내전 당시 마법 병기와 기술 병기의 충돌로 마력장이 극도로 왜곡된 지점. 이 반경 안에서는 나침반이 먹통이 되고, 마법 시전이 예측 불가능해진다. 마물이 지속적으로 자연 발생하며 희귀 마력 결정체가 발생하는 유일한 구역이기도 하다. 스캐빈저들이 경고 표식을 남겨두었으나 그 표식조차 사라지는 경우가 있다고 한다.</div>
+    </div>
+
+    <div class="panel" id="panel-mil_base">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#5F5E5A;">▣</div>
+        <div><div class="panel-name">통합 병영</div><div class="panel-zone">군벌 구역 — 군사 거점</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">구 정부 기지 접수</span><span class="ptag">격납고</span><span class="ptag">훈련소</span><span class="ptag">무기고</span></div>
+      <div class="panel-desc">내전 당시 구 정부군이 사용하던 군사 기지를 군벌이 그대로 접수해 사용 중이다. 반쯤 무너진 격납고와 망루, 바리케이드가 혼재하는 형태로, 외관만으로는 여전히 전쟁 중인 것처럼 보인다. 아그리파머로부터 식량을 공급받는 대가로 그린존 일대의 치안을 담당하고 있다.</div>
+    </div>
+
+    <div class="panel" id="panel-mil_tower">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#5F5E5A;">▲</div>
+        <div><div class="panel-name">방송탑</div><div class="panel-zone">군벌 구역 — 통신 장악 거점</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">구 통신망</span><span class="ptag">선전 방송</span><span class="ptag">정보 통제</span></div>
+      <div class="panel-desc">구 통일국가 시절 설치된 광역 통신 인프라를 군벌이 장악하여 운용 중이다. 그린존 일대에서 가장 높이 솟은 구조물로, 군벌의 명령과 선전 방송을 내보내는 수단이다. 로드맨은 이 탑의 신호를 이용해 루트 정보를 교환하기도 하며, 방송탑의 침묵은 이 구역에 무언가 일어났다는 신호로 통한다.</div>
+    </div>
+
+    <div class="panel" id="panel-scv1">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#854F0B;">⬡</div>
+        <div><div class="panel-name">SCV-1 — 폐쇼핑몰</div><div class="panel-zone">서쪽 회색지대 — 가장 안전한 스캐빈저 베이스</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">거점화</span><span class="ptag">물자 집적</span><span class="ptag">그린존 인근</span></div>
+      <div class="panel-desc">내전 이전 대형 쇼핑몰 건물을 스캐빈저들이 거점으로 개조한 곳. 4개 SCV 거점 중 그린존에 가장 가까워 상대적으로 안전하다. 내부의 구조물을 최대한 활용해 각 층마다 역할이 나뉘어 있으며, 물자 교환과 정보 공유가 이루어지는 비공식 허브이기도 하다.</div>
+    </div>
+
+    <div class="panel" id="panel-scv2">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#854F0B;">⬡</div>
+        <div><div class="panel-name">SCV-2 — 고가도로 캠프</div><div class="panel-zone">동쪽 회색지대 — 로드맨 접선지</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">이동식 거점</span><span class="ptag">감시 우위</span><span class="ptag">로드맨 연결</span></div>
+      <div class="panel-desc">무너진 고가도로 위에 형성된 이동식 캠프. 높은 위치 덕분에 주변 일대를 감시하기 유리하며, 로드맨과의 접선 포인트로도 활용된다. 구조 자체가 불안정해 무게와 인원을 제한해야 하지만, 그 불편함이 오히려 외부인의 접근을 막는 역할을 한다.</div>
+    </div>
+
+    <div class="panel" id="panel-scv3">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#854F0B;">⬡</div>
+        <div><div class="panel-name">SCV-3 — 폐역사</div><div class="panel-zone">북쪽 — 데드존 진입 전 마지막 보급지</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">고위험 위치</span><span class="ptag">보급 기능</span><span class="ptag">정보 집결</span></div>
+      <div class="panel-desc">데드존 경계와 가장 인접한 스캐빈저 거점. 데드존으로 진입하기 전 마지막으로 보급을 받을 수 있는 곳으로, 고위험 스캐빈저들의 출발점이자 귀환지다. 데드존에서 살아 돌아온 이들의 정보가 가장 먼저 모이는 장소이기도 하다. 상주 인원은 적지만 오가는 정보의 밀도는 가장 높다.</div>
+    </div>
+
+    <div class="panel" id="panel-scv4">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#854F0B;">⬡</div>
+        <div><div class="panel-name">SCV-4 — 정수탑</div><div class="panel-zone">동남쪽 회색지대 — 자원 분쟁지</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">수자원 거점</span><span class="ptag">다중 세력 관심</span><span class="ptag">분쟁 위험</span></div>
+      <div class="panel-desc">희귀한 수자원을 확보할 수 있는 구 정수처리 시설. 현재는 스캐빈저 집단이 장악하고 있으나, 군벌과 다른 세력도 눈독을 들이는 분쟁 가능성이 높은 곳이다. 물을 통제하는 자가 이 지역의 협상력을 가져간다는 사실을 모두가 알고 있다.</div>
+    </div>
+
+    <div class="panel" id="panel-road">
+      <div class="panel-header">
+        <div class="panel-icon" style="color:#185FA5;">◎</div>
+        <div><div class="panel-name">무명 시장</div><div class="panel-zone">회색지대 — 로드맨 교차점</div></div>
+      </div>
+      <div class="panel-tags"><span class="ptag">중립 거래</span><span class="ptag">이동식</span><span class="ptag">정보 브로커</span><span class="ptag">전 세력 접근 가능</span></div>
+      <div class="panel-desc">로드맨의 유통 루트가 교차하는 지점에 자연 발생한 이동식 시장. 특정 건물이 아니라 시기마다 위치가 달라지며, 그 위치를 아는 것 자체가 정보력의 척도가 된다. 원칙적으로 모든 세력에게 열려 있으며, 이곳에서의 거래 중에는 무력 충돌이 묵시적으로 금지된다.</div>
+    </div>
+  </div>
+
+  <div class="main-divider" style="margin-top:18px;"></div>
+  <p style="text-align:center;font-size:10px;color:var(--ink-light);letter-spacing:2px;font-style:italic;">궁금한 사항은 언제든 1층 프론트로 문의해 주십시오</p>
+
+  <div class="stamp"><span class="stamp-text">REVISED<br>MAP</span></div>
+</div>
+
+<script>
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const t=document.getElementById('panel-'+id);
+  if(t) t.classList.add('active');
+}
+</script>
