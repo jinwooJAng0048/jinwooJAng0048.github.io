@@ -1,0 +1,314 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap');
+:root {
+  --paper: #f5f0e8;
+  --paper-dark: #e8e0cc;
+  --ink: #1a1510;
+  --ink-faded: #4a3f30;
+  --ink-light: #7a6a55;
+  --gold: #8B6914;
+  --gold-light: #c9a84c;
+  --red-warn: #6b1a1a;
+  --green-zone: #3B5E1A;
+  --gray-zone: #5a5045;
+  --divider: #c4b08a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:transparent;}
+.wrapper{background:var(--paper);max-width:680px;margin:0 auto;padding:44px 48px 56px;font-family:'Noto Sans KR',sans-serif;color:var(--ink);position:relative;border:1px solid var(--paper-dark);}
+.wrapper::before{content:'';position:absolute;inset:8px;border:1px solid var(--divider);pointer-events:none;opacity:0.5;}
+.corner{position:absolute;width:18px;height:18px;border-color:var(--gold);border-style:solid;opacity:0.7;}
+.corner-tl{top:18px;left:18px;border-width:2px 0 0 2px;}
+.corner-tr{top:18px;right:18px;border-width:2px 2px 0 0;}
+.corner-bl{bottom:18px;left:18px;border-width:0 0 2px 2px;}
+.corner-br{bottom:18px;right:18px;border-width:0 2px 2px 0;}
+.header-emblem{text-align:center;margin-bottom:10px;}
+.emblem-line{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;}
+.emblem-rule{flex:1;max-width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.emblem-icon{font-size:20px;color:var(--gold);}
+.doc-title{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:600;color:var(--ink);letter-spacing:5px;text-align:center;}
+.doc-sub{font-size:10px;letter-spacing:4px;color:var(--ink-light);text-align:center;margin-top:5px;text-transform:uppercase;}
+.main-divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--divider) 20%,var(--divider) 80%,transparent);margin:18px 0;}
+
+.tab-row{display:flex;gap:0;margin-bottom:22px;border:1px solid var(--divider);}
+.tab-btn{flex:1;padding:9px 8px;background:transparent;border:none;border-right:1px solid var(--divider);font-family:'Noto Sans KR',sans-serif;font-size:11px;letter-spacing:2px;color:var(--ink-light);cursor:pointer;transition:background 0.15s,color 0.15s;}
+.tab-btn:last-child{border-right:none;}
+.tab-btn:hover{background:var(--paper-dark);}
+.tab-btn.active{background:var(--paper-dark);color:var(--gold);font-weight:500;}
+
+.section{display:none;}
+.section.visible{display:block;}
+
+.section-label{font-family:'Noto Serif KR',serif;font-size:11px;letter-spacing:3px;color:var(--gold);text-align:center;margin:0 0 14px;}
+
+.zone-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--divider);}
+.zone-card{padding:14px;border-right:1px solid var(--divider);}
+.zone-card:last-child{border-right:none;}
+.zone-badge{display:inline-block;font-size:9px;letter-spacing:2px;padding:2px 7px;font-weight:600;margin-bottom:8px;}
+.badge-dead{border:1px solid var(--red-warn);color:var(--red-warn);}
+.badge-green{border:1px solid var(--green-zone);color:var(--green-zone);}
+.badge-gray{border:1px solid var(--gray-zone);color:var(--gray-zone);}
+.zone-name{font-family:'Noto Serif KR',serif;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.zone-name-en{font-size:9px;letter-spacing:2px;color:var(--ink-light);margin-bottom:10px;}
+.zone-divider{width:100%;height:1px;background:var(--divider);margin:10px 0;opacity:0.5;}
+.zone-item{display:flex;gap:7px;align-items:flex-start;margin-bottom:8px;}
+.zone-bullet{color:var(--gold);font-size:12px;flex-shrink:0;line-height:1.7;}
+.zone-text{font-size:11px;color:var(--ink-faded);line-height:1.7;}
+.zone-risk{margin-top:10px;padding:7px 9px;font-size:10px;line-height:1.5;font-style:italic;}
+.risk-dead{border-left:2px solid var(--red-warn);color:var(--red-warn);}
+.risk-green{border-left:2px solid var(--green-zone);color:var(--green-zone);}
+.risk-gray{border-left:2px solid var(--gray-zone);color:var(--gray-zone);}
+
+.faction-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--divider);}
+.faction-card{padding:14px 16px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider);}
+.faction-card:nth-child(2n){border-right:none;}
+.faction-card:nth-last-child(-n+2){border-bottom:none;}
+.faction-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.faction-sym{font-family:'Noto Serif KR',serif;font-size:22px;color:var(--gold);width:28px;flex-shrink:0;line-height:1;}
+.faction-name{font-family:'Noto Serif KR',serif;font-size:14px;font-weight:600;color:var(--ink);}
+.faction-role{font-size:10px;letter-spacing:1px;color:var(--ink-light);margin-top:2px;}
+.faction-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+.ftag{font-size:9px;padding:2px 6px;border:1px solid var(--divider);color:var(--ink-light);}
+.faction-desc{font-size:11px;color:var(--ink-faded);line-height:1.8;border-top:1px solid var(--divider);padding-top:9px;}
+
+.world-block{margin-bottom:20px;}
+.world-block-title{font-family:'Noto Serif KR',serif;font-size:11px;letter-spacing:3px;color:var(--gold);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--divider);}
+.ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--divider);}
+.ws-card{padding:12px 14px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider);}
+.ws-card:nth-child(2n){border-right:none;}
+.ws-card:nth-last-child(-n+2){border-bottom:none;}
+.ws-label{font-size:9px;letter-spacing:2px;color:var(--ink-light);margin-bottom:5px;}
+.ws-val{font-size:11.5px;color:var(--ink-faded);line-height:1.7;}
+
+.rel-table{width:100%;border:1px solid var(--divider);border-collapse:collapse;}
+.rel-table tr{border-bottom:1px solid var(--divider);}
+.rel-table tr:last-child{border-bottom:none;}
+.rel-table td{padding:9px 12px;font-size:11.5px;vertical-align:middle;}
+.rel-from{font-family:'Noto Serif KR',serif;color:var(--ink);font-size:11px;min-width:120px;}
+.rel-type{display:inline-block;font-size:9px;letter-spacing:1px;padding:2px 8px;font-weight:600;}
+.rt-ally{border:1px solid var(--green-zone);color:var(--green-zone);}
+.rt-trade{border:1px solid #4a6a8a;color:#4a6a8a;}
+.rt-tension{border:1px solid #8a5a20;color:#8a5a20;}
+.rt-hostile{border:1px solid var(--red-warn);color:var(--red-warn);}
+.rel-desc{color:var(--ink-faded);}
+
+.footer-text{text-align:center;font-size:10px;color:var(--ink-light);margin-top:28px;letter-spacing:2px;font-style:italic;}
+.stamp{position:absolute;bottom:44px;right:48px;width:52px;height:52px;border:2px solid var(--red-warn);border-radius:50%;display:flex;align-items:center;justify-content:center;transform:rotate(-14deg);opacity:0.3;}
+.stamp-text{font-size:7px;letter-spacing:1px;color:var(--red-warn);text-align:center;font-weight:600;line-height:1.5;}
+</style>
+
+<div class="wrapper">
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <div class="header-emblem">
+    <div class="emblem-line">
+      <div class="emblem-rule"></div>
+      <div class="emblem-icon">✦</div>
+      <div class="emblem-rule"></div>
+    </div>
+    <div class="doc-title">세 계 개 요</div>
+    <div class="doc-sub">Post-Apocalypse World Setting</div>
+  </div>
+
+  <div class="main-divider"></div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="showTab('zones',this)">구 역</button>
+    <button class="tab-btn" onclick="showTab('factions',this)">세 력</button>
+    <button class="tab-btn" onclick="showTab('world',this)">세계 구조</button>
+    <button class="tab-btn" onclick="showTab('relations',this)">세력 관계</button>
+  </div>
+
+  <div class="section visible" id="tab-zones">
+    <div class="section-label">— 구역 분류 —</div>
+    <div class="zone-grid">
+      <div class="zone-card">
+        <div class="zone-badge badge-dead">DEAD ZONE</div>
+        <div class="zone-name">데드존</div>
+        <div class="zone-name-en">황폐화된 전장</div>
+        <div class="zone-divider"></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">내전의 흔적이 고스란히 남은 구역. 방사능·마력 오염으로 지형 자체가 변형되었다.</span></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">구 정부(테라연방)의 첨단 병기 잔해와 희귀 마법 결정체가 묻혀 있어 목숨을 걸고 들어오는 이들이 있다.</span></div>
+        <div class="zone-risk risk-dead">위험도 : 최고 — 비보호 입역 시 생존 보장 없음</div>
+      </div>
+      <div class="zone-card">
+        <div class="zone-badge badge-green">GREEN ZONE</div>
+        <div class="zone-name">그린존</div>
+        <div class="zone-name-en">살아있는 인간의 거점</div>
+        <div class="zone-divider"></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">조직력 있는 세력이 장악하여 최소한의 치안이 유지. 시장이 열리고 사람이 모인다.</span></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">전기·수도·식량 공급이 자체적으로 이루어지는 경우가 있다. 호텔도 이에 해당.</span></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">안전하다는 이유로 인구가 집중되며, 자원 배분과 권력 다툼이 끊이지 않는다.</span></div>
+        <div class="zone-risk risk-green">안전도 : 상대적 안전 — 세력 장악 여부에 따라 변동</div>
+      </div>
+      <div class="zone-card">
+        <div class="zone-badge badge-gray">GRAY ZONE</div>
+        <div class="zone-name">회색지대</div>
+        <div class="zone-name-en">누구의 것도 아닌 땅</div>
+        <div class="zone-divider"></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">어느 세력도 장악하지 못한 완충지대. 로드맨의 유통 루트가 반드시 통과한다.</span></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">세력 간 협상·정보 거래가 이루어지는 중립지. 서로를 죽이면 손해라는 암묵적 불가침이 존재한다.</span></div>
+        <div class="zone-item"><span class="zone-bullet">◆</span><span class="zone-text">조건에 따라 하루 사이에 그린존이 되거나 데드존으로 전락할 수 있다.</span></div>
+        <div class="zone-risk risk-gray">위험도 : 유동적 — 세력 균형에 따라 수시로 변화</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-factions">
+    <div class="section-label">— 주요 세력 —</div>
+    <div class="faction-grid">
+      <div class="faction-card">
+        <div class="faction-header">
+          <div class="faction-sym">⚒</div>
+          <div><div class="faction-name">스캐빈저</div><div class="faction-role">회수 · 사냥 · 해체 전문 집단</div></div>
+        </div>
+        <div class="faction-tags"><span class="ftag">전투</span><span class="ftag">해킹</span><span class="ftag">마법</span><span class="ftag">공학</span></div>
+        <div class="faction-desc">폐허에서 부품·자원을 회수하거나 AI 병기·마물을 사냥해 전리품을 얻는 이들. 솔로부터 길드형 조직까지 편차가 크다. 가장 많은 수를 차지하는 집단이며 내부 격차도 심하다.</div>
+      </div>
+      <div class="faction-card">
+        <div class="faction-header">
+          <div class="faction-sym">✿</div>
+          <div><div class="faction-name">아그리파머</div><div class="faction-role">식량 생산 연구 집단</div></div>
+        </div>
+        <div class="faction-tags"><span class="ftag">수경재배</span><span class="ftag">토양 복원</span><span class="ftag">마법 농업</span></div>
+        <div class="faction-desc">죽은 땅 위에 다시 농사를 짓기 위해 모인 과학자·마법사의 연합. 식량을 쥐고 있다는 것 자체가 권력이며, 다른 세력의 보호를 받는 대신 식량을 공급하는 구조로 운영된다.</div>
+      </div>
+      <div class="faction-card">
+        <div class="faction-header">
+          <div class="faction-sym">▶</div>
+          <div><div class="faction-name">로드맨</div><div class="faction-role">유통 · 정찰 · 호위 집단</div></div>
+        </div>
+        <div class="faction-tags"><span class="ftag">유통</span><span class="ftag">호위</span><span class="ftag">정찰</span><span class="ftag">차량</span></div>
+        <div class="faction-desc">세력 간 물자를 운반하고 유통하는 집단. 무너진 세상에서 유일하게 차량으로 움직이는 대규모 집단. 정보 브로커 역할도 겸하며 규모 있는 스캐빈저 집단과 동행하는 경우가 많다.</div>
+      </div>
+      <div class="faction-card">
+        <div class="faction-header">
+          <div class="faction-sym">✶</div>
+          <div><div class="faction-name">융합교단</div><div class="faction-role">마기공학 신봉 · 창조 집단</div></div>
+        </div>
+        <div class="faction-tags"><span class="ftag">마기공학</span><span class="ftag">개조</span><span class="ftag">신앙</span><span class="ftag">실험</span></div>
+        <div class="faction-desc">마법과 기술의 융합을 신성시하며 그 완성체를 만드는 것이 목적. 단순한 연구집단이 아닌 신앙의 형태로 추구한다. 개조된 신체를 가진 구성원이 많으며 타 세력에게 이질적이거나 위협적으로 여겨진다.</div>
+      </div>
+      <div class="faction-card">
+        <div class="faction-header">
+          <div class="faction-sym">■</div>
+          <div><div class="faction-name">구 정부(테라 연방) AI 병기</div><div class="faction-role">잔존 자율 전투 시스템</div></div>
+        </div>
+        <div class="faction-tags"><span class="ftag">자율 전투</span><span class="ftag">교전 중</span><span class="ftag">명령 미해제</span></div>
+        <div class="faction-desc">내전 당시 투입된 자율 병기들. 전쟁중 중앙 AI와 연결이 끊기고 이후 명령을 받지 못한 채 데드존을 배회한다. 세력이라기보다 환경 요소에 가깝지만 일부는 독자적인 판단 체계를 발전시켰다는 설도 있다.</div>
+      </div>
+      <div class="faction-card">
+        <div class="faction-header">
+          <div class="faction-sym">+</div>
+          <div><div class="faction-name">히포크라테스</div><div class="faction-role">의료 · 약품 공급 집단</div></div>
+        </div>
+        <div class="faction-tags"><span class="ftag">치료</span><span class="ftag">약품</span><span class="ftag">중립</span></div>
+        <div class="faction-desc">의약품과 치료 기술을 보유한 집단. 아그리파머가 식량을 쥐듯 이들은 의료를 쥐고 있다. 원칙적으로 중립을 표방하나, 치료를 대가로 정보·노동·자원을 요구하기도 한다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-world">
+    <div class="world-block">
+      <div class="world-block-title">— 경제 구조 —</div>
+      <div class="ws-grid">
+        <div class="ws-card">
+          <div class="ws-label">통화</div>
+          <div class="ws-val">구 정부 화폐는 사실상 폐기. 식량 크레딧·연료·마력석이 실질 교환 수단으로 자리잡았다.</div>
+        </div>
+        <div class="ws-card">
+          <div class="ws-label">권력의 축</div>
+          <div class="ws-val">식량(아그리파머), 의약품(메딕), 정보(로드맨), 무력(군벌·스캐빈저). 이 네 축의 균형이 지역 판도를 결정한다.</div>
+        </div>
+        <div class="ws-card">
+          <div class="ws-label">유통망</div>
+          <div class="ws-val">로드맨이 회색지대를 잇는 주요 루트를 사실상 독점. 루트를 장악한 자가 정보를 장악한다.</div>
+        </div>
+        <div class="ws-card">
+          <div class="ws-label">기술 수준</div>
+          <div class="ws-val">내전 이전 근미래 수준의 기술이 혼재. 작동하는 것과 파괴된 것이 뒤섞여 기술 격차가 극단적으로 크다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="world-block">
+      <div class="world-block-title">— 세계 특성 —</div>
+      <div class="ws-grid">
+        <div class="ws-card">
+          <div class="ws-label">마법과 기술</div>
+          <div class="ws-val">양쪽 모두 실재하며 융합도 가능하다. 안정적으로 다루는 이는 극소수. 융합교단이 이 분야의 첨단을 달린다.</div>
+        </div>
+        <div class="ws-card">
+          <div class="ws-label">마물</div>
+          <div class="ws-val">왜곡된 마력장에서 자연 발생하거나 데드존에서 흘러나온다. 위험 요소이자 스캐빈저의 수익원이기도 하다.</div>
+        </div>
+        <div class="ws-card">
+          <div class="ws-label">토지와 식량</div>
+          <div class="ws-val">내전으로 대부분의 경작지가 죽었다. 아그리파머의 기술 없이는 자급자족이 사실상 불가능한 지역이 대부분.</div>
+        </div>
+        <div class="ws-card">
+          <div class="ws-label">정보</div>
+          <div class="ws-val">통신망이 단절된 곳이 많아 정보가 곧 생존과 직결된다. 로드맨이 정보 유통의 핵심 경로.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-relations">
+    <div class="section-label">— 세력 관계도 —</div>
+    <table class="rel-table">
+      <tr style="background:rgba(196,176,138,0.15);">
+        <td style="font-size:9px;letter-spacing:2px;color:var(--ink-light);">세력</td>
+        <td style="font-size:9px;letter-spacing:2px;color:var(--ink-light);">관계</td>
+        <td style="font-size:9px;letter-spacing:2px;color:var(--ink-light);">내용</td>
+      </tr>
+      <tr>
+        <td class="rel-from">스캐빈저 → 로드맨</td>
+        <td><span class="rel-type rt-ally">협력</span></td>
+        <td class="rel-desc">대형 집단은 함께 이동하며 호위와 물자 분배를 공유</td>
+      </tr>
+      <tr>
+        <td class="rel-from">아그리파머 → 군벌</td>
+        <td><span class="rel-type rt-trade">거래</span></td>
+        <td class="rel-desc">식량 공급 대가로 군사적 보호를 받는 상호의존 구조</td>
+      </tr>
+      <tr>
+        <td class="rel-from">로드맨 → 전 세력</td>
+        <td><span class="rel-type rt-trade">중립</span></td>
+        <td class="rel-desc">원칙적으로 중립. 자원이 있으면 누구에게나 서비스 제공</td>
+      </tr>
+      <tr>
+        <td class="rel-from">융합교단 → 타 세력</td>
+        <td><span class="rel-type rt-tension">긴장</span></td>
+        <td class="rel-desc">목적과 방식이 이질적. 경계하거나 기술 탐내는 시선이 공존</td>
+      </tr>
+      <tr>
+        <td class="rel-from">히포크라테스 → 전 세력</td>
+        <td><span class="rel-type rt-trade">의존</span></td>
+        <td class="rel-desc">모든 세력이 필요로 하나, 중립을 이용해 협상력을 유지</td>
+      </tr>
+      <tr>
+        <td class="rel-from">AI 병기 → 생존자</td>
+        <td><span class="rel-type rt-hostile">적대</span></td>
+        <td class="rel-desc">교전 명령 미해제 상태. 데드존에서 모든 생존자를 위협</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="main-divider" style="margin-top:28px;"></div>
+  <p class="footer-text">이 문서는 호텔 투숙객의 생존을 위해 작성되었습니다</p>
+
+  <div class="stamp"><span class="stamp-text">WORLD<br>FILE</span></div>
+</div>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('visible');
+  btn.classList.add('active');
+}
+</script>
