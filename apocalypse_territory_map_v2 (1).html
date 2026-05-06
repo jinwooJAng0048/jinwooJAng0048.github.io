@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>근처 약도 — Territory Map</title>
+</head>
+<body>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap');
@@ -156,9 +164,6 @@
       <ellipse cx="238" cy="368" rx="72" ry="58" fill="#1a3a08" opacity="0.18"/>
       <ellipse cx="238" cy="368" rx="72" ry="58" fill="none" stroke="#2a5010" stroke-width="1" opacity="0.45"/>
 
-      <!-- 로드맨 루트 점선 -->
-      <path d="M70 430 Q180 380 296 408 Q380 368 510 258" fill="none" stroke="#4a3a28" stroke-width="1" stroke-dasharray="9 5" opacity="0.45"/>
-      <text x="152" y="434" font-family="'Noto Sans KR',sans-serif" font-size="7.5" fill="#4a3a28" opacity="0.6" letter-spacing="0.8" transform="rotate(-8 152 434)">로드맨 루트</text>
 
       <!-- 방위 -->
       <g opacity="0.55">
@@ -179,7 +184,7 @@
 
     <!-- 랜드마크 마커 -->
     <!-- 융합교단 -->
-    <div class="lm" style="left:13%;top:17%;" onclick="showPanel('cult')">
+    <div class="lm" style="left:13%;top:19%;" onclick="showPanel('cult')">
       <div class="lm-dot" style="background:#534AB7;"></div>
       <div class="lm-label">융합교단</div>
       <div class="lm-sub">(구)메트로코프</div>
@@ -233,13 +238,13 @@
       <div class="lm-sub">고가도로 캠프</div>
     </div>
     <!-- SCV-3 -->
-    <div class="lm" style="left:52%;top:7%;" onclick="showPanel('scv3')">
+    <div class="lm" style="left:52%;top:10%;" onclick="showPanel('scv3')">
       <div class="lm-dot" style="background:#854F0B;"></div>
       <div class="lm-label">SCV-3</div>
       <div class="lm-sub">폐역사</div>
     </div>
     <!-- SCV-4 -->
-    <div class="lm" style="left:95%;top:57%;" onclick="showPanel('scv4')">
+    <div class="lm" style="left:94%;top:57%;" onclick="showPanel('scv4')">
       <div class="lm-dot" style="background:#854F0B;"></div>
       <div class="lm-label">SCV-4</div>
       <div class="lm-sub">정수탑</div>
@@ -383,3 +388,43 @@ function showPanel(id){
   if(t) t.classList.add('active');
 }
 </script>
+
+<style>
+/* ── 반응형 (기존 스타일 이후 로드) ── */
+@media (max-width: 720px) {
+  .wrapper {
+    padding: 24px 14px 44px;
+    border-left: none;
+    border-right: none;
+  }
+  .wrapper::before { inset: 5px; }
+  .corner { display: none; }
+
+  .doc-title { font-size: 17px; letter-spacing: 3px; }
+  .doc-sub   { font-size: 9px; letter-spacing: 2px; }
+
+  /* 지도 마커 라벨 — 글자 겹침 방지 */
+  .lm-label { font-size: 7.5px; padding: 1px 3px; }
+  .lm-sub   { font-size: 6.5px; }
+  .lm-dot   { width: 9px; height: 9px; }
+
+  /* 범례 — 줄바꿈 허용 & 글자 크기 축소 */
+  .legend-row   { flex-wrap: wrap; }
+  .legend-cell  { min-width: 60px; flex: 1 1 60px; padding: 6px 4px; }
+  .legend-label { font-size: 8px; }
+  .legend-name  { font-size: 9px; }
+
+  /* 패널 — 글자 크기·여백 조정 */
+  .panel { padding: 12px 13px; }
+  .panel-name { font-size: 13px; }
+  .panel-zone { font-size: 9.5px; }
+  .panel-desc { font-size: 11px; line-height: 1.85; }
+  .ptag       { font-size: 8.5px; padding: 2px 6px; }
+
+  .stamp { right: 14px; bottom: 34px; width: 42px; height: 42px; }
+  .stamp-text { font-size: 6px; }
+}
+</style>
+
+</body>
+</html>
