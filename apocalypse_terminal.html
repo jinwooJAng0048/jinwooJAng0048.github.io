@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M.CORP — Metro Corp Field Terminal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Noto+Sans+KR:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #020d02;
+  --bg2: #041004;
+  --bg3: #071507;
+  --green: #00ff41;
+  --green-dim: #00cc33;
+  --green-dark: #005510;
+  --green-faint: #003308;
+  --amber: #ffb000;
+  --red: #ff3333;
+  --cyan: #00ffcc;
+  --white: #c8ffc8;
+  --border: #00551088;
+  --scanline: rgba(0,255,65,0.03);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--green);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* CRT 스캔라인 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scanline) 2px,
+    var(--scanline) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* 노이즈 오버레이 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.4;
+}
+
+/* ── 로딩 화면 ── */
+#loader {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.loader-logo {
+  font-family: 'VT323', monospace;
+  font-size: 52px;
+  color: var(--green);
+  text-shadow: 0 0 20px var(--green), 0 0 40px var(--green-dim);
+  letter-spacing: 8px;
+  animation: flicker 3s infinite;
+}
+
+.loader-sub {
+  font-size: 11px;
+  color: var(--green-dim);
+  letter-spacing: 4px;
+}
+
+.loader-log {
+  width: 380px;
+  font-size: 11px;
+  color: var(--green-dim);
+  line-height: 2;
+  min-height: 80px;
+}
+
+.loader-log .log-line {
+  opacity: 0;
+  animation: fadeIn 0.1s forwards;
+}
+
+.progress-wrap {
+  width: 380px;
+}
+
+.progress-label {
+  font-size: 10px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 3px;
+  background: var(--green-faint);
+  border: 1px solid var(--green-dark);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+/* ── 메인 레이아웃 ── */
+#app {
+  display: none;
+  min-height: 100vh;
+}
+
+/* 상단 헤더 */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  z-index: 100;
+}
+
+.topbar-logo {
+  font-family: 'VT323', monospace;
+  font-size: 26px;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green);
+  letter-spacing: 3px;
+}
+
+.topbar-divider { width: 1px; height: 20px; background: var(--border); }
+
+.topbar-meta {
+  font-size: 10px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+}
+
+.topbar-status {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--green-dim);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--green);
+  animation: blink 1.5s infinite;
+}
+
+/* 사이드바 */
+.sidebar {
+  position: fixed;
+  top: 48px; left: 0; bottom: 0;
+  width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  overflow-y: auto;
+  z-index: 90;
+}
+
+.sidebar-section {
+  padding: 0 16px;
+  margin-bottom: 24px;
+}
+
+.sidebar-section-title {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--green-dark);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--green-dark);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  font-size: 12px;
+  color: var(--green-dim);
+  letter-spacing: 1px;
+  position: relative;
+}
+
+.nav-item:hover {
+  background: var(--green-faint);
+  border-color: var(--green-dark);
+  color: var(--green);
+}
+
+.nav-item.active {
+  background: var(--green-faint);
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+
+.nav-item.active::before {
+  content: '▶';
+  position: absolute;
+  left: -1px;
+  font-size: 8px;
+  color: var(--green);
+}
+
+.nav-sym { font-size: 13px; width: 16px; text-align: center; }
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 16px;
+  left: 16px; right: 16px;
+  font-size: 9px;
+  color: var(--green-dark);
+  letter-spacing: 1px;
+  line-height: 1.8;
+  border-top: 1px solid var(--green-dark);
+  padding-top: 10px;
+}
+
+/* 메인 콘텐츠 */
+.main {
+  margin-left: 220px;
+  padding-top: 48px;
+  min-height: 100vh;
+}
+
+.content-area {
+  padding: 32px 36px;
+  max-width: 900px;
+}
+
+/* 페이지 헤더 */
+.page-header {
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-header-path {
+  font-size: 13px;
+  color: var(--green-dark);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.page-header-title {
+  font-family: 'VT323', monospace;
+  font-size: 54px;
+  color: var(--green);
+  text-shadow: 0 0 12px var(--green-dim);
+  letter-spacing: 4px;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.page-header-meta {
+  font-size: 13px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ── 타이핑 애니메이션 ── */
+@keyframes typing-title {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes typing-meta {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { border-color: var(--green); }
+  50%       { border-color: transparent; }
+}
+
+.section.visible .page-header-title {
+  display: inline-block;
+  width: 0;
+  animation:
+    typing-title 0.5s steps(30, end) 0.05s forwards,
+    cursor-blink 0.6s step-end 0.05s 4;
+  border-right: 2px solid var(--green);
+}
+
+.section.visible .page-header-meta {
+  display: inline-block;
+  width: 0;
+  animation:
+    typing-meta 0.7s steps(50, end) 0.55s forwards,
+    cursor-blink 0.6s step-end 0.55s 5;
+  border-right: 2px solid var(--green-dim);
+  color: var(--green-dim);
+}
+
+/* 섹션 */
+.section { display: none; }
+.section.visible { display: block; }
+
+/* ── 구역 카드 ── */
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.zone-card {
+  border: 1px solid var(--border);
+  padding: 16px;
+  background: var(--bg3);
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.zone-card:hover { border-color: var(--green-dim); }
+
+.zone-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.zone-card.dead::before { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.zone-card.green::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.zone-card.gray::before { background: #888; }
+
+.zone-badge {
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  margin-bottom: 10px;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.badge-dead { border: 1px solid var(--red); color: var(--red); }
+.badge-green { border: 1px solid var(--green); color: var(--green); }
+.badge-gray { border: 1px solid #888; color: #888; }
+
+.zone-name {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: var(--white);
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+}
+
+.zone-name-en {
+  font-size: 9px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.zone-divider { width: 100%; height: 1px; background: var(--border); margin: 10px 0; }
+
+.zone-item {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.zone-bullet { color: var(--green-dim); font-size: 10px; flex-shrink: 0; padding-top: 2px; }
+
+.zone-text {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  color: #7acc7a;
+  line-height: 1.7;
+}
+
+.zone-risk {
+  margin-top: 12px;
+  padding: 7px 10px;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.risk-dead { border-left: 2px solid var(--red); color: var(--red); background: rgba(255,51,51,0.05); }
+.risk-green { border-left: 2px solid var(--green); color: var(--green-dim); background: rgba(0,255,65,0.05); }
+.risk-gray { border-left: 2px solid #888; color: #888; background: rgba(136,136,136,0.05); }
+
+/* ── 세력 카드 ── */
+.faction-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.faction-card {
+  border: 1px solid var(--border);
+  padding: 16px;
+  background: var(--bg3);
+  transition: border-color 0.2s;
+}
+
+.faction-card:hover { border-color: var(--green-dim); }
+
+.faction-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.faction-sym {
+  font-family: 'VT323', monospace;
+  font-size: 28px;
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.faction-name {
+  font-size: 13px;
+  color: var(--white);
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+.faction-role {
+  font-size: 9px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+  margin-top: 3px;
+}
+
+.faction-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.ftag {
+  font-size: 9px;
+  padding: 2px 7px;
+  border: 1px solid var(--green-dark);
+  color: var(--green-dim);
+  letter-spacing: 1px;
+}
+
+.faction-desc {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  color: #7acc7a;
+  line-height: 1.8;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* ── 세계 구조 ── */
+.world-block { margin-bottom: 24px; }
+
+.world-block-title {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--green-dim);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ws-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ws-card {
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  background: var(--bg3);
+}
+
+.ws-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--green-dim);
+  margin-bottom: 6px;
+}
+
+.ws-val {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  color: #7acc7a;
+  line-height: 1.7;
+}
+
+/* ── 관계도 ── */
+.rel-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+
+.rel-table tr { border-bottom: 1px solid var(--border); }
+.rel-table tr:last-child { border-bottom: none; }
+.rel-table tr:hover { background: var(--green-faint); }
+
+.rel-table td { padding: 10px 14px; font-size: 11.5px; vertical-align: middle; }
+
+.rel-table thead td {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--green-dark);
+  background: var(--bg3);
+  padding: 8px 14px;
+}
+
+.rel-from {
+  color: var(--white);
+  font-size: 11px;
+  min-width: 160px;
+  letter-spacing: 0.5px;
+}
+
+.rel-type {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 9px;
+  font-weight: 600;
+}
+
+.rt-ally { border: 1px solid var(--green); color: var(--green); }
+.rt-trade { border: 1px solid var(--cyan); color: var(--cyan); }
+.rt-tension { border: 1px solid var(--amber); color: var(--amber); }
+.rt-hostile { border: 1px solid var(--red); color: var(--red); }
+
+.rel-desc {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  color: #7acc7a;
+}
+
+/* ── 공통 유틸 ── */
+.terminal-line {
+  font-size: 11px;
+  color: var(--green-dim);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.terminal-line::before { content: '> '; color: var(--green-dark); }
+
+/* 애니메이션 */
+@keyframes flicker {
+  0%,100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.4; }
+  94% { opacity: 1; }
+  96% { opacity: 0.6; }
+  97% { opacity: 1; }
+}
+
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.1; }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section.visible .zone-card,
+.section.visible .faction-card,
+.section.visible .ws-card {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.section.visible .zone-card:nth-child(1) { animation-delay: 0.05s; opacity: 0; }
+.section.visible .zone-card:nth-child(2) { animation-delay: 0.1s; opacity: 0; }
+.section.visible .zone-card:nth-child(3) { animation-delay: 0.15s; opacity: 0; }
+.section.visible .faction-card:nth-child(1) { animation-delay: 0.05s; opacity: 0; }
+.section.visible .faction-card:nth-child(2) { animation-delay: 0.1s; opacity: 0; }
+.section.visible .faction-card:nth-child(3) { animation-delay: 0.15s; opacity: 0; }
+.section.visible .faction-card:nth-child(4) { animation-delay: 0.2s; opacity: 0; }
+.section.visible .faction-card:nth-child(5) { animation-delay: 0.25s; opacity: 0; }
+.section.visible .faction-card:nth-child(6) { animation-delay: 0.3s; opacity: 0; }
+.section.visible .ws-card:nth-child(1) { animation-delay: 0.05s; opacity: 0; }
+.section.visible .ws-card:nth-child(2) { animation-delay: 0.1s; opacity: 0; }
+.section.visible .ws-card:nth-child(3) { animation-delay: 0.15s; opacity: 0; }
+.section.visible .ws-card:nth-child(4) { animation-delay: 0.2s; opacity: 0; }
+
+/* ── 지도 탭 ── */
+.map-wrap {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  position: relative;
+  overflow: hidden;
+}
+
+.map-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--green-dim);
+  letter-spacing: 2px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--border);
+  margin-top: 12px;
+}
+
+.map-legend-cell {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 10px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
+.map-legend-cell:last-child { border-right: none; }
+
+.map-legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin: 0 auto 4px;
+}
+
+.map-legend-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--green-dim);
+}
+
+.map-legend-name {
+  font-size: 9px;
+  color: var(--green-dark);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+/* 지도 마커 */
+.lm { position: absolute; cursor: pointer; transform: translate(-50%,-50%); z-index: 10; text-align: center; }
+.lm-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg); margin: 0 auto 3px; transition: transform 0.15s, box-shadow 0.15s; }
+.lm:hover .lm-dot { transform: scale(1.5); box-shadow: 0 0 8px currentColor; }
+.lm-label { font-size: 8px; letter-spacing: 0.5px; white-space: nowrap; color: var(--green); background: rgba(2,13,2,0.85); padding: 1px 4px; border: 1px solid var(--green-dark); font-family: 'Share Tech Mono', monospace; }
+.lm-sub { font-size: 7px; color: var(--green-dim); white-space: nowrap; }
+
+/* 지도 패널 */
+.map-panel-wrap {
+  margin-top: 12px;
+  min-height: 130px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.map-panel { display: none; padding: 14px 18px; }
+.map-panel.active { display: block; }
+
+.map-panel-hint {
+  font-size: 11px;
+  color: var(--green-dark);
+  text-align: center;
+  padding: 36px 0;
+  letter-spacing: 2px;
+}
+
+.map-panel-hint::before { content: '> '; }
+
+.map-panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-panel-icon {
+  width: 30px; height: 30px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  background: var(--bg2);
+}
+
+.map-panel-name {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: var(--white);
+  letter-spacing: 2px;
+}
+
+.map-panel-zone {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--green-dim);
+  margin-top: 2px;
+}
+
+.map-panel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.map-ptag {
+  font-size: 9px;
+  padding: 2px 7px;
+  border: 1px solid var(--green-dark);
+  color: var(--green-dim);
+  letter-spacing: 1px;
+}
+
+.map-panel-desc {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  color: #7acc7a;
+  line-height: 1.8;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); transition: transform 0.2s; }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .zone-grid { grid-template-columns: 1fr; }
+  .faction-grid { grid-template-columns: 1fr; }
+  .ws-grid { grid-template-columns: 1fr; }
+  .content-area { padding: 20px 16px; }
+  .mob-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    background: var(--green-faint);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: auto;
+  }
+}
+
+.mob-toggle { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ── 로딩 화면 ── -->
+<div id="loader">
+  <div class="loader-logo">M.CORP</div>
+  <div class="loader-sub">METRO CORP FIELD TERMINAL v2.7 — POST-COLLAPSE EDITION</div>
+  <div class="loader-log" id="loaderLog"></div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="progLabel">INITIALIZING...</span>
+      <span id="progPct">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progBar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 메인 앱 ── -->
+<div id="app">
+
+  <!-- 상단 바 -->
+  <div class="topbar">
+    <div class="topbar-logo">M.CORP</div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-meta">METRO CORP FIELD TERMINAL</div>
+    <div class="topbar-status">
+      <div class="status-dot"></div>
+      <span>SYSTEM ONLINE</span>
+      <div class="topbar-divider"></div>
+      <span id="clockDisplay"></span>
+    </div>
+    <div class="mob-toggle" onclick="toggleSidebar()">☰</div>
+  </div>
+
+  <!-- 사이드바 -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">// DATABASE</div>
+      <div class="nav-item active" onclick="showSection('overview', this)">
+        <span class="nav-sym">◉</span> 세계 개요
+      </div>
+      <div class="nav-item" onclick="showSection('factions', this)">
+        <span class="nav-sym">⚔</span> 세력 정보
+      </div>
+      <div class="nav-item" onclick="showSection('world', this)">
+        <span class="nav-sym">◇</span> 세계 구조
+      </div>
+      <div class="nav-item" onclick="showSection('relations', this)">
+        <span class="nav-sym">◈</span> 세력 관계
+      </div>
+      <div class="nav-item" onclick="showSection('map', this)">
+        <span class="nav-sym">▣</span> 지역 지도
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">// SYSTEM</div>
+      <div class="nav-item">
+        <span class="nav-sym">⚠</span> 위험 경보
+      </div>
+      <div class="nav-item">
+        <span class="nav-sym">◎</span> 접속 로그
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      ACCESS LEVEL : FIELD OPS<br>
+      CORP : METRO CORP<br>
+      UPTIME : 00:00:00
+    </div>
+  </div>
+
+  <!-- 메인 콘텐츠 -->
+  <div class="main">
+    <div class="content-area">
+
+      <!-- 세계 개요 -->
+      <div class="section visible" id="sec-overview">
+        <div class="page-header">
+          <div class="page-header-path">M.CORP / OVERVIEW /</div>
+          <div class="page-header-title">세계 개요</div>
+          <div class="page-header-meta">CLASSIFIED RECORD — METRO CORP INTERNAL USE ONLY</div>
+        </div>
+
+        <!-- M.CORP 소개 블록 -->
+        <div style="border:1px solid var(--border);padding:20px 22px;background:var(--bg3);margin-bottom:16px;position:relative;">
+          <div style="position:absolute;top:12px;right:14px;font-size:9px;color:var(--green-dark);letter-spacing:2px;">CORP RECORD #0001</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+            <div style="font-family:'VT323',monospace;font-size:42px;color:var(--green);text-shadow:0 0 16px var(--green);letter-spacing:4px;line-height:1;">M</div>
+            <div>
+              <div style="font-family:'VT323',monospace;font-size:22px;color:var(--white);letter-spacing:3px;">METRO CORP</div>
+              <div style="font-size:9px;color:var(--green-dim);letter-spacing:3px;margin-top:3px;">테라 연방의 설립자 · 지배 기업 · 본 터미널 시스템 개발사</div>
+            </div>
+          </div>
+          <div style="font-family:'Noto Sans KR',sans-serif;font-size:12px;color:#7acc7a;line-height:2;">
+            본 터미널은 <span style="color:var(--green);">Metro Corp(메트로 코프)</span>가 개발·운용한 현장 정보 시스템입니다.<br>
+            메트로 코프는 통일국가 <span style="color:var(--green);">테라 연방(Terra Federation)</span>의 실질적 설립자이자, 붕괴 이전 세계를 지배한 가장 거대한 기업입니다.<br>
+            내전 이후 중앙 서버와의 연결이 단절되었으나, 잔존 노드를 통해 현장 터미널은 제한적으로 운용 중입니다.
+          </div>
+        </div>
+
+        <!-- 연표 -->
+        <div style="border:1px solid var(--border);background:var(--bg3);margin-bottom:16px;">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:3px;color:var(--green-dim);">// TIMELINE — 세계사 개요</div>
+          <div style="padding:6px 0;">
+
+            <div style="display:flex;gap:0;border-bottom:1px solid var(--border);">
+              <div style="width:110px;flex-shrink:0;padding:14px 16px;border-right:1px solid var(--border);">
+                <div style="font-family:'VT323',monospace;font-size:18px;color:var(--green);letter-spacing:2px;">1946</div>
+                <div style="font-size:8px;color:var(--green-dark);letter-spacing:1px;">ERA : DAWN</div>
+              </div>
+              <div style="padding:14px 16px;flex:1;">
+                <div style="font-size:11px;color:var(--white);letter-spacing:1px;margin-bottom:4px;">테라 연방 수립</div>
+                <div style="font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#7acc7a;line-height:1.8;">Metro Corp의 창립자 <span style="color:var(--green);">메트로</span>가 주도하여 다수의 국가를 통합, 테라 연방을 선포. 기술과 마법이 공존하는 체제를 공식화했다. 메트로 코프는 연방의 핵심 인프라 전체를 장악했다.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:0;border-bottom:1px solid var(--border);">
+              <div style="width:110px;flex-shrink:0;padding:14px 16px;border-right:1px solid var(--border);">
+                <div style="font-family:'VT323',monospace;font-size:18px;color:var(--green);letter-spacing:2px;">2020s</div>
+                <div style="font-size:8px;color:var(--green-dark);letter-spacing:1px;">ERA : PEAK</div>
+              </div>
+              <div style="padding:14px 16px;flex:1;">
+                <div style="font-size:11px;color:var(--white);letter-spacing:1px;margin-bottom:4px;">기술·마법 융합 황금기</div>
+                <div style="font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#7acc7a;line-height:1.8;">마법과 기술의 융합 연구가 절정에 달하며 테라 연방은 전례 없는 번영을 누렸다. 이 시기 개발된 AI 병기 시스템과 마법 인프라가 훗날 내전의 핵심 무기가 된다.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:0;border-bottom:1px solid var(--border);">
+              <div style="width:110px;flex-shrink:0;padding:14px 16px;border-right:1px solid var(--border);">
+                <div style="font-family:'VT323',monospace;font-size:18px;color:var(--amber);letter-spacing:2px;">2051</div>
+                <div style="font-size:8px;color:var(--amber);letter-spacing:1px;opacity:0.6;">ERA : FRACTURE</div>
+              </div>
+              <div style="padding:14px 16px;flex:1;">
+                <div style="font-size:11px;color:var(--amber);letter-spacing:1px;margin-bottom:4px;">내전 발발</div>
+                <div style="font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#7acc7a;line-height:1.8;">연방 내부의 자원·이권 갈등이 임계점을 넘어 내전이 시작됐다. <span style="color:var(--amber);">메트로</span>는 이를 통제 가능한 범위 내의 충돌로 판단하고 각 세력을 조종하려 했다.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:0;border-bottom:1px solid var(--border);">
+              <div style="width:110px;flex-shrink:0;padding:14px 16px;border-right:1px solid var(--border);">
+                <div style="font-family:'VT323',monospace;font-size:18px;color:var(--red);letter-spacing:2px;">2065</div>
+                <div style="font-size:8px;color:var(--red);letter-spacing:1px;opacity:0.7;">ERA : COLLAPSE</div>
+              </div>
+              <div style="padding:14px 16px;flex:1;">
+                <div style="font-size:11px;color:var(--red);letter-spacing:1px;margin-bottom:4px;">통제 불능 — 연방 붕괴</div>
+                <div style="font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#7acc7a;line-height:1.8;">내전은 메트로의 예측을 한참 벗어났다. AI 병기의 교전 해제 실패, 마력 균열지 발생, 식량망 붕괴가 연쇄적으로 터지며 테라 연방은 사실상 소멸했다. 메트로 코프 중앙 시스템도 이 시기 오프라인으로 전환됐다.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:0;">
+              <div style="width:110px;flex-shrink:0;padding:14px 16px;border-right:1px solid var(--border);">
+                <div style="font-family:'VT323',monospace;font-size:18px;color:var(--green);letter-spacing:2px;">2070</div>
+                <div style="font-size:8px;color:var(--green-dark);letter-spacing:1px;">ERA : NOW</div>
+              </div>
+              <div style="padding:14px 16px;flex:1;">
+                <div style="font-size:11px;color:var(--white);letter-spacing:1px;margin-bottom:4px;">현재 — 붕괴 이후 세계</div>
+                <div style="font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#7acc7a;line-height:1.8;">내전 종료 5년 후. 통일국가는 존재하지 않는다. 군벌·스캐빈저·교단·아그리파머 등 다양한 세력이 폐허 위에서 각자의 방식으로 생존하고 있다. 본 터미널은 현장 요원을 위한 잔존 인프라로 운용 중이다.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 핵심 인물 블록 -->
+        <div style="border:1px solid var(--border);background:var(--bg3);">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:3px;color:var(--green-dim);">// KEY FIGURE</div>
+          <div style="padding:16px 18px;display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:36px;height:36px;border:1px solid var(--amber);display:flex;align-items:center;justify-content:center;font-family:'VT323',monospace;font-size:22px;color:var(--amber);flex-shrink:0;background:var(--bg2);">M</div>
+            <div style="flex:1;">
+              <div style="font-family:'VT323',monospace;font-size:22px;color:var(--amber);letter-spacing:3px;">METRO</div>
+              <div style="font-size:9px;color:var(--amber);letter-spacing:2px;opacity:0.7;margin-bottom:10px;">Metro Corp 창립자 · 테라 연방 설계자</div>
+              <div style="font-family:'Noto Sans KR',sans-serif;font-size:11px;color:#7acc7a;line-height:1.9;">
+                테라 연방의 설계자이자 메트로 코프의 오너. 세계 최고 수준의 정치적 수완과 자원을 보유했으며, 내전을 체스판의 말을 움직이듯 조종할 수 있다고 믿었다.<br>
+                <span style="color:var(--amber);">그러나 내전은 그의 계산을 벗어났다.</span> 붕괴 이후 그의 행방과 생사는 본 터미널에서 확인할 수 없다.
+              </div>
+              <div style="margin-top:10px;padding:7px 10px;border-left:2px solid var(--amber);font-size:10px;color:var(--amber);opacity:0.8;background:rgba(255,176,0,0.04);font-family:'Noto Sans KR',sans-serif;">
+                상태 : <span style="letter-spacing:1px;">UNKNOWN — 위치 추적 불가</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 세력 -->
+      <div class="section" id="sec-factions">
+        <div class="page-header">
+          <div class="page-header-path">M.CORP / FACTIONS /</div>
+          <div class="page-header-title">세력 정보</div>
+          <div class="page-header-meta">FACTION DATABASE — 6 RECORDS FOUND</div>
+        </div>
+        <div class="faction-grid">
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">⚔</div>
+              <div><div class="faction-name">군벌</div><div class="faction-role">무력 지배 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">무력</span><span class="ftag">영역 지배</span><span class="ftag">징세</span></div>
+            <div class="faction-desc">총과 수하를 통해 구역을 지배하는 실력자들. 대의명분보다 실리를 추구하며, 세력권 내 주민들에게 보호 명목으로 자원을 징수한다. 군벌마다 성향이 달라 협상 가능한 곳도, 불가능한 곳도 있다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">◈</div>
+              <div><div class="faction-name">스캐빈저</div><div class="faction-role">폐허 탐사 · 회수 전문 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">탐사</span><span class="ftag">회수</span><span class="ftag">데드존 진입</span></div>
+            <div class="faction-desc">데드존을 헤집고 다니며 물자와 기술 잔해를 회수하는 자들. 위험을 감수하는 대신 타 세력이 얻지 못하는 희귀 자원을 확보한다. 강인하고 독립적인 성격이 많으나 조직력이 약하다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">⬡</div>
+              <div><div class="faction-name">융합교단</div><div class="faction-role">마법·기술 융합 연구 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">마법</span><span class="ftag">기술</span><span class="ftag">융합 연구</span></div>
+            <div class="faction-desc">마기 교단이라 불리기도 한다, 마법과 첨단기술을 융합하여 자신들의 신을 이 세상에 현현 시키는것이 목적인 광적인 집단이다. 목적을 위해서만 행동하며 데드존 안에서 활동한다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">◎</div>
+              <div><div class="faction-name">아그리파머</div><div class="faction-role">식량 생산 · 공급 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">식량</span><span class="ftag">농업기술</span><span class="ftag">협상력</span></div>
+            <div class="faction-desc">죽어버린 대지에서 식량을 생산하는 기술을 보유한 집단. 식량이 곧 생명인 세계에서 막강한 협상력을 지닌다. 군사력이 없는 대신 군벌과의 상호의존 관계로 보호를 받는다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">■</div>
+              <div><div class="faction-name">구 정부 AI 병기</div><div class="faction-role">잔존 자율 전투 시스템</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">자율 전투</span><span class="ftag">교전 중</span><span class="ftag">명령 미해제</span></div>
+            <div class="faction-desc">내전 당시 투입된 자율 병기들. 중앙 AI(CAI)와 연결이 끊긴 채 데드존을 배회한다. 세력이라기보다 환경 요소에 가깝지만, 일부는 독자적인 판단 체계를 발전시켰다는 설도 있다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">+</div>
+              <div><div class="faction-name">히포크라테스</div><div class="faction-role">의료 · 약품 공급 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">치료</span><span class="ftag">약품</span><span class="ftag">중립</span></div>
+            <div class="faction-desc">의약품과 치료 기술을 보유한 집단. 아그리파머가 식량을 쥐듯 이들은 의료를 쥐고 있다. 원칙적으로 중립을 표방하나, 치료를 대가로 정보·노동·자원을 요구하기도 한다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">®</div>
+              <div><div class="faction-name">로드맨</div><div class="faction-role">차량 · 운송 정보 유통 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">차량</span><span class="ftag">물자</span><span class="ftag">중립</span></div>
+            <div class="faction-desc">도로망과 차량기술을 보유한 이들은 자신들의 루트를 통해 물자와 사람 그리고 그 사이에서 들려오는 모든 정보를 독접하고 있다. 스캐빈저들 부터 군벌과 아그리파머 모두 이들에게 물자 운송을 부탁하고 있다.</div>
+          </div>
+          <div class="faction-card">
+            <div class="faction-header">
+              <div class="faction-sym">Ĥ</div>
+              <div><div class="faction-name">호텔</div><div class="faction-role">휴식 · 서비스 공급 집단</div></div>
+            </div>
+            <div class="faction-tags"><span class="ftag">휴식</span><span class="ftag">온천</span><span class="ftag">식사</span><span class="ftag">중립</span></div>
+            <div class="faction-desc">어느날 폐허에서 불을 켠 건물 회색 지대에서 통제를 잃은 AI들을 지배하며 그린존으로 탈바꿈 하였다. 어느 파벌이라도 상관없이 호텔에서 숙박이 가능하며 모든 종류의 폭력은 거절중이다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 세계 구조 -->
+      <div class="section" id="sec-world">
+        <div class="page-header">
+          <div class="page-header-path">M.CORP / STRUCTURE /</div>
+          <div class="page-header-title">세계 구조</div>
+          <div class="page-header-meta">WORLD STRUCTURE ANALYSIS</div>
+        </div>
+        <div class="world-block">
+          <div class="world-block-title">// 경제 구조</div>
+          <div class="ws-grid">
+            <div class="ws-card">
+              <div class="ws-label">통화</div>
+              <div class="ws-val">구 정부 화폐는 사실상 폐기. 식량 크레딧·연료·마력석이 실질 교환 수단으로 자리잡았다.</div>
+            </div>
+            <div class="ws-card">
+              <div class="ws-label">권력의 축</div>
+              <div class="ws-val">식량(아그리파머), 의약품(메딕), 정보(로드맨), 무력(군벌·스캐빈저). 이 네 축의 균형이 지역 판도를 결정한다.</div>
+            </div>
+            <div class="ws-card">
+              <div class="ws-label">유통망</div>
+              <div class="ws-val">로드맨이 회색지대를 잇는 주요 루트를 사실상 독점. 무너진 세상에서 차량을 통해 물건과 사람 정보를 운송 가능하다.</div>
+            </div>
+            <div class="ws-card">
+              <div class="ws-label">기술 수준</div>
+              <div class="ws-val">내전 이전 근미래 수준의 기술이 혼재. 작동하는 것과 파괴된 것이 뒤섞여 기술 격차가 극단적으로 크다.</div>
+            </div>
+          </div>
+        </div>
+        <div class="world-block">
+          <div class="world-block-title">// 세계 특성</div>
+          <div class="ws-grid">
+            <div class="ws-card">
+              <div class="ws-label">마법과 기술</div>
+              <div class="ws-val">양쪽 모두 실재하며 융합도 가능하다. 안정적으로 다루는 이는 극소수. 융합교단이 이 분야의 첨단을 달린다.</div>
+            </div>
+            <div class="ws-card">
+              <div class="ws-label">마물</div>
+              <div class="ws-val">왜곡된 마력장에서 자연 발생하거나 데드존에서 흘러나온다. 위험 요소이자 스캐빈저의 수익원이기도 하다.</div>
+            </div>
+            <div class="ws-card">
+              <div class="ws-label">토지와 식량</div>
+              <div class="ws-val">내전으로 대부분의 경작지가 죽었다. 아그리파머의 기술 없이는 자급자족이 사실상 불가능한 지역이 대부분.</div>
+            </div>
+            <div class="ws-card">
+              <div class="ws-label">정보</div>
+              <div class="ws-val">통신망이 단절된 곳이 많아 정보가 곧 생존과 직결된다. 로드맨이 정보 유통의 핵심 경로.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 세력 관계 -->
+      <div class="section" id="sec-relations">
+        <div class="page-header">
+          <div class="page-header-path">M.CORP / RELATIONS /</div>
+          <div class="page-header-title">세력 관계</div>
+          <div class="page-header-meta">FACTION RELATIONS — 6 ENTRIES</div>
+        </div>
+        <table class="rel-table">
+          <thead>
+            <tr>
+              <td>세력</td><td>관계</td><td>내용</td>
+            </tr>
+          </thead>
+          <tbody>
+
+            <tr>
+              <td class="rel-from">호텔 → 전 세력</td>
+              <td><span class="rel-type rt-trade">중립</span></td>
+              <td class="rel-desc">숙박비만 지불하면 모든 종류의 서비스 제공</td>
+            </tr>
+            <tr>
+              <td class="rel-from">스캐빈저 → 로드맨</td>
+              <td><span class="rel-type rt-ally">협력</span></td>
+              <td class="rel-desc">대형 집단은 함께 이동하며 호위와 물자 분배를 공유</td>
+            </tr>
+            <tr>
+              <td class="rel-from">아그리파머 → 군벌</td>
+              <td><span class="rel-type rt-trade">거래</span></td>
+              <td class="rel-desc">식량 공급 대가로 군사적 보호를 받는 상호의존 구조</td>
+            </tr>
+            <tr>
+              <td class="rel-from">로드맨 → 전 세력</td>
+              <td><span class="rel-type rt-trade">중립</span></td>
+              <td class="rel-desc">원칙적으로 중립. 자원이 있으면 누구에게나 서비스 제공</td>
+            </tr>
+            <tr>
+              <td class="rel-from">융합교단 → 타 세력</td>
+              <td><span class="rel-type rt-tension">긴장</span></td>
+              <td class="rel-desc">목적과 방식이 이질적. 경계하거나 기술 탐내는 시선이 공존</td>
+            </tr>
+            <tr>
+              <td class="rel-from">히포크라테스 → 전 세력</td>
+              <td><span class="rel-type rt-trade">의존</span></td>
+              <td class="rel-desc">모든 세력이 필요로 하나, 중립을 이용해 협상력을 유지</td>
+            </tr>
+            <tr>
+              <td class="rel-from">AI 병기 → 생존자</td>
+              <td><span class="rel-type rt-hostile">적대</span></td>
+              <td class="rel-desc">교전 명령 미해제 상태. 데드존에서 모든 생존자를 위협</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 지도 -->
+      <div class="section" id="sec-map">
+        <div class="page-header">
+          <div class="page-header-path">M.CORP / MAP /</div>
+          <div class="page-header-title">지역 지도</div>
+          <div class="page-header-meta">TERRITORY MAP — MARKER를 클릭하면 상세 정보가 표시됩니다</div>
+        </div>
+
+        <!-- 구역 분류 (지도 탭 내부) -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;letter-spacing:3px;color:var(--green-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">// ZONE CLASSIFICATION</div>
+          <div class="zone-grid">
+            <div class="zone-card dead">
+              <div class="zone-badge badge-dead">DEAD ZONE</div>
+              <div class="zone-name">데드존</div>
+              <div class="zone-name-en">황폐화된 전장</div>
+              <div class="zone-divider"></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">내전의 흔적이 고스란히 남은 구역. 방사능·마력 오염으로 지형 자체가 변형되었다.</span></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">구 정부(테라연방)의 첨단 병기 잔해와 희귀 마법 결정체가 묻혀 있어 목숨을 걸고 들어오는 이들이 있다.</span></div>
+              <div class="zone-risk risk-dead">위험도 : 최고 — 비보호 입역 시 생존 보장 없음</div>
+            </div>
+            <div class="zone-card green">
+              <div class="zone-badge badge-green">GREEN ZONE</div>
+              <div class="zone-name">그린존</div>
+              <div class="zone-name-en">살아있는 인간의 거점</div>
+              <div class="zone-divider"></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">통제 되는 AI 병기들과 각종 군사 세력들로 치안이 유지. 시장이 열리고 사람이 모인다.</span></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">전기·수도·식량 공급이 자체적으로 이루어지는 경우가 있다. 호텔도 이에 해당.</span></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">안전하다는 이유로 인구가 집중되며, 자원 배분과 권력 다툼이 끊이지 않는다.</span></div>
+              <div class="zone-risk risk-green">안전도 : 상대적 안전 — 세력 장악 여부에 따라 변동</div>
+            </div>
+            <div class="zone-card gray">
+              <div class="zone-badge badge-gray">GRAY ZONE</div>
+              <div class="zone-name">회색지대</div>
+              <div class="zone-name-en">누구의 것도 아닌 땅</div>
+              <div class="zone-divider"></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">어느 세력도 장악하지 못한 완충지대. 로드맨의 유통 루트가 반드시 통과한다.</span></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">무법지대에 가깝지만, 암묵적인 거래 규칙이 존재한다. 힘 있는 자가 법이다.</span></div>
+              <div class="zone-item"><span class="zone-bullet">►</span><span class="zone-text">군벌과 스캐빈저의 충돌이 잦다. 빠른 이동이 곧 생존이다.</span></div>
+              <div class="zone-risk risk-gray">위험도 : 중간 — 무력 또는 정보 없이는 통과 불가</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="map-wrap">
+          <div class="map-header">
+            <span class="status-dot"></span>
+            <span>TERRITORY SCAN ACTIVE</span>
+            <span style="margin-left:auto;color:var(--green-dark)">// 마커 클릭 → 거점 상세</span>
+          </div>
+
+          <!-- SVG 지도 (터미널 색감으로 재색칠) -->
+          <div style="position:relative;">
+            <svg width="100%" viewBox="0 0 592 480" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <defs>
+                <pattern id="cross-gray" patternUnits="userSpaceOnUse" width="10" height="10">
+                  <line x1="0" y1="0" x2="10" y2="10" stroke="#00ff41" stroke-width="0.4" stroke-opacity="0.08"/>
+                  <line x1="10" y1="0" x2="0" y2="10" stroke="#00ff41" stroke-width="0.4" stroke-opacity="0.08"/>
+                </pattern>
+                <pattern id="hatch-dead" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+                  <line x1="0" y1="0" x2="0" y2="5" stroke="#ff3333" stroke-width="1" stroke-opacity="0.3"/>
+                </pattern>
+                <pattern id="hatch-cult" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(40)">
+                  <line x1="0" y1="0" x2="0" y2="6" stroke="#00ffcc" stroke-width="0.8" stroke-opacity="0.25"/>
+                </pattern>
+                <pattern id="hatch-scav" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(35)">
+                  <line x1="0" y1="0" x2="0" y2="5" stroke="#ffb000" stroke-width="0.7" stroke-opacity="0.25"/>
+                </pattern>
+              </defs>
+
+              <!-- 배경: 회색지대 -->
+              <rect x="0" y="0" width="592" height="480" fill="#041004"/>
+              <rect x="0" y="0" width="592" height="480" fill="url(#cross-gray)"/>
+              <text x="10" y="26" font-family="'Share Tech Mono',monospace" font-size="9" fill="#005510" opacity="0.8" letter-spacing="3">GRAY ZONE</text>
+              <text x="470" y="472" font-family="'Share Tech Mono',monospace" font-size="9" fill="#005510" opacity="0.8" letter-spacing="3">GRAY ZONE</text>
+
+              <!-- 데드존 -->
+              <polygon points="16,16 240,16 260,130 220,230 80,260 16,180" fill="#ff3333" opacity="0.07"/>
+              <polygon points="16,16 240,16 260,130 220,230 80,260 16,180" fill="url(#hatch-dead)"/>
+              <polygon points="16,16 240,16 260,130 220,230 80,260 16,180" fill="none" stroke="#ff3333" stroke-width="1.5" stroke-dasharray="4 2" opacity="0.5"/>
+              <text x="88" y="175" font-family="'Share Tech Mono',monospace" font-size="10" fill="#ff3333" opacity="0.8" font-weight="600" letter-spacing="2">DEAD ZONE</text>
+              <text x="92" y="188" font-family="'Share Tech Mono',monospace" font-size="8" fill="#ff5555" opacity="0.5" letter-spacing="1">데드존</text>
+
+              <!-- 융합교단 -->
+              <polygon points="42,38 110,38 118,78 98,110 52,115 36,88" fill="#00ffcc" opacity="0.08"/>
+              <polygon points="42,38 110,38 118,78 98,110 52,115 36,88" fill="url(#hatch-cult)"/>
+              <polygon points="42,38 110,38 118,78 98,110 52,115 36,88" fill="none" stroke="#00ffcc" stroke-width="1.2" opacity="0.5"/>
+
+              <!-- 군벌 구역 -->
+              <polygon points="400,16 576,16 576,210 480,230 378,178 358,78" fill="#ffb000" opacity="0.06"/>
+              <polygon points="400,16 576,16 576,210 480,230 378,178 358,78" fill="none" stroke="#ffb000" stroke-width="1.2" stroke-dasharray="5 3" opacity="0.4"/>
+              <text x="450" y="68" font-family="'Share Tech Mono',monospace" font-size="11" fill="#ffb000" opacity="0.7" font-weight="600" letter-spacing="1">군벌 세력</text>
+              <text x="454" y="82" font-family="'Share Tech Mono',monospace" font-size="8" fill="#ffb000" opacity="0.4" letter-spacing="1">WARLORD</text>
+
+              <!-- 스캐빈저 SCV-1 -->
+              <polygon points="16,355 82,334 104,398 70,432 16,428" fill="#ffb000" opacity="0.08"/>
+              <polygon points="16,355 82,334 104,398 70,432 16,428" fill="url(#hatch-scav)"/>
+              <polygon points="16,355 82,334 104,398 70,432 16,428" fill="none" stroke="#ffb000" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+
+              <!-- 스캐빈저 SCV-2 -->
+              <polygon points="478,374 542,354 564,408 530,443 472,438" fill="#ffb000" opacity="0.08"/>
+              <polygon points="478,374 542,354 564,408 530,443 472,438" fill="url(#hatch-scav)"/>
+              <polygon points="478,374 542,354 564,408 530,443 472,438" fill="none" stroke="#ffb000" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+
+              <!-- 스캐빈저 SCV-3 -->
+              <polygon points="180,16 310,16 320,60 290,82 168,75" fill="#ffb000" opacity="0.08"/>
+              <polygon points="180,16 310,16 320,60 290,82 168,75" fill="url(#hatch-scav)"/>
+              <polygon points="180,16 310,16 320,60 290,82 168,75" fill="none" stroke="#ffb000" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+
+              <!-- 스캐빈저 SCV-4 -->
+              <polygon points="390,350 450,338 468,392 440,424 382,416" fill="#ffb000" opacity="0.08"/>
+              <polygon points="390,350 450,338 468,392 440,424 382,416" fill="url(#hatch-scav)"/>
+              <polygon points="390,350 450,338 468,392 440,424 382,416" fill="none" stroke="#ffb000" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+
+              <!-- 그린존 (호텔) -->
+              <rect x="238" y="258" width="116" height="104" rx="2" fill="#00ff41" opacity="0.06"/>
+              <rect x="238" y="258" width="116" height="104" rx="2" fill="none" stroke="#00ff41" stroke-width="1.5" opacity="0.5"/>
+              <text x="258" y="315" font-family="'Share Tech Mono',monospace" font-size="10" fill="#00ff41" opacity="0.7" letter-spacing="1">GREEN ZONE</text>
+
+              <!-- 아그리파머 구역 -->
+              <polygon points="240,380 340,368 352,424 318,460 230,454 222,416" fill="#00ff41" opacity="0.07"/>
+              <polygon points="240,380 340,368 352,424 318,460 230,454 222,416" fill="none" stroke="#00ff41" stroke-width="1" stroke-dasharray="5 3" opacity="0.35"/>
+              <text x="252" y="420" font-family="'Share Tech Mono',monospace" font-size="8" fill="#00ff41" opacity="0.6" letter-spacing="1">AGRI</text>
+
+              <!-- 히포크라테스 -->
+              <circle cx="178" cy="322" r="28" fill="#00ffcc" opacity="0.06"/>
+              <circle cx="178" cy="322" r="28" fill="none" stroke="#00ffcc" stroke-width="1" stroke-dasharray="3 2" opacity="0.4"/>
+
+              <!-- 로드맨 루트 선 -->
+              <polyline points="56,384 160,320 178,322 250,306 296,290 360,280 420,380" fill="none" stroke="#00cc33" stroke-width="1.2" stroke-dasharray="6 3" opacity="0.35"/>
+              <polyline points="240,44 270,130 260,200 296,258 296,290" fill="none" stroke="#00cc33" stroke-width="1" stroke-dasharray="6 3" opacity="0.3"/>
+              <polyline points="420,380 510,406" fill="none" stroke="#00cc33" stroke-width="1" stroke-dasharray="6 3" opacity="0.3"/>
+              <text x="300" y="248" font-family="'Share Tech Mono',monospace" font-size="7" fill="#00cc33" opacity="0.45" letter-spacing="2">ROAD ROUTE</text>
+
+              <!-- 격자 눈금선 -->
+              <line x1="0" y1="160" x2="592" y2="160" stroke="#005510" stroke-width="0.5" opacity="0.3"/>
+              <line x1="0" y1="320" x2="592" y2="320" stroke="#005510" stroke-width="0.5" opacity="0.3"/>
+              <line x1="197" y1="0" x2="197" y2="480" stroke="#005510" stroke-width="0.5" opacity="0.3"/>
+              <line x1="394" y1="0" x2="394" y2="480" stroke="#005510" stroke-width="0.5" opacity="0.3"/>
+            </svg>
+
+            <!-- 마커들 -->
+            <!-- 융합교단 -->
+            <div class="lm" style="left:12.8%;top:16.5%;" onclick="showMapPanel('cult')">
+              <div class="lm-dot" style="background:#00ffcc;color:#00ffcc;"></div>
+              <div class="lm-label">융합교단(메트로코프 본사)</div>
+            </div>
+            <!-- AI 병기 거점 -->
+            <div class="lm" style="left:28%;top:35%;" onclick="showMapPanel('dead_ai')">
+              <div class="lm-dot" style="background:#ff3333;color:#ff3333;"></div>
+              <div class="lm-label">AI 병기 거점</div>
+            </div>
+            <!-- 마력 균열지 -->
+            <div class="lm" style="left:16%;top:42%;" onclick="showMapPanel('dead_rift')">
+              <div class="lm-dot" style="background:#ff5588;color:#ff5588;"></div>
+              <div class="lm-label">마력 균열지</div>
+            </div>
+            <!-- 통합 병영 -->
+            <div class="lm" style="left:80%;top:20%;" onclick="showMapPanel('mil_base')">
+              <div class="lm-dot" style="background:#ffb000;color:#ffb000;"></div>
+              <div class="lm-label">통합 병영</div>
+            </div>
+            <!-- 방송탑 -->
+            <div class="lm" style="left:68%;top:12%;" onclick="showMapPanel('mil_tower')">
+              <div class="lm-dot" style="background:#ffb000;color:#ffb000;"></div>
+              <div class="lm-label">방송탑</div>
+            </div>
+            <!-- SCV-1 -->
+            <div class="lm" style="left:10%;top:79%;" onclick="showMapPanel('scv1')">
+              <div class="lm-dot" style="background:#ffb000;color:#ffb000;"></div>
+              <div class="lm-label">SCV-1</div>
+              <div class="lm-sub">폐쇼핑몰</div>
+            </div>
+            <!-- SCV-2 -->
+            <div class="lm" style="left:86%;top:82%;" onclick="showMapPanel('scv2')">
+              <div class="lm-dot" style="background:#ffb000;color:#ffb000;"></div>
+              <div class="lm-label">SCV-2</div>
+              <div class="lm-sub">고가도로 캠프</div>
+            </div>
+            <!-- SCV-3 -->
+            <div class="lm" style="left:42%;top:7%;" onclick="showMapPanel('scv3')">
+              <div class="lm-dot" style="background:#ffb000;color:#ffb000;"></div>
+              <div class="lm-label">SCV-3</div>
+              <div class="lm-sub">폐역사</div>
+            </div>
+            <!-- SCV-4 -->
+            <div class="lm" style="left:71%;top:78%;" onclick="showMapPanel('scv4')">
+              <div class="lm-dot" style="background:#ffb000;color:#ffb000;"></div>
+              <div class="lm-label">SCV-4</div>
+              <div class="lm-sub">정수탑</div>
+            </div>
+            <!-- 호텔 (그린존) -->
+            <div class="lm" style="left:50%;top:64%;" onclick="showMapPanel('hotel')">
+              <div class="lm-dot" style="background:#00ff41;color:#00ff41;"></div>
+              <div class="lm-label">호텔 (그린존)</div>
+            </div>
+            <!-- 아그리파머 -->
+            <div class="lm" style="left:48%;top:86%;" onclick="showMapPanel('agri')">
+              <div class="lm-dot" style="background:#00ff41;color:#00ff41;"></div>
+              <div class="lm-label">아그리파머</div>
+            </div>
+            <!-- 히포크라테스 -->
+            <div class="lm" style="left:30%;top:67%;" onclick="showMapPanel('hippo')">
+              <div class="lm-dot" style="background:#00ffcc;color:#00ffcc;"></div>
+              <div class="lm-label">히포크라테스</div>
+            </div>
+            <!-- 무명 시장 -->
+            <div class="lm" style="left:58%;top:56%;" onclick="showMapPanel('road')">
+              <div class="lm-dot" style="background:#00cc33;color:#00cc33;"></div>
+              <div class="lm-label">무명 시장</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 범례 -->
+        <div class="map-legend">
+          <div class="map-legend-cell">
+            <div class="map-legend-dot" style="background:#ff3333;box-shadow:0 0 4px #ff3333;"></div>
+            <div class="map-legend-label">DEAD ZONE</div>
+            <div class="map-legend-name">데드존</div>
+          </div>
+          <div class="map-legend-cell">
+            <div class="map-legend-dot" style="background:#00ff41;box-shadow:0 0 4px #00ff41;"></div>
+            <div class="map-legend-label">GREEN ZONE</div>
+            <div class="map-legend-name">그린존</div>
+          </div>
+          <div class="map-legend-cell">
+            <div class="map-legend-dot" style="background:#555;"></div>
+            <div class="map-legend-label">GRAY ZONE</div>
+            <div class="map-legend-name">회색지대</div>
+          </div>
+          <div class="map-legend-cell">
+            <div class="map-legend-dot" style="background:#ffb000;box-shadow:0 0 4px #ffb000;"></div>
+            <div class="map-legend-label">WARLORD / SCV</div>
+            <div class="map-legend-name">군벌·스캐빈저</div>
+          </div>
+          <div class="map-legend-cell">
+            <div class="map-legend-dot" style="background:#00ffcc;box-shadow:0 0 4px #00ffcc;"></div>
+            <div class="map-legend-label">SPECIAL</div>
+            <div class="map-legend-name">교단·의료</div>
+          </div>
+        </div>
+
+        <!-- 거점 정보 패널 -->
+        <div class="map-panel-wrap">
+          <div class="map-panel" id="mpanel-hint" style="display:block;">
+            <div class="map-panel-hint">지도 위 마커를 클릭하면 거점 상세 정보가 표시됩니다</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-cult">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#00ffcc;">⬡</div>
+              <div><div class="map-panel-name">융합교단</div><div class="map-panel-zone">데드존 내부 — 마법·기술 융합 연구시설</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">마법·기술 융합</span><span class="map-ptag">데드존 내 거점</span><span class="map-ptag">고위험 연구</span></div>
+            <div class="map-panel-desc">데드존 한가운데 자리잡은 융합교단의 연구시설, 과거 메트로 코프의 본사로써 인류 역사상 가장 큰 건물의 위용을 자랑하며 지금 또한 마찬가지. 마력 균열지와 가까워 위험하지만, 그만큼 희귀한 마력 데이터와 병기 잔해를 쉽게 확보할 수 있다. 외부 세력의 접근을 철저히 차단하며, 교단원이 아닌 자가 내부를 본 이는 거의 없다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-dead_ai">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ff3333;">⚙</div>
+              <div><div class="map-panel-name">AI 병기 거점</div><div class="map-panel-zone">데드존 — 구 정부 병기 집결지</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">자율 교전 중</span><span class="map-ptag">접근 최위험</span><span class="map-ptag">폐군수창고</span></div>
+            <div class="map-panel-desc">내전 당시 군수 물자를 생산하는 산업 단지. 교전 해제 명령을 받지 못한 구 정부 AI 병기들이 이 일대를 거점 삼아 순찰,자원수집,병기 생산 등을 한다. 내부에는 수많은 무기와 부품이 남아 있어 고위험 스캐빈저들이 목숨을 걸고 잠입을 시도하는 곳이기도 하다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-dead_rift">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ff5588;">◈</div>
+              <div><div class="map-panel-name">마력 균열지</div><div class="map-panel-zone">데드존 — 출입 경고구역</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">마물 자연발생</span><span class="map-ptag">방향감각 상실</span><span class="map-ptag">마법 불안정</span></div>
+            <div class="map-panel-desc">내전 당시 마법 병기의 충돌로 마력장이 극도로 왜곡된 지점. 나침반이 먹통이 되고 마법 시전이 예측 불가능해진다. 마물이 지속 발생하며 희귀 마력 결정체가 생성되는 유일한 구역이다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-mil_base">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ffb000;">▣</div>
+              <div><div class="map-panel-name">통합 병영</div><div class="map-panel-zone">군벌 구역 — 군사 거점</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">구 정부 기지 접수</span><span class="map-ptag">격납고</span><span class="map-ptag">무기고</span></div>
+            <div class="map-panel-desc">구 정부군 군사 기지를 군벌이 그대로 접수해 사용 중이다. 반쯤 무너진 격납고와 망루, 바리케이드가 혼재한다. 아그리파머로부터 식량을 공급받는 대가로 그린존 일대의 치안을 담당하고 있다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-mil_tower">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ffb000;">▲</div>
+              <div><div class="map-panel-name">방송탑</div><div class="map-panel-zone">군벌 구역 — 통신 장악 거점</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">구 통신망</span><span class="map-ptag">선전 방송</span><span class="map-ptag">정보 통제</span></div>
+            <div class="map-panel-desc">구 통일국가 시절 설치된 광역 통신 인프라를 군벌이 장악하여 운용 중이다. 그린존 일대에서 가장 높이 솟은 구조물로, 방송탑의 침묵은 이 구역에 무언가 일어났다는 신호로 통한다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-scv1">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ffb000;">⬡</div>
+              <div><div class="map-panel-name">SCV-1 — 폐쇼핑몰</div><div class="map-panel-zone">서쪽 회색지대 — 가장 안전한 스캐빈저 베이스</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">거점화</span><span class="map-ptag">물자 집적</span><span class="map-ptag">그린존 인근</span></div>
+            <div class="map-panel-desc">대형 쇼핑몰 건물을 스캐빈저들이 거점으로 개조한 곳. 4개 SCV 중 그린존에 가장 가까워 상대적으로 안전하다. 물자 교환과 정보 공유가 이루어지는 비공식 허브이기도 하다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-scv2">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ffb000;">⬡</div>
+              <div><div class="map-panel-name">SCV-2 — 고가도로 캠프</div><div class="map-panel-zone">동쪽 회색지대 — 로드맨 접선지</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">이동식 거점</span><span class="map-ptag">감시 우위</span><span class="map-ptag">로드맨 연결</span></div>
+            <div class="map-panel-desc">무너진 고가도로 위에 형성된 이동식 캠프. 높은 위치 덕분에 주변 일대를 감시하기 유리하며, 로드맨과의 접선 포인트로도 활용된다. 구조 자체가 불안정해 무게와 인원을 제한해야 한다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-scv3">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ffb000;">⬡</div>
+              <div><div class="map-panel-name">SCV-3 — 폐역사</div><div class="map-panel-zone">북쪽 — 데드존 진입 전 마지막 보급지</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">고위험 위치</span><span class="map-ptag">보급 기능</span><span class="map-ptag">정보 집결</span></div>
+            <div class="map-panel-desc">데드존 경계와 가장 인접한 스캐빈저 거점. 데드존으로 진입하기 전 마지막으로 보급을 받을 수 있는 곳으로, 살아 돌아온 이들의 정보가 가장 먼저 모이는 장소다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-scv4">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#ffb000;">⬡</div>
+              <div><div class="map-panel-name">SCV-4 — 정수탑</div><div class="map-panel-zone">동남쪽 회색지대 — 자원 분쟁지</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">수자원 거점</span><span class="map-ptag">다중 세력 관심</span><span class="map-ptag">분쟁 위험</span></div>
+            <div class="map-panel-desc">희귀한 수자원을 확보할 수 있는 구 정수처리 시설. 현재는 스캐빈저 집단이 장악하고 있으나, 군벌과 다른 세력도 눈독을 들이는 분쟁 가능성이 높은 곳이다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-hotel">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#00ff41;">◉</div>
+              <div><div class="map-panel-name">호텔 (그린존)</div><div class="map-panel-zone">그린존 중심 — 생존자 거점</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">그린존</span><span class="map-ptag">전기·수도 가동</span><span class="map-ptag">치안 유지</span></div>
+            <div class="map-panel-desc">그린존 내 핵심 거점. 전기와 수도가 자체적으로 공급되며, 유일하게 통제되는 AI 병기들로 치안이 유지된다. 세력 간 협상이 이루어지는 중립 공간으로도 기능한다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-agri">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#00ff41;">◎</div>
+              <div><div class="map-panel-name">아그리파머 구역</div><div class="map-panel-zone">그린존 남부 — 식량 생산 거점</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">식량 생산</span><span class="map-ptag">농업기술</span><span class="map-ptag">군벌 협약</span></div>
+            <div class="map-panel-desc">죽어버린 대지에서 식량을 생산하는 아그리파머의 핵심 시설. 군벌에게 식량을 공급하는 대가로 군사적 보호를 받는 구조다. 이 시설이 멈추면 그린존 전체가 흔들린다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-hippo">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#00ffcc;">+</div>
+              <div><div class="map-panel-name">히포크라테스</div><div class="map-panel-zone">회색지대 — 의료 중립 구역</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">치료</span><span class="map-ptag">약품</span><span class="map-ptag">중립 표방</span></div>
+            <div class="map-panel-desc">의약품과 치료 기술을 보유한 집단의 거점. 원칙적으로 중립을 표방하나, 치료를 대가로 정보·노동·자원을 요구하기도 한다. 모든 세력이 필요로 하는 만큼, 어느 쪽도 공격하지 않는 묵시적 협약이 존재한다.</div>
+          </div>
+
+          <div class="map-panel" id="mpanel-road">
+            <div class="map-panel-header">
+              <div class="map-panel-icon" style="color:#00cc33;">◎</div>
+              <div><div class="map-panel-name">무명 시장</div><div class="map-panel-zone">회색지대 — 로드맨 교차점</div></div>
+            </div>
+            <div class="map-panel-tags"><span class="map-ptag">중립 거래</span><span class="map-ptag">이동식</span><span class="map-ptag">정보 브로커</span><span class="map-ptag">전 세력 개방</span></div>
+            <div class="map-panel-desc">로드맨의 유통 루트가 교차하는 지점에 자연 발생한 이동식 시장. 위치가 시기마다 달라지며, 그 위치를 아는 것 자체가 정보력의 척도다. 이곳에서의 거래 중에는 무력 충돌이 묵시적으로 금지된다.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 로딩 시퀀스 ──
+const logs = [
+  '> BOOT SEQUENCE INITIATED...',
+  '> LOADING KERNEL MODULES...',
+  '> CHECKING MEMORY INTEGRITY... OK',
+  '> CONNECTING TO FIELD NODE 07...',
+  '> AUTHENTICATING ACCESS CREDENTIALS...',
+  '> DECRYPTING WORLD DATABASE...',
+  '> LOADING ZONE CLASSIFICATION DATA...',
+  '> LOADING FACTION REGISTRY...',
+  '> LOADING WORLD STRUCTURE ANALYSIS...',
+  '> LOADING TERRITORY MAP DATA...',
+  '> ALL MODULES LOADED — M.CORP TERMINAL READY',
+  '> 환영합니다, 생존자',
+];
+
+const labels = [
+  'INITIALIZING...', 'LOADING MODULES...', 'CHECKING INTEGRITY...',
+  'CONNECTING...', 'AUTHENTICATING...', 'DECRYPTING...',
+  'LOADING ZONES...', 'LOADING FACTIONS...', 'LOADING STRUCTURE...',
+  'READY'
+];
+
+let logEl = document.getElementById('loaderLog');
+let progBar = document.getElementById('progBar');
+let progPct = document.getElementById('progPct');
+let progLabel = document.getElementById('progLabel');
+let i = 0;
+
+function nextLog() {
+  if (i >= logs.length) {
+    setTimeout(() => {
+      document.getElementById('loader').style.opacity = '0';
+      document.getElementById('loader').style.transition = 'opacity 0.5s';
+      setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        startClock();
+        startUptime();
+      }, 500);
+    }, 300);
+    return;
+  }
+  let line = document.createElement('div');
+  line.className = 'log-line';
+  line.textContent = logs[i];
+  logEl.appendChild(line);
+  if (logEl.children.length > 5) logEl.removeChild(logEl.children[0]);
+
+  let pct = Math.round(((i + 1) / logs.length) * 100);
+  progBar.style.width = pct + '%';
+  progPct.textContent = pct + '%';
+  progLabel.textContent = labels[i] || 'LOADING...';
+
+  i++;
+  setTimeout(nextLog, 280 + Math.random() * 180);
+}
+
+setTimeout(nextLog, 400);
+
+// ── 시계 ──
+function startClock() {
+  function update() {
+    let now = new Date();
+    let h = String(now.getHours()).padStart(2,'0');
+    let m = String(now.getMinutes()).padStart(2,'0');
+    let s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clockDisplay').textContent = h+':'+m+':'+s;
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// ── 업타임 ──
+let uptimeSeconds = 0;
+function startUptime() {
+  setInterval(() => {
+    uptimeSeconds++;
+    let h = String(Math.floor(uptimeSeconds / 3600)).padStart(2,'0');
+    let m = String(Math.floor((uptimeSeconds % 3600) / 60)).padStart(2,'0');
+    let s = String(uptimeSeconds % 60).padStart(2,'0');
+    document.querySelector('.sidebar-footer').innerHTML =
+      `ACCESS LEVEL : FIELD OPS<br>CORP : METRO CORP<br>UPTIME : ${h}:${m}:${s}`;
+  }, 1000);
+}
+
+// ── 지도 패널 ──
+function showMapPanel(id) {
+  document.querySelectorAll('.map-panel').forEach(p => p.style.display = 'none');
+  document.getElementById('mpanel-' + id).style.display = 'block';
+}
+
+// ── 섹션 전환 ──
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const sec = document.getElementById('sec-' + id);
+
+  // 타이핑 애니메이션 재실행을 위해 엘리먼트 리셋
+  const title = sec.querySelector('.page-header-title');
+  const meta  = sec.querySelector('.page-header-meta');
+  if (title) { title.style.animation = 'none'; title.style.width = '0'; }
+  if (meta)  { meta.style.animation  = 'none'; meta.style.width  = '0'; }
+
+  // 다음 프레임에 visible 추가 → CSS 애니메이션 재트리거
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (title) title.style.animation = '';
+      if (meta)  meta.style.animation  = '';
+      sec.classList.add('visible');
+    });
+  });
+
+  el.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+// ── 모바일 사이드바 ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+</script>
+</body>
+</html>
