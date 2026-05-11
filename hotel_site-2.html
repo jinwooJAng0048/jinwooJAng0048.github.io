@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOTEL — 세상이 끝난 뒤에도, 우리는 문을 엽니다</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&display=swap');
+
+:root {
+  --paper: #0f0d09;
+  --paper-dark: #1a1710;
+  --paper-mid: #151209;
+  --ink: #f0dfa0;
+  --ink-faded: #c8b87a;
+  --ink-light: #8a7a50;
+  --gold: #d4a843;
+  --gold-light: #f0cc6a;
+  --gold-glow: #ffd966;
+  --gold-dim: #7a5e1a;
+  --red-warn: #cc3333;
+  --teal: #2ab8b8;
+  --divider: #3a3010;
+  --divider-bright: #6a5520;
+  --bg: #050402;
+  --card-bg: #120f08;
+  --card-border: #2e2510;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(212,168,67,0.015) 60px, rgba(212,168,67,0.015) 61px),
+    repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(212,168,67,0.015) 60px, rgba(212,168,67,0.015) 61px);
+}
+
+/* ── 로딩 ── */
+#loader {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  transition: opacity 1.2s ease;
+}
+#loader.fade-out { opacity: 0; pointer-events: none; }
+.loader-hotel {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 42px; font-weight: 700;
+  color: var(--gold-glow); letter-spacing: 10px;
+  text-shadow: 0 0 40px rgba(255,217,102,0.6), 0 0 80px rgba(212,168,67,0.3);
+  animation: gentle-flicker 4s infinite;
+}
+.loader-rule {
+  width: 280px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--gold-light), var(--gold), transparent);
+}
+.loader-sub { font-family: 'Cinzel', serif; font-size: 11px; color: var(--ink-light); letter-spacing: 4px; }
+.loader-progress { margin-top: 32px; width: 200px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.loader-bar-bg { width: 100%; height: 2px; background: var(--divider); position: relative; }
+.loader-bar-bg::before,.loader-bar-bg::after { content:''; position:absolute; top:-3px; width:6px; height:8px; background: var(--gold-dim); }
+.loader-bar-bg::before { left:-3px; } .loader-bar-bg::after { right:-3px; }
+.loader-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold-glow)); width: 0%; transition: width 0.15s linear; box-shadow: 0 0 8px var(--gold-glow); }
+.loader-pct { font-family: 'Cinzel', serif; font-size: 10px; color: var(--ink-light); letter-spacing: 4px; }
+
+/* ── 상단바 ── */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--paper-dark);
+  border-bottom: 1px solid var(--divider-bright);
+  box-shadow: 0 2px 20px rgba(212,168,67,0.08);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; z-index: 100;
+}
+.topbar::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim) 20%, var(--gold) 50%, var(--gold-dim) 80%, transparent);
+}
+.topbar-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px; font-weight: 700;
+  color: var(--gold-glow); letter-spacing: 6px;
+  text-shadow: 0 0 12px rgba(255,217,102,0.4);
+}
+.topbar-sub { font-family: 'Cinzel', serif; font-size: 9px; color: var(--ink-light); letter-spacing: 3px; }
+.topbar-nav { display: flex; gap: 2px; }
+.topbar-nav-item {
+  padding: 7px 14px; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
+  color: var(--ink-light); cursor: pointer;
+  border: 1px solid transparent; transition: all 0.2s;
+}
+.topbar-nav-item:hover { color: var(--gold-light); border-color: var(--divider-bright); background: rgba(212,168,67,0.06); }
+.topbar-nav-item.active { color: var(--gold-glow); border-color: var(--gold-dim); background: rgba(212,168,67,0.1); }
+.mob-menu-btn {
+  display: none; background: none; border: 1px solid var(--divider-bright);
+  color: var(--gold); font-size: 16px; width: 34px; height: 34px;
+  align-items: center; justify-content: center; cursor: pointer;
+}
+
+/* ── 레이아웃 ── */
+#app { display: none; padding-top: 56px; min-height: 100vh; background: var(--paper); }
+.section { display: none; }
+.section.visible { display: block; }
+.page-wrap { max-width: 760px; margin: 0 auto; padding: 48px 40px 80px; position: relative; }
+.page-wrap::before, .page-wrap::after {
+  content: ''; display: block; width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim) 15%, var(--gold) 50%, var(--gold-dim) 85%, transparent);
+  margin: 0 0 36px;
+}
+.page-wrap::after { margin: 36px 0 0; }
+.corner-deco { position: absolute; width: 28px; height: 28px; border-color: var(--gold); border-style: solid; opacity: 0.7; }
+.cd-tl { top: 20px; left: 20px; border-width: 2px 0 0 2px; }
+.cd-tr { top: 20px; right: 20px; border-width: 2px 2px 0 0; }
+.cd-bl { bottom: 20px; left: 20px; border-width: 0 0 2px 2px; }
+.cd-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; }
+
+.sec-title {
+  font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 5px;
+  color: var(--gold); text-align: center; margin: 28px 0 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.sec-title::before { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.sec-title::after  { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+
+.divider-main {
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim) 20%, var(--gold) 50%, var(--gold-dim) 80%, transparent);
+  margin: 28px 0; position: relative;
+}
+.divider-main::before {
+  content: '◆'; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8px; color: var(--gold); background: var(--paper); padding: 0 6px;
+}
+
+/* ── 메인 탭 ── */
+.hotel-hero { text-align: center; padding: 20px 0 32px; }
+.hero-emblem { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
+.hero-rule { flex:1; max-width:100px; height:2px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.hero-rule.rev { background: linear-gradient(90deg, var(--gold), transparent); }
+.hero-icon { font-size: 20px; color: var(--gold-glow); text-shadow: 0 0 12px var(--gold); }
+.hero-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 44px; font-weight: 700;
+  color: var(--gold-glow); letter-spacing: 14px; margin-bottom: 8px;
+  text-shadow: 0 0 30px rgba(255,217,102,0.4), 0 2px 4px rgba(0,0,0,0.5);
+}
+.hero-tagline { font-family: 'Cinzel', serif; font-size: 11px; color: var(--ink-light); letter-spacing: 3px; }
+.welcome-block { font-family: 'Noto Serif KR', serif; font-size: 14px; line-height: 2.3; color: var(--ink-faded); text-align: center; padding: 0 20px; }
+
+.checkin-row { display: flex; gap: 2px; margin-top: 6px; }
+.checkin-box { flex: 1; border: 1px solid var(--divider-bright); padding: 16px; text-align: center; background: var(--card-bg); position: relative; overflow: hidden; }
+.checkin-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+.checkin-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--ink-light); display: block; margin-bottom: 6px; }
+.checkin-time { font-family: 'Cinzel', serif; font-size: 22px; color: var(--gold-glow); font-weight: 600; text-shadow: 0 0 10px rgba(255,217,102,0.3); }
+
+.notice-card { border: 1px solid var(--divider-bright); border-left: 3px solid var(--gold); padding: 16px 20px; background: var(--card-bg); margin-bottom: 10px; }
+.notice-card-title { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--ink-light); margin-bottom: 10px; }
+.notice-item { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+.notice-bullet { color: var(--gold); font-size: 12px; flex-shrink: 0; line-height: 1.8; }
+.notice-text { font-size: 13px; color: var(--ink-faded); line-height: 1.85; }
+.warn-item .notice-bullet { color: var(--red-warn); }
+.warn-item .notice-text { color: #cc6655; }
+
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.quick-card { border: 1px solid var(--divider-bright); padding: 16px 18px; background: var(--card-bg); position: relative; overflow: hidden; transition: border-color 0.2s, background 0.2s; }
+.quick-card:hover { border-color: var(--gold-dim); background: rgba(212,168,67,0.04); }
+.quick-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--gold-dim), transparent); }
+.quick-card-title { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold); letter-spacing: 1.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.quick-card-body { font-size: 12.5px; color: var(--ink-faded); line-height: 1.85; }
+
+/* ══════════════════════════════
+   시설 아코디언
+══════════════════════════════ */
+.floor-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--divider-bright); }
+.floor-item { border-bottom: 1px solid var(--divider-bright); overflow: hidden; }
+.floor-item:last-child { border-bottom: none; }
+
+.floor-header {
+  display: flex; align-items: center;
+  width: 100%; background: var(--card-bg);
+  border: none; cursor: pointer; padding: 0; text-align: left; transition: background 0.2s;
+}
+.floor-header:hover { background: rgba(212,168,67,0.06); }
+.floor-header.open { background: rgba(212,168,67,0.08); }
+
+.floor-badge {
+  width: 90px; flex-shrink: 0; padding: 18px 14px;
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+  color: var(--gold); border-right: 1px solid var(--divider-bright); text-align: center;
+  text-shadow: 0 0 8px rgba(212,168,67,0.3);
+}
+.floor-item.restricted .floor-badge { color: var(--red-warn); text-shadow: 0 0 8px rgba(204,51,51,0.3); }
+
+.floor-header-info { flex: 1; padding: 18px 20px; }
+.floor-header-name { font-size: 14px; color: var(--ink); font-weight: 500; margin-bottom: 3px; }
+.floor-item.restricted .floor-header-name { color: #cc6655; }
+.floor-header-hint { font-family: 'Cinzel', serif; font-size: 10px; color: var(--ink-light); letter-spacing: 1px; }
+
+.floor-arrow { width: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--gold); transition: transform 0.3s; }
+.floor-item.restricted .floor-arrow { color: var(--red-warn); }
+.floor-header.open .floor-arrow { transform: rotate(180deg); }
+
+.floor-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; background: var(--paper-mid); border-top: 0px solid var(--divider-bright); }
+.floor-panel.open { max-height: 2400px; border-top: 1px solid var(--divider-bright); }
+
+.floor-panel-inner { padding: 22px 24px 24px; }
+.floor-panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 12px; }
+
+.fpg-card { border: 1px solid var(--divider-bright); padding: 14px 16px; background: var(--card-bg); position: relative; }
+.fpg-card::before { content:''; position:absolute; top:0; left:0; width:2px; height:100%; background: var(--gold-dim); }
+.fpg-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--gold); display: block; margin-bottom: 6px; }
+.fpg-body { font-size: 13px; color: var(--ink-faded); line-height: 1.85; }
+
+.floor-panel-desc { font-size: 14px; color: var(--ink-faded); line-height: 2; margin-bottom: 14px; font-family: 'Noto Serif KR', serif; }
+
+.floor-status-row { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+.floor-status-tag { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1.5px; padding: 4px 10px; border: 1px solid var(--divider-bright); color: var(--ink-light); background: var(--card-bg); }
+.floor-status-tag.green { border-color: #2a7a2a; color: #4aaa4a; }
+.floor-status-tag.red { border-color: #662222; color: #cc5555; }
+.floor-status-tag.gold { border-color: var(--gold-dim); color: var(--gold-light); }
+
+/* ── B3 잠금 UI ── */
+.b3-lock-wrap { display: flex; flex-direction: column; align-items: center; padding: 32px 24px 28px; gap: 14px; background: var(--card-bg); border-top: 2px solid #441111; }
+.b3-lock-icon { font-size: 28px; color: var(--red-warn); opacity: 0.7; }
+.b3-lock-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 4px; color: var(--red-warn); text-shadow: 0 0 8px rgba(204,51,51,0.4); }
+.b3-lock-desc { font-size: 13px; color: var(--ink-light); text-align: center; line-height: 1.8; }
+
+.b3-input-row { display: flex; gap: 0; width: 100%; max-width: 320px; }
+.b3-input { flex: 1; padding: 10px 14px; background: #0a0804; border: 1px solid #441111; border-right: none; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 3px; color: var(--red-warn); outline: none; }
+.b3-input::placeholder { color: #442222; letter-spacing: 2px; }
+.b3-input:focus { border-color: var(--red-warn); box-shadow: 0 0 8px rgba(204,51,51,0.2); }
+.b3-submit { padding: 10px 16px; background: #1a0505; border: 1px solid #441111; color: var(--red-warn); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; }
+.b3-submit:hover { background: #2a0808; border-color: var(--red-warn); }
+.b3-error { font-family: 'Cinzel', serif; font-size: 11px; color: var(--red-warn); letter-spacing: 2px; display: none; }
+.b3-error.show { display: block; }
+
+/* B3 내용 */
+.b3-content { display: none; }
+.b3-content.unlocked { display: block; }
+.b3-lock-form { display: block; }
+.b3-lock-form.hidden { display: none; }
+
+/* ── 직원 탭 ── */
+.staff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.staff-card { border: 1px solid var(--divider-bright); background: var(--card-bg); overflow: hidden; transition: border-color 0.2s; position: relative; }
+.staff-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+.staff-card:hover { border-color: var(--gold-dim); }
+.staff-img-slot { width: 100%; aspect-ratio: 3/4; background: var(--paper-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 1px solid var(--divider-bright); position: relative; overflow: hidden; }
+.staff-img-placeholder { font-size: 28px; color: var(--gold-dim); margin-bottom: 6px; opacity: 0.5; }
+.staff-img-note { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--ink-light); }
+.staff-info { padding: 14px 14px 16px; }
+.staff-name { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold-light); font-weight: 600; letter-spacing: 2px; margin-bottom: 4px; }
+.staff-role { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--ink-light); margin-bottom: 8px; }
+.staff-desc { font-size: 12px; color: var(--ink-faded); line-height: 1.75; border-top: 1px solid var(--divider-bright); padding-top: 8px; }
+
+/* ── 별관 탭 ── */
+.annex-hero { text-align: center; padding: 16px 0 28px; }
+.annex-hero-title { font-family: 'Cinzel Decorative', serif; font-size: 28px; color: var(--gold-glow); letter-spacing: 6px; margin-bottom: 8px; text-shadow: 0 0 20px rgba(255,217,102,0.3); }
+.annex-hero-sub { font-family: 'Cinzel', serif; font-size: 10px; color: var(--ink-light); letter-spacing: 4px; }
+.onsen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 14px; }
+.onsen-card { border: 1px solid var(--divider-bright); padding: 16px 18px; background: var(--card-bg); position: relative; }
+.onsen-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, var(--gold-dim), transparent); }
+.onsen-card-title { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--divider-bright); display: flex; align-items: center; gap: 8px; }
+.onsen-card-body { font-size: 13px; color: var(--ink-faded); line-height: 1.9; }
+.onsen-time-row { display: flex; gap: 2px; margin-bottom: 14px; }
+.onsen-time-box { flex: 1; border: 1px solid var(--divider-bright); padding: 12px; text-align: center; background: var(--card-bg); }
+.onsen-time-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--ink-light); display: block; margin-bottom: 4px; }
+.onsen-time-val { font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold-light); font-weight: 600; }
+
+/* ── 자원 & 보안 탭 ── */
+.resource-block { margin-bottom: 24px; }
+.resource-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--divider-bright); display: flex; align-items: center; gap: 8px; }
+.resource-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.resource-card { border: 1px solid var(--divider-bright); padding: 14px 16px; background: var(--card-bg); }
+.resource-card-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--gold); margin-bottom: 6px; display: block; }
+.resource-card-body { font-size: 13px; color: var(--ink-faded); line-height: 1.85; }
+.classified-box { border: 1px solid var(--divider-bright); border-left: 3px solid var(--red-warn); padding: 14px 18px; background: rgba(204,51,51,0.04); margin-top: 10px; }
+.classified-title { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--red-warn); margin-bottom: 8px; }
+.classified-body { font-size: 13px; color: var(--ink-faded); line-height: 1.85; }
+
+/* ── 예약 탭 ── */
+.reserve-intro { font-family: 'Noto Serif KR', serif; font-size: 14px; color: var(--ink-faded); text-align: center; line-height: 2.1; padding: 0 16px 8px; }
+.form-section { margin-bottom: 20px; }
+.form-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--ink-light); display: block; margin-bottom: 6px; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid var(--divider-bright); background: var(--card-bg); font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--ink); outline: none; transition: border-color 0.2s; }
+.form-input:focus { border-color: var(--gold-dim); box-shadow: 0 0 8px rgba(212,168,67,0.1); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-select { width: 100%; padding: 10px 14px; border: 1px solid var(--divider-bright); background: var(--card-bg); font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--ink); outline: none; cursor: pointer; appearance: none; }
+.form-btn { width: 100%; padding: 14px; border: 1px solid var(--gold-dim); background: transparent; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 4px; color: var(--gold); cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+.form-btn:hover { background: rgba(212,168,67,0.1); border-color: var(--gold); color: var(--gold-glow); box-shadow: 0 0 16px rgba(212,168,67,0.15); }
+.payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.payment-card { border: 1px solid var(--divider-bright); padding: 14px 16px; background: var(--card-bg); }
+.payment-type { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.payment-desc { font-size: 13px; color: var(--ink-faded); line-height: 1.75; }
+
+/* ── 애니메이션 ── */
+@keyframes gentle-flicker { 0%,100%{opacity:1} 88%{opacity:1} 90%{opacity:0.7} 91%{opacity:1} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.section.visible .page-wrap > * { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+.section.visible .page-wrap > *:nth-child(1){animation-delay:.05s}
+.section.visible .page-wrap > *:nth-child(2){animation-delay:.1s}
+.section.visible .page-wrap > *:nth-child(3){animation-delay:.15s}
+.section.visible .page-wrap > *:nth-child(4){animation-delay:.2s}
+.section.visible .page-wrap > *:nth-child(5){animation-delay:.25s}
+.section.visible .page-wrap > *:nth-child(6){animation-delay:.3s}
+.section.visible .page-wrap > *:nth-child(7){animation-delay:.35s}
+.section.visible .page-wrap > *:nth-child(8){animation-delay:.4s}
+
+/* ── B3 대시보드 — 아토믹 펑크 ── */
+.b3-dash {
+  font-family: 'Courier New', monospace;
+  background: #05050a;
+  color: #e8c040;
+  padding: 20px;
+  border: 1px solid #2a2010;
+  position: relative;
+  overflow: hidden;
+}
+.b3-dash::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(232,192,64,0.03) 28px, rgba(232,192,64,0.03) 29px),
+    repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(232,192,64,0.03) 28px, rgba(232,192,64,0.03) 29px);
+  pointer-events: none;
+}
+.b3-dash-header {
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #2a2010; padding-bottom: 12px; margin-bottom: 16px;
+  position: relative;
+}
+.b3-dash-header::after {
+  content: '◆ ◆ ◆';
+  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  font-size: 6px; color: #e8c040; background: #05050a; padding: 0 8px;
+  letter-spacing: 4px;
+}
+.b3-dash-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 4px; color: #e8c040; text-shadow: 0 0 10px rgba(232,192,64,0.5); }
+.b3-dash-status { font-size: 10px; color: #e8c040; display: flex; align-items: center; gap: 6px; font-family: 'Cinzel', serif; letter-spacing: 2px; }
+.b3-dash-blink { width: 7px; height: 7px; background: #e8c040; clip-path: polygon(50% 0%,100% 50%,50% 100%,0% 50%); animation: blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.b3-doc-section {
+  background: #080810;
+  border: 1px solid #2a2010;
+  border-left: 3px solid #e8c040;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.b3-doc-section::before { content:''; position:absolute; top:0; right:0; width:24px; height:24px; border-bottom:1px solid #2a2010; border-left:1px solid #2a2010; background:#080810; }
+.b3-doc-header {
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px; color: #a08030;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px solid #2a2010;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.b3-doc-stamp {
+  font-family: 'Cinzel', serif; font-size: 9px; color: #cc4444;
+  border: 1px solid #cc4444; padding: 2px 8px; letter-spacing: 2px;
+  text-shadow: 0 0 6px rgba(204,68,68,0.4);
+  transform: rotate(-2deg); display: inline-block;
+}
+.b3-doc-body {
+  font-size: 13px; color: #a09050; line-height: 2;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.b3-doc-body b { color: #e8c040; font-weight: 500; }
+.b3-doc-redact { background: #2a2010; color: transparent; user-select: none; display: inline; padding: 0 2px; }
+
+.b3-metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.b3-metric-card {
+  background: #080810; border: 1px solid #2a2010; padding: 14px;
+  position: relative;
+}
+.b3-metric-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, #e8c040, transparent); }
+.b3-metric-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: #a08030; margin-bottom: 6px; display: block; }
+.b3-metric-val { font-family: 'Cinzel', serif; font-size: 24px; color: #e8c040; margin-bottom: 8px; display: block; text-shadow: 0 0 10px rgba(232,192,64,0.4); }
+.b3-metric-val.warn { color: #e06030; text-shadow: 0 0 10px rgba(224,96,48,0.4); }
+.b3-metric-val.crit { color: #cc3333; text-shadow: 0 0 10px rgba(204,51,51,0.4); }
+.b3-bar-bg { height: 4px; background: #1a1808; width: 100%; position: relative; }
+.b3-bar-bg::before,.b3-bar-bg::after { content:''; position:absolute; top:-2px; width:2px; height:8px; background:#2a2010; }
+.b3-bar-bg::before{left:0;} .b3-bar-bg::after{right:0;}
+.b3-bar-fill { height: 100%; background: linear-gradient(90deg, #806010, #e8c040); transition: width 1s ease; box-shadow: 0 0 4px rgba(232,192,64,0.3); }
+.b3-bar-fill.warn { background: linear-gradient(90deg, #803010, #e06030); }
+.b3-bar-fill.crit { background: linear-gradient(90deg, #801010, #cc3333); }
+
+.b3-graph-wrap { background: #080810; border: 1px solid #2a2010; padding: 14px; margin-bottom: 16px; }
+.b3-graph-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: #a08030; margin-bottom: 10px; display: block; }
+.b3-graph-canvas-wrap { position: relative; height: 80px; }
+canvas.b3-canvas { width: 100%; height: 80px; display: block; }
+
+.b3-clone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.b3-clone-card { background: #080810; border: 1px solid #2a2010; padding: 12px 14px; }
+.b3-clone-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: #a08030; margin-bottom: 5px; display: block; }
+.b3-clone-val { font-size: 14px; color: #a09050; line-height: 1.7; }
+.b3-clone-val.ok { color: #e8c040; text-shadow: 0 0 6px rgba(232,192,64,0.3); }
+.b3-clone-val.standby { color: #e06030; }
+
+.b3-log { background: #080810; border: 1px solid #2a2010; padding: 12px 14px; }
+.b3-log-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: #a08030; margin-bottom: 8px; display: block; }
+.b3-log-line { font-size: 11px; color: #604820; line-height: 2; }
+.b3-log-line span { color: #a09050; }
+
+/* 별관 직원 카드 */
+.annex-staff-section {
+  margin-top: 24px;
+  border: 1px solid var(--divider-bright);
+  border-top: 2px solid var(--gold);
+  background: var(--card-bg);
+  overflow: hidden;
+  position: relative;
+}
+.annex-staff-section::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.annex-staff-header { padding: 14px 18px; border-bottom: 1px solid var(--divider-bright); font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--gold); }
+.annex-staff-inner { display: flex; gap: 0; }
+.annex-staff-img { width: 120px; flex-shrink: 0; background: var(--paper-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid var(--divider-bright); min-height: 140px; }
+.annex-staff-img-ph { font-size: 24px; color: var(--gold-dim); margin-bottom: 5px; opacity: 0.5; }
+.annex-staff-img-note { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1.5px; color: var(--ink-light); }
+.annex-staff-info { padding: 16px 18px; flex: 1; }
+.annex-staff-name { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold-light); font-weight: 600; letter-spacing: 2px; margin-bottom: 3px; }
+.annex-staff-role { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: var(--ink-light); margin-bottom: 10px; }
+.annex-staff-desc { font-size: 13px; color: var(--ink-faded); line-height: 1.85; border-top: 1px solid var(--divider-bright); padding-top: 10px; }
+
+@media(max-width:680px){
+  .topbar-nav{display:none} .topbar-sub{display:none} .mob-menu-btn{display:flex}
+  .mob-nav-open .topbar-nav{display:flex;flex-direction:column;position:fixed;top:56px;left:0;right:0;background:var(--paper-dark);border-bottom:1px solid var(--divider-bright);padding:8px 0;z-index:99}
+  .topbar-nav-item{padding:10px 20px;border:none;border-bottom:1px solid var(--divider)}
+  .quick-grid,.floor-panel-grid,.staff-grid,.onsen-grid,.resource-grid,.payment-grid,.form-row,.b3-metrics-grid,.b3-clone-grid{grid-template-columns:1fr}
+  .page-wrap{padding:32px 20px 60px}
+  .hero-name{font-size:28px;letter-spacing:6px}
+  .staff-grid{grid-template-columns:1fr 1fr}
+  .floor-badge{width:70px;font-size:11px}
+  .annex-staff-inner{flex-direction:column}
+  .annex-staff-img{width:100%;min-height:80px;border-right:none;border-bottom:1px solid var(--divider-bright)}
+}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-hotel">H O T E L</div>
+  <div class="loader-rule"></div>
+  <div class="loader-sub">세상이 끝난 뒤에도, 우리는 문을 엽니다</div>
+  <div class="loader-progress">
+    <div class="loader-bar-bg"><div class="loader-bar-fill" id="lbar"></div></div>
+    <div class="loader-pct" id="lpct">0%</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar" id="topbar">
+    <div class="topbar-logo">H O T E L</div>
+    <div class="topbar-sub">세상이 끝난 뒤에도, 우리는 문을 엽니다</div>
+    <nav class="topbar-nav" id="topNav">
+      <div class="topbar-nav-item active" onclick="showSec('main',this)">안내</div>
+      <div class="topbar-nav-item" onclick="showSec('facility',this)">시설</div>
+      <div class="topbar-nav-item" onclick="showSec('staff',this)">직원</div>
+      <div class="topbar-nav-item" onclick="showSec('annex',this)">별관</div>
+      <div class="topbar-nav-item" onclick="showSec('resource',this)">자원 & 보안</div>
+      <div class="topbar-nav-item" onclick="showSec('reserve',this)">예약 & 결제</div>
+    </nav>
+    <button class="mob-menu-btn" onclick="toggleMobNav()">☰</button>
+  </div>
+
+  <!-- ── 메인 ── -->
+  <div class="section visible" id="sec-main">
+    <div class="page-wrap">
+      <div class="corner-deco cd-tl"></div><div class="corner-deco cd-tr"></div>
+      <div class="corner-deco cd-bl"></div><div class="corner-deco cd-br"></div>
+      <div class="hotel-hero">
+        <div class="hero-emblem">
+          <div class="hero-rule"></div><div class="hero-icon">✦</div><div class="hero-rule rev"></div>
+        </div>
+        <div class="hero-name">H O T E L</div>
+        <div class="hero-tagline">세상이 끝난 뒤에도, 우리는 문을 엽니다</div>
+      </div>
+      <div class="divider-main"></div>
+      <div class="welcome-block">
+        이 문을 열고 들어오셨다면, 오늘도 살아남으신 겁니다.<br>
+        환영합니다.<br><br>
+        폐허가 된 세상에서 저희 호텔은 아직 불을 켜고 있습니다.<br>
+        전기가 들어오고, 식사가 나오고, 문이 잠깁니다.<br>
+        이곳에 머무시는 동안 최선의 서비스를 제공해 드리겠습니다.
+      </div>
+      <div class="divider-main"></div>
+      <div class="sec-title">체크인 & 체크아웃</div>
+      <div class="checkin-row">
+        <div class="checkin-box"><span class="checkin-label">CHECK IN</span><span class="checkin-time">PM 05:00</span></div>
+        <div class="checkin-box"><span class="checkin-label">CHECK OUT</span><span class="checkin-time">AM 11:00</span></div>
+        <div class="checkin-box"><span class="checkin-label">FRONT DESK</span><span class="checkin-time">24H</span></div>
+      </div>
+      <div class="sec-title">빠른 안내</div>
+      <div class="quick-grid">
+        <div class="quick-card"><div class="quick-card-title">✦ 식사</div><div class="quick-card-body">1층 식당 매일 3식 제공<br>B1 카페 24시간 운영<br>특별식은 프론트 문의</div></div>
+        <div class="quick-card"><div class="quick-card-title">✦ 보안</div><div class="quick-card-body">호텔 일대 그린존 유지 중<br>외출 시 반드시 프론트 신고<br>24시간 보안 인원 상주</div></div>
+        <div class="quick-card"><div class="quick-card-title">✦ 의무실</div><div class="quick-card-body">2층 의무실 상시 운영<br>경상은 무료 처치 제공<br>중상 치료는 별도 협의</div></div>
+        <div class="quick-card"><div class="quick-card-title">✦ 별관</div><div class="quick-card-body">온천 · 다다미방 운영 중<br>사전 예약 필수<br>본관과 별도 요금 적용</div></div>
+      </div>
+      <div class="sec-title">투숙객 안내</div>
+      <div class="notice-card">
+        <div class="notice-card-title">GUEST NOTICE</div>
+        <div class="notice-item"><span class="notice-bullet">◆</span><span class="notice-text">외부 출입 시 반드시 1층 프론트에 사전 신고해 주십시오. 미신고 외출로 인한 사고에 대해 호텔은 책임지지 않습니다.</span></div>
+        <div class="notice-item"><span class="notice-bullet">◆</span><span class="notice-text">외부인 무단 동반 입실은 엄격히 금지됩니다. 모든 동반자는 프론트에서 검역 절차를 거쳐야 합니다.</span></div>
+        <div class="notice-item"><span class="notice-bullet">◆</span><span class="notice-text">외부 반입 물자(식량, 물, 약품 등)는 1층 프론트에서 검사 후 반입이 허가됩니다.</span></div>
+        <div class="notice-item"><span class="notice-bullet">◆</span><span class="notice-text">22:00 이후 복도 및 공용 구역에서의 소음을 자제해 주십시오.</span></div>
+        <div class="notice-item warn-item"><span class="notice-bullet">◆</span><span class="notice-text">직원 안내를 따르지 않아 발생하는 사고에 대해 호텔은 책임지지 않습니다. 원내 난동 행위는 보안 요원에 의해 즉시 제지됩니다.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 시설 ── -->
+  <div class="section" id="sec-facility">
+    <div class="page-wrap">
+      <div class="corner-deco cd-tl"></div><div class="corner-deco cd-tr"></div>
+      <div class="corner-deco cd-bl"></div><div class="corner-deco cd-br"></div>
+
+      <div class="sec-title" style="margin-top:0;">시설 안내</div>
+      <div style="text-align:center;font-size:12px;color:var(--ink-light);letter-spacing:1px;margin-bottom:20px;font-style:italic;">FACILITY GUIDE — 층을 클릭하면 상세 정보를 확인하실 수 있습니다</div>
+
+      <div class="floor-list">
+
+        <!-- 14F -->
+        <div class="floor-item" id="fi-14">
+          <button class="floor-header" onclick="toggleFloor('14')">
+            <div class="floor-badge">14F</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">직원 숙소</div>
+              <div class="floor-header-hint">관계자 외 출입 제한</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-14">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">호텔 상주 직원 전용 생활 구역입니다. 각 직원에게 개인 룸이 배정되며, 공용 휴게 공간과 소규모 주방이 구비되어 있습니다. 투숙객의 출입은 어떠한 경우에도 허용되지 않습니다.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">ROOMS — 객실 수</span><div class="fpg-body">직원 1인당 독립 룸 배정<br>공용 라운지 · 공용 주방 구비</div></div>
+                <div class="fpg-card"><span class="fpg-label">ACCESS — 접근 통제</span><div class="fpg-body">전용 엘리베이터 카드키 필요<br>일반 엘리베이터 14F 정지 불가</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag red">관계자 전용</span>
+                <span class="floor-status-tag">무단 출입 시 퇴실 조치</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 13F -->
+        <div class="floor-item" id="fi-13">
+          <button class="floor-header" onclick="toggleFloor('13')">
+            <div class="floor-badge">13F</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">카지노 · 바</div>
+              <div class="floor-header-hint">21:00 — 익일 04:00 / 투숙객 전용</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-13">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">세상이 끝난 뒤에도 밤은 깁니다. 13층 카지노 & 바는 투숙객 전용 야간 시설로, 다양한 테이블 게임과 음료를 즐길 수 있습니다. 입장은 체크인 확인 카드 소지자에 한합니다.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">CASINO — 게임</span><div class="fpg-body">블랙잭 · 포커 · 룰렛 운영<br>칩 환전은 프론트에서 사전 진행</div></div>
+                <div class="fpg-card"><span class="fpg-label">BAR — 음료</span><div class="fpg-body">수제 증류주 · 발효주 제공<br>외부 반입 주류 일부 취급</div></div>
+                <div class="fpg-card"><span class="fpg-label">RULES — 이용 규칙</span><div class="fpg-body">분쟁 발생 시 즉시 퇴장 조치<br>과도한 음주자 입장 제한</div></div>
+                <div class="fpg-card"><span class="fpg-label">PAYMENT — 결제</span><div class="fpg-body">아그리파머 크레딧 및 자원 결제<br>구 화폐 취급 불가</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag gold">21:00 — 04:00</span>
+                <span class="floor-status-tag">투숙객 전용</span>
+                <span class="floor-status-tag green">운영 중</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3F–12F -->
+        <div class="floor-item" id="fi-3-12">
+          <button class="floor-header" onclick="toggleFloor('3-12')">
+            <div class="floor-badge">3F — 12F</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">객실</div>
+              <div class="floor-header-hint">표준 / 스위트 · 총 10개 층</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-3-12">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">호텔 객실은 3층부터 12층에 걸쳐 운영됩니다. 표준 객실과 스위트 객실로 구분되며, 모든 객실은 독립 전력 및 환기 시스템과 연결되어 있습니다. 각 층마다 비상 대피 안내도가 부착되어 있으니 반드시 숙지해 주십시오.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">STANDARD — 표준 객실</span><div class="fpg-body">싱글 / 더블 구성<br>기본 침구 · 욕실 · 잠금장치 구비<br>창문 외부 뷰 제공</div></div>
+                <div class="fpg-card"><span class="fpg-label">SUITE — 스위트 객실</span><div class="fpg-body">거실 분리형 구조<br>욕조 · 미니바 · 집기 업그레이드<br>상층부 배치로 전망 우수</div></div>
+                <div class="fpg-card"><span class="fpg-label">AMENITY — 어메니티</span><div class="fpg-body">세면도구 · 수건 · 기본 식수 제공<br>객실 청소 격일 시행</div></div>
+                <div class="fpg-card"><span class="fpg-label">SECURITY — 객실 보안</span><div class="fpg-body">개인 도어락 카드키 지급<br>분실 시 즉시 프론트 신고</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag green">운영 중</span>
+                <span class="floor-status-tag">10개 층 · 다수 호실</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2F -->
+        <div class="floor-item" id="fi-2">
+          <button class="floor-header" onclick="toggleFloor('2')">
+            <div class="floor-badge">2F</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">휴게실 · 의무실</div>
+              <div class="floor-header-hint">경상 처치 상시 운영</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-2">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">2층은 투숙객 공용 휴게 공간과 의무실로 구성됩니다. 폐허가 된 바깥 세계에서 다쳐 오신 분들을 위해 의무실은 24시간 최소 1인의 의료 인원이 상주합니다.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">LOUNGE — 휴게실</span><div class="fpg-body">소파 · 독서 공간 · 보드게임 구비<br>공용 라디오 수신기 1대 운영<br>외부 신호 수신 시 공지</div></div>
+                <div class="fpg-card"><span class="fpg-label">MEDICAL — 의무실</span><div class="fpg-body">경상(타박상·열상·골절 등) 무료 처치<br>항생제 · 소독약 · 기초 의약품 보유<br>중증 외상은 별도 협의 후 치료</div></div>
+                <div class="fpg-card"><span class="fpg-label">SUPPLY — 의약 재고</span><div class="fpg-body">아그리파머 공급 약품 정기 입고<br>투숙객 반입 의약품 기부 시 요금 할인</div></div>
+                <div class="fpg-card"><span class="fpg-label">QUARANTINE — 격리</span><div class="fpg-body">감염 의심자 전용 격리 구역 운영<br>검역 통과 전까지 이동 제한</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag green">24시간 운영</span>
+                <span class="floor-status-tag gold">경상 무료</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1F -->
+        <div class="floor-item" id="fi-1">
+          <button class="floor-header" onclick="toggleFloor('1')">
+            <div class="floor-badge">1F</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">프론트 · 식당 · 카페</div>
+              <div class="floor-header-hint">24시간 운영</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-1">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">호텔의 중심부입니다. 체크인·체크아웃, 식사, 음료, 각종 문의와 신고가 모두 1층에서 이루어집니다. 외부 출입 전 반드시 이곳 프론트에 신고하십시오.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">FRONT — 프론트</span><div class="fpg-body">체크인 / 체크아웃 처리<br>외출 신고 · 자원 검사<br>예약 · 결제 협의 전담</div></div>
+                <div class="fpg-card"><span class="fpg-label">RESTAURANT — 식당</span><div class="fpg-body">조식 07:00 / 중식 12:00 / 석식 18:00<br>아그리파머 공급 식재료 사용<br>합성 단백질 포함 시 별도 표기</div></div>
+                <div class="fpg-card"><span class="fpg-label">CAFÉ — 카페</span><div class="fpg-body">24시간 운영<br>발효 음료 · 대체 커피 제공<br>간단한 식사류 상시 판매</div></div>
+                <div class="fpg-card"><span class="fpg-label">ENTRANCE — 출입구</span><div class="fpg-body">이중 기밀 구조 출입문<br>외부인 검역 절차 실시<br>보안 요원 상시 배치</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag green">24시간 운영</span>
+                <span class="floor-status-tag">메인 출입구</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B1 -->
+        <div class="floor-item" id="fi-b1">
+          <button class="floor-header" onclick="toggleFloor('b1')">
+            <div class="floor-badge">B1</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">수영장 · 주방 · 헬스장</div>
+              <div class="floor-header-hint">자체 정수 시스템 운영</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-b1">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">지하 1층은 호텔의 생존 인프라와 레저 시설이 공존하는 공간입니다. 독립 정수 시스템을 통해 지하수를 처리하여 수영장과 식수 모두를 공급합니다.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">POOL — 수영장</span><div class="fpg-body">자체 정수 처리 수질 유지<br>성인 · 아동 구역 분리<br>이용 시간 06:00 — 22:00</div></div>
+                <div class="fpg-card"><span class="fpg-label">KITCHEN — 주방</span><div class="fpg-body">단백질 합성 장비 운영<br>냉장·냉동 저장고 보유<br>외부인 출입 금지</div></div>
+                <div class="fpg-card"><span class="fpg-label">GYM — 헬스장</span><div class="fpg-body">기본 웨이트 · 유산소 기구 구비<br>이용 시간 05:00 — 23:00<br>부상 시 2층 의무실 즉시 방문</div></div>
+                <div class="fpg-card"><span class="fpg-label">WATER — 정수</span><div class="fpg-body">지하수 원수 → 다단계 여과 처리<br>식수 기준 충족 후 공급<br>외부 수원 의존 없음</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag green">정수 시스템 정상</span>
+                <span class="floor-status-tag">투숙객 이용 가능</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B2 -->
+        <div class="floor-item" id="fi-b2">
+          <button class="floor-header" onclick="toggleFloor('b2')">
+            <div class="floor-badge">B2</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">세탁실 · 발전실</div>
+              <div class="floor-header-hint">독립 전력 운영 중</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-b2">
+            <div class="floor-panel-inner">
+              <div class="floor-panel-desc">호텔 전체에 전력을 공급하는 독립 발전실과 세탁 시설이 위치합니다. 외부 전력망이 완전히 끊긴 이후에도 이 층 덕분에 호텔은 계속 불을 밝히고 있습니다.</div>
+              <div class="floor-panel-grid">
+                <div class="fpg-card"><span class="fpg-label">GENERATOR — 발전실</span><div class="fpg-body">복수 발전기 병렬 운영<br>연료 비축량 기밀 유지<br>비상시 우선 공급 구역 지정</div></div>
+                <div class="fpg-card"><span class="fpg-label">LAUNDRY — 세탁실</span><div class="fpg-body">투숙객 세탁물 수거 후 처리<br>프론트 접수 · 익일 반환 기준<br>대형 세탁물 별도 협의</div></div>
+                <div class="fpg-card"><span class="fpg-label">FUEL — 연료 관리</span><div class="fpg-body">연료 비축 현황 비공개<br>연료 반입 시 요금 할인 협의 가능</div></div>
+                <div class="fpg-card"><span class="fpg-label">ACCESS — 출입 제한</span><div class="fpg-body">유지보수 직원 및 관리자 전용<br>투숙객 무단 출입 금지<br>이상 발생 시 프론트 신고</div></div>
+              </div>
+              <div class="floor-status-row">
+                <span class="floor-status-tag green">발전 정상 운영</span>
+                <span class="floor-status-tag red">투숙객 출입 불가</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B3 — 잠금 -->
+        <div class="floor-item restricted" id="fi-b3">
+          <button class="floor-header" onclick="toggleFloor('b3')">
+            <div class="floor-badge">B3</div>
+            <div class="floor-header-info">
+              <div class="floor-header-name">관계자 외 출입 금지</div>
+              <div class="floor-header-hint">무단 출입 시 즉시 퇴실 조치</div>
+            </div>
+            <div class="floor-arrow">▼</div>
+          </button>
+          <div class="floor-panel" id="fp-b3">
+            <!-- 잠금 폼 -->
+            <div class="b3-lock-form" id="b3-lock-form">
+              <div class="b3-lock-wrap">
+                <div class="b3-lock-icon">⚿</div>
+                <div class="b3-lock-title">— RESTRICTED AREA —</div>
+                <div class="b3-lock-desc">이 구역의 정보는 암호화되어 있습니다.<br>열람 권한 코드를 입력하십시오.</div>
+                <div class="b3-input-row">
+                  <input class="b3-input" id="b3-pw" type="password" placeholder="ACCESS CODE" onkeydown="if(event.key==='Enter')checkB3()">
+                  <button class="b3-submit" onclick="checkB3()">확인</button>
+                </div>
+                <div class="b3-error" id="b3-error">— 코드가 올바르지 않습니다 —</div>
+              </div>
+            </div>
+            <!-- 잠금 해제 후 내용 -->
+            <div class="b3-content" id="b3-content">
+              <div class="floor-panel-inner" style="padding:20px 20px 24px;">
+
+                <div class="b3-dash">
+                  <div class="b3-dash-header">
+                    <div class="b3-dash-title">METRO CORE SYSTEM — B3 MONITOR v2.1</div>
+                    <div class="b3-dash-status"><div class="b3-dash-blink"></div><span id="b3-clock">--:--:--</span></div>
+                  </div>
+
+                  <!-- 배경 문서 -->
+                  <div class="b3-doc-section">
+                    <div class="b3-doc-header">
+                      SUBJECT : METRO / ENTITY PROFILE
+                      <span class="b3-doc-stamp">CLASSIFIED</span>
+                    </div>
+                    <div class="b3-doc-body">
+                      <b>[ 테라 연방 설립자 · 메트로코프 창업자 ]</b><br>
+                      통일국가 <b>테라 연방</b>의 설립을 주도한 인물로, 이후 정치 일선에서 물러나 <b>메트로코프</b>를 통해 연방 내 자원·기술·정보를 실질적으로 지배하였다. 공식 기록상 연방 정치와 무관한 민간 기업인으로 분류되나, 연방 붕괴 이전 주요 의사결정의 다수가 그의 개입 정황과 일치한다.<br><br>
+                      <b>[ 내전 · 아포칼립스 ]</b><br>
+                      연방 내부 균열이 내전으로 확대되는 과정에서 복수 세력의 통제를 시도하였으나 실패. 내전은 메트로코프 본사가 화마에 휩쓸리는 것을 포함해 걷잡을 수 없는 규모로 확대되었으며, 현재의 <span class="b3-doc-redact">아포칼립스 상황을 초래한 직접적 원인</span>으로 판단된다.<br><br>
+                      <b>[ 현재 상태 — ENTITY STATUS ]</b><br>
+                      공식적으로는 <b>행방불명</b>. 메트로코프 본사 소실 이후 생사 불명 처리되었다. 그러나 본 시설(B3)에 이식된 <b>뇌-서버 연결 시스템</b>을 통해 클론 형태로 운영 중임이 내부 기록으로 확인된다. 현재 Metro 본인이 이 호텔의 설립자이자 최고 권한자이며, 클론이 물리적 대리 역할을 수행하고 있다.
+                    </div>
+                  </div>
+
+                  <!-- 실시간 지표 -->
+                  <div class="b3-metrics-grid">
+                    <div class="b3-metric-card">
+                      <span class="b3-metric-label">SERVER POWER — 전력 공급</span>
+                      <span class="b3-metric-val" id="m-power">97.3%</span>
+                      <div class="b3-bar-bg"><div class="b3-bar-fill" id="b-power" style="width:97%"></div></div>
+                    </div>
+                    <div class="b3-metric-card">
+                      <span class="b3-metric-label">SERVER TEMP — 서버 온도</span>
+                      <span class="b3-metric-val" id="m-temp">38.2°C</span>
+                      <div class="b3-bar-bg"><div class="b3-bar-fill warn" id="b-temp" style="width:38%"></div></div>
+                    </div>
+                    <div class="b3-metric-card">
+                      <span class="b3-metric-label">NEURAL SYNC — 신경 동기화율</span>
+                      <span class="b3-metric-val" id="m-sync">99.1%</span>
+                      <div class="b3-bar-bg"><div class="b3-bar-fill" id="b-sync" style="width:99%"></div></div>
+                    </div>
+                    <div class="b3-metric-card">
+                      <span class="b3-metric-label">MEMORY LOAD — 메모리 사용</span>
+                      <span class="b3-metric-val" id="m-mem">61.7%</span>
+                      <div class="b3-bar-bg"><div class="b3-bar-fill" id="b-mem" style="width:62%"></div></div>
+                    </div>
+                  </div>
+
+                  <!-- 전력 그래프 -->
+                  <div class="b3-graph-wrap">
+                    <span class="b3-graph-label">POWER USAGE — 실시간 전력 소비 (최근 60s)</span>
+                    <div class="b3-graph-canvas-wrap">
+                      <canvas class="b3-canvas" id="cv-power"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- 온도 그래프 -->
+                  <div class="b3-graph-wrap">
+                    <span class="b3-graph-label">SERVER TEMP — 실시간 온도 변화 (최근 60s)</span>
+                    <div class="b3-graph-canvas-wrap">
+                      <canvas class="b3-canvas" id="cv-temp"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- 클론 시설 -->
+                  <div class="b3-doc-section">
+                    <div class="b3-doc-header">CLONE FACILITY STATUS <span class="b3-doc-stamp">RESTRICTED</span></div>
+                    <div class="b3-clone-grid">
+                      <div class="b3-clone-card">
+                        <span class="b3-clone-label">ACTIVE CLONE — 활성 클론</span>
+                        <span class="b3-clone-val ok">1 / 가동 중</span>
+                      </div>
+                      <div class="b3-clone-card">
+                        <span class="b3-clone-label">STANDBY CLONE — 대기 클론</span>
+                        <span class="b3-clone-val standby">2 / 성장 중</span>
+                      </div>
+                      <div class="b3-clone-card">
+                        <span class="b3-clone-label">VITAL SIGN — 생체 신호</span>
+                        <span class="b3-clone-val ok" id="m-vital">정상 — 맥박 62bpm</span>
+                      </div>
+                      <div class="b3-clone-card">
+                        <span class="b3-clone-label">FACILITY POWER — 시설 전력</span>
+                        <span class="b3-clone-val ok">B2 발전실 직결</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 시스템 로그 -->
+                  <div class="b3-log">
+                    <span class="b3-log-label">SYSTEM LOG — 최근 이벤트</span>
+                    <div id="b3-log-body">
+                      <div class="b3-log-line">> <span id="log0"></span></div>
+                      <div class="b3-log-line">> <span id="log1"></span></div>
+                      <div class="b3-log-line">> <span id="log2"></span></div>
+                      <div class="b3-log-line">> <span id="log3"></span></div>
+                    </div>
+                  </div>
+
+                </div><!-- /b3-dash -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /floor-list -->
+
+      <div style="margin-top:14px;border:1px solid var(--divider);border-top:2px solid var(--gold-light);padding:16px 20px;background:var(--paper-mid);">
+        <span style="font-size:10px;letter-spacing:3px;color:var(--gold);display:block;margin-bottom:6px;">— 별 관 —</span>
+        <span style="font-size:13px;color:var(--ink-faded);line-height:1.8;display:block;">온천 시설 · 다다미 방<br>본관과 별도 운영되며, 이용 시 프론트에서 사전 예약이 필요합니다.<br>외부와 완전히 차단된 독립 구조로, 조용한 휴식을 보장합니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 직원 ── -->
+  <div class="section" id="sec-staff">
+    <div class="page-wrap">
+      <div class="corner-deco cd-tl"></div><div class="corner-deco cd-tr"></div>
+      <div class="corner-deco cd-bl"></div><div class="corner-deco cd-br"></div>
+      <div class="sec-title" style="margin-top:0;">직원 소개</div>
+      <div style="text-align:center;font-size:12px;color:var(--ink-light);letter-spacing:1px;margin-bottom:24px;font-style:italic;">OUR STAFF</div>
+      <div class="staff-grid">
+        <div class="staff-card"><div class="staff-img-slot"><div class="staff-img-placeholder">✦</div><div class="staff-img-note">IMAGE SLOT</div></div><div class="staff-info"><div class="staff-name">이름 미정</div><div class="staff-role">FRONT MANAGER</div><div class="staff-desc">프론트 총괄 매니저. 체크인·체크아웃 및 투숙객 안내를 담당합니다.</div></div></div>
+        <div class="staff-card"><div class="staff-img-slot"><div class="staff-img-placeholder">✦</div><div class="staff-img-note">IMAGE SLOT</div></div><div class="staff-info"><div class="staff-name">이름 미정</div><div class="staff-role">HEAD CHEF</div><div class="staff-desc">식당 총괄 셰프. 아그리파머 식자원과 단백질 합성 재료로 매일 식사를 준비합니다.</div></div></div>
+        <div class="staff-card"><div class="staff-img-slot"><div class="staff-img-placeholder">✦</div><div class="staff-img-note">IMAGE SLOT</div></div><div class="staff-info"><div class="staff-name">이름 미정</div><div class="staff-role">SECURITY CHIEF</div><div class="staff-desc">호텔 보안 총괄. 그린존 유지 및 외부 위협 대응을 담당합니다.</div></div></div>
+        <div class="staff-card"><div class="staff-img-slot"><div class="staff-img-placeholder">✦</div><div class="staff-img-note">IMAGE SLOT</div></div><div class="staff-info"><div class="staff-name">이름 미정</div><div class="staff-role">MEDIC</div><div class="staff-desc">의무실 담당. 투숙객 및 직원의 부상·질병 처치를 맡습니다.</div></div></div>
+        <div class="staff-card"><div class="staff-img-slot"><div class="staff-img-placeholder">✦</div><div class="staff-img-note">IMAGE SLOT</div></div><div class="staff-info"><div class="staff-name">이름 미정</div><div class="staff-role">MAINTENANCE</div><div class="staff-desc">시설 유지보수 담당. 발전실·정수 시스템·각종 설비를 관리합니다.</div></div></div>
+        <div class="staff-card"><div class="staff-img-slot"><div class="staff-img-placeholder">✦</div><div class="staff-img-note">IMAGE SLOT</div></div><div class="staff-info"><div class="staff-name">이름 미정</div><div class="staff-role">CONCIERGE</div><div class="staff-desc">컨시어지. 투숙객의 특별 요청과 외부 정보 안내를 담당합니다.</div></div></div>
+      </div>
+      <div style="margin-top:16px;border:1px solid var(--divider);border-left:3px solid var(--gold-light);padding:12px 16px;background:var(--paper-mid);">
+        <div class="notice-card-title">STAFF NOTICE</div>
+        <div style="font-size:12.5px;color:var(--ink-faded);line-height:1.8;">직원 관련 문의는 1층 프론트로 해주십시오. 직원 개인 숙소(14F) 방문은 엄격히 금지됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 별관 ── -->
+  <div class="section" id="sec-annex">
+    <div class="page-wrap">
+      <div class="corner-deco cd-tl"></div><div class="corner-deco cd-tr"></div>
+      <div class="corner-deco cd-bl"></div><div class="corner-deco cd-br"></div>
+      <div class="annex-hero">
+        <div class="hero-emblem"><div class="hero-rule"></div><div class="hero-icon">✦</div><div class="hero-rule rev"></div></div>
+        <div class="annex-hero-title">별 관</div>
+        <div class="annex-hero-sub">외부와 완전히 차단된 공간 — 온전한 휴식을 약속합니다</div>
+      </div>
+      <div class="divider-main"></div>
+      <div class="onsen-time-row">
+        <div class="onsen-time-box"><span class="onsen-time-label">온천 운영</span><span class="onsen-time-val">06:00 — 23:00</span></div>
+        <div class="onsen-time-box"><span class="onsen-time-label">사전 예약</span><span class="onsen-time-val">필수</span></div>
+        <div class="onsen-time-box"><span class="onsen-time-label">이용 단위</span><span class="onsen-time-val">1박 이상</span></div>
+      </div>
+      <div class="onsen-grid">
+        <div class="onsen-card"><div class="onsen-card-title">✦ 온천</div><div class="onsen-card-body">지하에서 끌어올린 온수를 자체 정수 처리하여 공급합니다.<br>남탕·여탕·가족탕으로 구분되며, 가족탕은 사전 예약 시 단독 이용이 가능합니다.<br>세상이 끝나도 뜨거운 물은 남아 있습니다.</div></div>
+        <div class="onsen-card"><div class="onsen-card-title">✦ 다다미 방</div><div class="onsen-card-body">전통 양식의 다다미 방을 그대로 보존하고 있습니다.<br>객실 내 별도 히노키 욕조 구비, 조식 포함 패키지 이용 가능합니다.<br>창문 너머 정원은 직원이 매일 관리합니다.</div></div>
+        <div class="onsen-card"><div class="onsen-card-title">✦ 정원</div><div class="onsen-card-body">별관 내부 정원은 외부와 완전히 차단된 구조로 운영됩니다.<br>아그리파머의 기술 협조로 일부 식물이 자라고 있습니다.<br>야외 좌석에서 조식 이용이 가능합니다.</div></div>
+        <div class="onsen-card"><div class="onsen-card-title">✦ 이용 안내</div><div class="onsen-card-body">별관은 본관과 요금 체계가 별도로 적용됩니다.<br>예약 및 요금 협의는 1층 프론트에서 진행됩니다.<br>외부인의 직접 방문 예약은 불가하며, 반드시 투숙객 신분이 확인되어야 합니다.</div></div>
+      </div>
+      <div class="notice-card">
+        <div class="notice-card-title">별관 주의사항</div>
+        <div class="notice-item"><span class="notice-bullet">◆</span><span class="notice-text">온천 내 음주는 금지됩니다. 바 이용은 13층을 이용해 주십시오.</span></div>
+        <div class="notice-item"><span class="notice-bullet">◆</span><span class="notice-text">정원 식물 및 시설 훼손 시 별도 배상이 청구됩니다.</span></div>
+        <div class="notice-item warn-item"><span class="notice-bullet">◆</span><span class="notice-text">별관 이용 중 외부 반출입은 일체 불가합니다. 별관은 완전 독립 구조로 운영됩니다.</span></div>
+      </div>
+
+      <div class="annex-staff-section">
+        <div class="annex-staff-header">— 별관 담당 직원 —</div>
+        <div class="annex-staff-inner">
+          <div class="annex-staff-img">
+            <div class="annex-staff-img-ph">✦</div>
+            <div class="annex-staff-img-note">IMAGE SLOT</div>
+          </div>
+          <div class="annex-staff-info">
+            <div class="annex-staff-name">이름 미정</div>
+            <div class="annex-staff-role">ANNEX KEEPER — 별관 담당</div>
+            <div class="annex-staff-desc">
+              별관 시설 전반을 단독으로 관리하는 담당자입니다.<br>
+              온천 수질 관리, 다다미 방 청소 및 정비, 정원 유지, 투숙객 응대까지 별관에서 이루어지는 모든 업무를 맡고 있습니다.<br>
+              별관 관련 문의 및 예약 조율은 이 담당자를 통해 진행되며, 1층 프론트로 연락 주시면 연결해 드립니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 자원 & 보안 ── -->
+  <div class="section" id="sec-resource">
+    <div class="page-wrap">
+      <div class="corner-deco cd-tl"></div><div class="corner-deco cd-tr"></div>
+      <div class="corner-deco cd-bl"></div><div class="corner-deco cd-br"></div>
+      <div class="sec-title" style="margin-top:0;">자원 & 보안</div>
+      <div style="text-align:center;font-size:12px;color:var(--ink-light);letter-spacing:1px;margin-bottom:24px;font-style:italic;">RESOURCES & SECURITY</div>
+      <div class="resource-block">
+        <div class="resource-title">✦ 식량 & 식수</div>
+        <div class="resource-grid">
+          <div class="resource-card"><span class="resource-card-label">WATER — 식수</span><div class="resource-card-body">B1 자체 정수 시스템을 통해 지하수를 정수하여 공급합니다. 외부 식수 공급에 의존하지 않는 독립 운영 체계로, 투숙객에게 안정적인 식수를 보장합니다.</div></div>
+          <div class="resource-card"><span class="resource-card-label">FOOD — 식자원</span><div class="resource-card-body">아그리파머 돔과의 공급 협약을 통해 신선 식자원을 정기적으로 공급받습니다. 협약 물량 외 부족분은 투숙객이 반입하는 자원으로 보충됩니다.</div></div>
+          <div class="resource-card"><span class="resource-card-label">PROTEIN — 단백질</span><div class="resource-card-body">주방 내 단백질 합성 장비를 운영 중입니다. 가축 사육이 불가능한 환경에서도 육류에 준하는 식품을 제공할 수 있습니다. 합성육임을 별도 표기하여 제공합니다.</div></div>
+          <div class="resource-card"><span class="resource-card-label">GUEST SUPPLY — 반입 자원</span><div class="resource-card-body">투숙객이 외부에서 반입하는 자원은 1층 프론트에서 검사 후 허가됩니다. 반입된 자원 중 일부를 숙박 요금으로 대체하는 협의가 가능합니다.</div></div>
+        </div>
+      </div>
+      <div class="resource-block">
+        <div class="resource-title">✦ 전력 & 인프라</div>
+        <div class="resource-grid">
+          <div class="resource-card"><span class="resource-card-label">POWER — 전력</span><div class="resource-card-body">B2 독립 발전실을 통해 호텔 전체에 전력을 공급합니다. 외부 전력망 단절 이후에도 자체 운영이 가능하도록 설계된 시스템입니다.</div></div>
+          <div class="resource-card"><span class="resource-card-label">MAINTENANCE — 유지보수</span><div class="resource-card-body">전담 유지보수 인원이 시설 전반을 관리합니다. 투숙 중 시설 이상 발생 시 즉시 프론트로 신고해 주십시오.</div></div>
+        </div>
+      </div>
+      <div class="resource-block">
+        <div class="resource-title">✦ 보안</div>
+        <div class="resource-grid">
+          <div class="resource-card"><span class="resource-card-label">GREEN ZONE — 안전 구역</span><div class="resource-card-body">호텔 일대는 그린존으로 분류되어 있습니다. 24시간 보안 인원이 상주하며, 호텔 외벽 및 출입구 전체를 감시합니다.</div></div>
+          <div class="resource-card"><span class="resource-card-label">PERIMETER — 외곽 통제</span><div class="resource-card-body">호텔 외곽 일정 반경 내에 무인 경계 시스템이 운영 중입니다. 해당 구역 내 무단 침입자는 자동으로 감지·대응됩니다.</div></div>
+        </div>
+        <div class="classified-box">
+          <div class="classified-title">— RESTRICTED INFORMATION —</div>
+          <div class="classified-body">본 구역의 보안 시스템 운영 방식 및 외곽 경계 기술의 상세 내용은 공개되지 않습니다. 보안 관련 문의는 담당자를 통해서만 접수됩니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 예약 & 결제 ── -->
+  <div class="section" id="sec-reserve">
+    <div class="page-wrap">
+      <div class="corner-deco cd-tl"></div><div class="corner-deco cd-tr"></div>
+      <div class="corner-deco cd-bl"></div><div class="corner-deco cd-br"></div>
+      <div class="sec-title" style="margin-top:0;">예약 & 결제</div>
+      <div style="text-align:center;font-size:12px;color:var(--ink-light);letter-spacing:1px;margin-bottom:24px;font-style:italic;">RESERVATION & PAYMENT</div>
+      <div class="reserve-intro">모든 요금은 체크인 시 협의하며,<br>부가 서비스 이용 요금은 체크아웃 시 일괄 정산합니다.<br>아래 양식을 작성하신 후 1층 프론트에 제출해 주십시오.</div>
+      <div class="divider-main"></div>
+      <div class="form-section"><label class="form-label">성함 · NAME</label><input class="form-input" type="text" placeholder="투숙객 성함을 입력해 주십시오"></div>
+      <div class="form-section"><div class="form-row"><div><label class="form-label">체크인 · CHECK IN</label><input class="form-input" type="text" placeholder="날짜 협의"></div><div><label class="form-label">체크아웃 · CHECK OUT</label><input class="form-input" type="text" placeholder="날짜 협의"></div></div></div>
+      <div class="form-section"><label class="form-label">객실 유형 · ROOM TYPE</label><select class="form-select"><option>표준 객실 (Standard)</option><option>스위트 객실 (Suite)</option><option>별관 다다미 방 (Annex)</option></select></div>
+      <div class="form-section"><label class="form-label">인원 · GUESTS</label><select class="form-select"><option>1명</option><option>2명</option><option>3명 이상 (별도 협의)</option></select></div>
+      <div class="form-section"><label class="form-label">특이사항 · NOTES</label><textarea class="form-input" rows="3" placeholder="특별 요청사항이 있으시면 기재해 주십시오" style="resize:vertical;"></textarea></div>
+      <button class="form-btn" onclick="this.textContent='접수되었습니다 — 프론트에서 확인해 드리겠습니다'">예약 신청</button>
+      <div class="divider-main"></div>
+      <div class="sec-title">결제 방법</div>
+      <div class="payment-grid">
+        <div class="payment-card"><div class="payment-type">✦ 자원 결제</div><div class="payment-desc">식량·물·연료·약품 등 실물 자원으로 요금을 대체할 수 있습니다. 환산 비율은 프론트에서 협의합니다.</div></div>
+        <div class="payment-card"><div class="payment-type">✦ 식량 크레딧</div><div class="payment-desc">아그리파머 발행 식량 크레딧을 결제 수단으로 인정합니다. 현재 가장 선호되는 결제 방식입니다.</div></div>
+        <div class="payment-card"><div class="payment-type">✦ 노동 제공</div><div class="payment-desc">단기 노동력 제공으로 숙박 요금을 대체하는 협의가 가능합니다. 내용과 기간은 담당자와 별도 협의합니다.</div></div>
+        <div class="payment-card"><div class="payment-type">✦ 정보 제공</div><div class="payment-desc">외부 지역 정보·지도·세력 동향 등 유효한 정보를 제공하는 방식으로 요금 협의가 가능합니다.</div></div>
+      </div>
+      <div style="margin-top:14px;text-align:center;font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-light);letter-spacing:1px;font-style:italic;">구 정부 발행 화폐는 결제 수단으로 인정되지 않습니다.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 로딩 ──
+let pct = 0;
+const bar = document.getElementById('lbar');
+const lpct = document.getElementById('lpct');
+const t = setInterval(() => {
+  pct += Math.random() * 12 + 3;
+  if (pct >= 100) {
+    pct = 100;
+    bar.style.width = '100%';
+    lpct.textContent = '100%';
+    clearInterval(t);
+    setTimeout(() => {
+      document.getElementById('loader').classList.add('fade-out');
+      setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+      }, 1200);
+    }, 600);
+    return;
+  }
+  bar.style.width = pct + '%';
+  lpct.textContent = Math.floor(pct) + '%';
+}, 200);
+
+// ── 섹션 전환 ──
+function showSec(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.topbar-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('visible');
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
+  document.getElementById('topbar').classList.remove('mob-nav-open');
+}
+
+// ── 모바일 메뉴 ──
+function toggleMobNav() {
+  document.getElementById('topbar').classList.toggle('mob-nav-open');
+}
+
+// ── 아코디언 ──
+function toggleFloor(id) {
+  const panel = document.getElementById('fp-' + id);
+  const header = panel.previousElementSibling;
+  const isOpen = panel.classList.contains('open');
+
+  // B3는 별도 처리
+  if (id === 'b3') {
+    if (!isOpen) {
+      panel.classList.add('open');
+      header.classList.add('open');
+    } else {
+      panel.classList.remove('open');
+      header.classList.remove('open');
+    }
+    return;
+  }
+
+  // 다른 층 모두 닫기 (선택: 아코디언 단일 열림 방식)
+  // 원하면 아래 주석 해제
+  // document.querySelectorAll('.floor-panel.open').forEach(p => {
+  //   if (p !== panel) { p.classList.remove('open'); p.previousElementSibling.classList.remove('open'); }
+  // });
+
+  panel.classList.toggle('open');
+  header.classList.toggle('open');
+}
+
+// ── B3 비밀번호 ──
+function checkB3() {
+  const val = document.getElementById('b3-pw').value.trim().toUpperCase();
+  const err = document.getElementById('b3-error');
+  if (val === 'METRO') {
+    document.getElementById('b3-lock-form').classList.add('hidden');
+    document.getElementById('b3-content').classList.add('unlocked');
+    err.classList.remove('show');
+    startB3Dashboard();
+  } else {
+    err.classList.add('show');
+    document.getElementById('b3-pw').value = '';
+    document.getElementById('b3-pw').focus();
+  }
+}
+
+// ── B3 대시보드 로직 ──
+let b3Interval = null;
+let powerData = [];
+let tempData = [];
+const MAX_POINTS = 40;
+
+function randBetween(min, max) {
+  return +(min + Math.random() * (max - min)).toFixed(1);
+}
+
+function initData() {
+  for (let i = 0; i < MAX_POINTS; i++) {
+    powerData.push(randBetween(92, 99));
+    tempData.push(randBetween(35, 42));
+  }
+}
+
+function drawGraph(canvasId, data, color, min, max, unit) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 80 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 80;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // grid lines
+  ctx.strokeStyle = '#1a3320';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = (H / 4) * i;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, color + '44');
+  grad.addColorStop(1, color + '00');
+
+  const step = W / (MAX_POINTS - 1);
+
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - ((v - min) / (max - min)) * H;
+    if (i === 0) ctx.lineTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.lineTo((MAX_POINTS - 1) * step, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - ((v - min) / (max - min)) * H;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // latest value dot
+  const lastX = (MAX_POINTS - 1) * step;
+  const lastY = H - ((data[data.length - 1] - min) / (max - min)) * H;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+const logMessages = [
+  'Neural bridge sync check — OK',
+  'Clone vitals within normal range',
+  'Memory defragmentation complete',
+  'B2 power feed — stable',
+  'Cooling fan RPM nominal',
+  'Backup node handshake — OK',
+  'No intrusion detected in B3',
+  'Auto-save: neural state archived',
+  'Clone growth cycle — Day 47',
+  'Thermal threshold: within limit',
+  'System watchdog — heartbeat OK',
+  'External signal blocked — firewall active',
+];
+let logQueue = [...logMessages].sort(() => Math.random() - 0.5);
+let logPool = ['', '', '', ''];
+
+function pushLog(msg) {
+  logPool = [logPool[1], logPool[2], logPool[3], msg];
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('log' + i);
+    if (el) el.textContent = logPool[i];
+  }
+}
+
+function updateClock() {
+  const el = document.getElementById('b3-clock');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toTimeString().slice(0, 8);
+}
+
+function updateMetrics() {
+  const power = randBetween(92, 99);
+  const temp  = randBetween(35, 45);
+  const sync  = randBetween(97, 99.9);
+  const mem   = randBetween(55, 72);
+  const bpm   = Math.floor(randBetween(58, 68));
+
+  // text
+  const mPow = document.getElementById('m-power');
+  const mTmp = document.getElementById('m-temp');
+  const mSnc = document.getElementById('m-sync');
+  const mMem = document.getElementById('m-mem');
+  const mVit = document.getElementById('m-vital');
+  if (mPow) mPow.textContent = power + '%';
+  if (mTmp) { mTmp.textContent = temp + '°C'; mTmp.className = 'b3-metric-val' + (temp > 42 ? ' warn' : ''); }
+  if (mSnc) mSnc.textContent = sync + '%';
+  if (mMem) mMem.textContent = mem + '%';
+  if (mVit) mVit.textContent = '정상 — 맥박 ' + bpm + 'bpm';
+
+  // bars
+  const setBar = (id, val, cls) => {
+    const el = document.getElementById(id);
+    if (el) { el.style.width = val + '%'; el.className = 'b3-bar-fill' + (cls ? ' ' + cls : ''); }
+  };
+  setBar('b-power', power, '');
+  setBar('b-temp', (temp - 30) * 5, temp > 42 ? 'warn' : '');
+  setBar('b-sync', sync, '');
+  setBar('b-mem', mem, mem > 70 ? 'warn' : '');
+
+  // graphs
+  powerData.push(power); if (powerData.length > MAX_POINTS) powerData.shift();
+  tempData.push(temp);   if (tempData.length > MAX_POINTS) tempData.shift();
+  drawGraph('cv-power', powerData, '#e8c040', 85, 105, '%');
+  drawGraph('cv-temp',  tempData,  '#e06030', 30, 50, '°C');
+
+  // log (every ~3 ticks)
+  if (Math.random() < 0.35) {
+    if (logQueue.length === 0) logQueue = [...logMessages].sort(() => Math.random() - 0.5);
+    pushLog(logQueue.pop());
+  }
+}
+
+function startB3Dashboard() {
+  initData();
+  updateClock();
+  drawGraph('cv-power', powerData, '#e8c040', 85, 105, '%');
+  drawGraph('cv-temp',  tempData,  '#e06030', 30, 50, '°C');
+  pushLog('System access granted — authorization: METRO');
+  pushLog('Loading neural core status...');
+
+  if (b3Interval) clearInterval(b3Interval);
+  b3Interval = setInterval(() => {
+    updateClock();
+    updateMetrics();
+  }, 1500);
+}
+</script>
+</body>
+</html>
