@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영지 관리 대장</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parchment:#f2e8c9; --parchment-dark:#e6d5a8; --parchment-shadow:#c9a96e;
+  --ink:#2c1a0e; --ink-faded:#5c3d1e; --ink-light:#8b5e3c;
+  --red-ink:#8b1a1a; --gold:#c8960c; --border:#9b7040; --border-dark:#6b4a20;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#1a0e06;background-image:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(100,60,20,.05) 2px,rgba(100,60,20,.05) 4px);min-height:100vh;font-family:'Noto Serif KR',serif;color:var(--ink);padding:24px 16px;}
+.ledger{max-width:980px;margin:0 auto;background:var(--parchment);border:3px solid var(--border-dark);box-shadow:0 0 0 6px var(--border),0 0 0 8px var(--border-dark),0 20px 60px rgba(0,0,0,.7);position:relative;background-image:linear-gradient(160deg,#f7efd8 0%,#f2e8c9 40%,#eadb9f 100%);}
+.ledger::before{content:'';position:absolute;inset:8px;border:1px solid var(--parchment-shadow);pointer-events:none;z-index:1;}
+
+/* 헤더 */
+.title-block{text-align:center;padding:28px 40px 16px;border-bottom:2px solid var(--border);}
+.title-block::after{content:'❧';display:block;color:var(--gold);font-size:20px;margin-top:6px;}
+.title-label{font-family:'IM Fell English',serif;font-size:11px;letter-spacing:4px;color:var(--ink-light);text-transform:uppercase;margin-bottom:6px;}
+.domain-title{font-family:'UnifrakturMaguntia',cursive;font-size:44px;color:var(--ink);line-height:1;outline:none;}
+.domain-title:focus{border-bottom:2px dashed var(--gold);}
+.header-meta{display:flex;justify-content:center;gap:28px;margin-top:10px;flex-wrap:wrap;}
+.meta-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-faded);}
+.meta-item label{font-style:italic;color:var(--ink-light);}
+.meta-item input{background:transparent;border:none;border-bottom:1px solid var(--parchment-shadow);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:130px;text-align:center;outline:none;}
+
+/* 탭 */
+.tabs{display:flex;border-bottom:2px solid var(--border);background:rgba(139,94,60,.08);overflow-x:auto;}
+.tab-btn{flex:none;padding:11px 14px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.tab-btn:hover{background:rgba(200,150,12,.1);color:var(--ink);}
+.tab-btn.active{background:var(--parchment);color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--gold);}
+.tab-content{display:none;padding:20px 24px;}
+.tab-content.active{display:block;}
+
+/* 섹션 제목 */
+.section-title{font-family:'IM Fell English',serif;font-size:17px;color:var(--red-ink);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-title::before{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--parchment-shadow),transparent);}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--parchment-shadow));}
+
+/* 대시보드 */
+.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dash-panel{border:1px solid var(--border);background:rgba(139,94,60,.04);overflow:hidden;}
+.dash-panel.full{grid-column:1/-1;}
+.dash-ph{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:rgba(139,94,60,.10);border-bottom:1px solid var(--border);font-family:'IM Fell English',serif;font-size:13px;color:var(--red-ink);}
+.dash-ph span.cnt{font-size:10px;color:var(--ink-light);font-family:'Noto Serif KR',serif;}
+.dash-pb{padding:10px 12px;}
+
+/* 재정 패널 */
+.finance-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.fin-cell{text-align:center;padding:10px 4px;border:1px solid var(--parchment-shadow);background:rgba(255,255,255,.15);}
+.fin-cell.red{border-color:var(--red-ink);}
+.fin-cell.grn{border-color:#4a7a4a;}
+.fin-cell .fc-lbl{font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;display:block;margin-bottom:4px;}
+.fin-cell .fc-val{font-size:18px;font-weight:700;background:transparent;border:none;width:100%;text-align:center;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed transparent;transition:border-color .2s;color:var(--ink);}
+.fin-cell.red .fc-val{color:var(--red-ink);}
+.fin-cell.grn .fc-val{color:#2e6b2e;}
+.fin-cell .fc-val:focus{border-color:var(--gold);}
+
+/* 미니 빌딩/NPC/퀘스트 */
+.mini-list{display:flex;flex-direction:column;gap:4px;}
+.mini-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--parchment-shadow);font-size:12px;}
+.mini-row .mr-name{flex:1;font-weight:600;}
+.mini-row .mr-sub{font-size:10px;color:var(--ink-light);}
+.status-tag{font-size:10px;padding:1px 5px;border:1px solid currentColor;}
+.s-normal{color:#3a7a3a;} .s-build{color:var(--gold);} .s-bad{color:var(--red-ink);} .s-etc{color:var(--ink-light);}
+.pin-btn{background:none;border:none;cursor:pointer;font-size:13px;opacity:.4;transition:opacity .2s;}
+.pin-btn.pinned{opacity:1;}
+.pin-btn:hover{opacity:1;}
+.mini-npc-icon{width:24px;height:24px;background:rgba(139,94,60,.12);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.mq-badge{font-size:9px;padding:2px 5px;border:1px solid currentColor;white-space:nowrap;}
+.mq-진행중{color:var(--gold);} .mq-완료{color:#3a7a3a;} .mq-대기{color:var(--ink-light);} .mq-실패{color:var(--red-ink);}
+
+/* 자원 미니 */
+.mini-res-row{display:flex;flex-wrap:wrap;gap:6px;}
+.mini-res{display:flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid var(--border);background:rgba(139,94,60,.06);font-size:12px;}
+
+/* 특이사항 */
+.snote-wrap{display:flex;align-items:stretch;margin:5px 0;border-left:3px solid var(--gold);background:rgba(200,150,12,.08);}
+.snote{flex:1;padding:6px 10px;font-size:13px;color:var(--ink-faded);outline:none;min-height:30px;}
+.snote-del{background:none;border:none;border-left:1px solid rgba(200,150,12,.3);color:var(--parchment-shadow);cursor:pointer;padding:0 10px;font-size:12px;transition:color .2s;}
+.snote-del:hover{color:var(--red-ink);}
+
+/* 버튼 공통 */
+.add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 16px;background:none;border:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-faded);cursor:pointer;transition:all .2s;letter-spacing:1px;position:relative;z-index:2;}
+.add-btn:hover{background:rgba(200,150,12,.1);border-color:var(--gold);color:var(--ink);}
+.action-btn{padding:8px 18px;border:1px solid var(--border-dark);background:var(--ink);color:var(--parchment);font-family:'Noto Serif KR',serif;font-size:12px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.action-btn:hover{background:var(--red-ink);}
+.action-btn.sec{background:transparent;color:var(--ink);}
+.action-btn.sec:hover{background:rgba(139,94,60,.15);color:var(--ink);}
+
+/* 테이블 */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;}
+.data-table th{background:rgba(139,94,60,.12);border:1px solid var(--border);padding:7px 8px;font-size:10px;letter-spacing:2px;color:var(--ink-faded);text-transform:uppercase;font-weight:600;text-align:left;}
+.data-table td{border:1px solid var(--parchment-shadow);padding:6px 8px;vertical-align:top;}
+.data-table td[contenteditable]:focus{background:rgba(200,150,12,.08);outline:none;}
+.data-table tr:hover td{background:rgba(200,150,12,.04);}
+.tdel{background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:13px;padding:0 4px;}
+.tdel:hover{color:var(--red-ink);}
+.tpin{background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .2s;}
+.tpin.pinned{opacity:1;}
+
+/* 자원 그리드 */
+.resource-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+.res-card{background:rgba(139,94,60,.06);border:1px solid var(--border);padding:10px;text-align:center;position:relative;}
+.res-card .del-btn{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:11px;opacity:0;transition:opacity .2s;}
+.res-card:hover .del-btn{opacity:1;}
+.res-icon{font-size:20px;display:block;margin-bottom:3px;}
+.res-name-lbl{font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;display:block;margin-bottom:4px;}
+.res-val{font-size:20px;font-weight:700;width:100%;background:transparent;border:none;text-align:center;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed transparent;}
+.res-val:focus{border-color:var(--gold);}
+.res-unit{font-size:10px;color:var(--ink-light);display:block;margin-top:2px;}
+
+/* ── 회계 장부 ── */
+.ledger-section{margin-bottom:20px;}
+.ledger-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.acct-box{border:1px solid var(--border);padding:12px;}
+.acct-box.debt-box{border-color:var(--red-ink);}
+.acct-box label{display:block;font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;margin-bottom:6px;}
+.acct-box .big-in{font-size:22px;font-weight:700;width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed var(--parchment-shadow);}
+.acct-box.debt-box .big-in{color:var(--red-ink);}
+.acct-total{grid-column:1/-1;border:2px solid var(--border-dark);padding:12px;background:rgba(44,26,14,.04);text-align:center;}
+.acct-total label{display:block;font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;margin-bottom:6px;}
+.acct-total .total-num{font-size:28px;font-weight:700;font-family:'Noto Serif KR',serif;}
+.month-pass-btn{width:100%;padding:10px;background:rgba(139,94,60,.1);border:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);cursor:pointer;transition:all .2s;letter-spacing:1px;margin-top:8px;}
+.month-pass-btn:hover{background:rgba(200,150,12,.15);border-color:var(--gold);}
+.ledger-log{margin-top:10px;max-height:180px;overflow-y:auto;}
+.ledger-log-row{font-size:11px;padding:4px 8px;border-left:2px solid var(--gold);margin-bottom:4px;color:var(--ink-faded);background:rgba(200,150,12,.05);}
+
+/* 인벤토리 */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
+.inv-card{border:1px solid var(--border);padding:12px;background:rgba(139,94,60,.04);position:relative;}
+.inv-card .inv-del{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:12px;opacity:0;transition:opacity .2s;}
+.inv-card:hover .inv-del{opacity:1;}
+.inv-name{font-size:14px;font-weight:700;color:var(--ink);width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed var(--parchment-shadow);margin-bottom:6px;}
+.inv-type{font-size:10px;letter-spacing:1px;color:var(--ink-light);width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;margin-bottom:6px;}
+.inv-desc{font-size:12px;color:var(--ink-faded);width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;resize:vertical;min-height:60px;line-height:1.7;}
+
+/* 세계 설정 */
+.world-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border);}
+.world-tab-btn{padding:7px 18px;background:none;border:none;font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-light);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.world-tab-btn.active{color:var(--ink);border-bottom-color:var(--gold);font-weight:700;}
+.world-tab-content{display:none;}
+.world-tab-content.active{display:block;}
+.world-memo{width:100%;min-height:200px;background:rgba(255,255,255,.2);border:1px solid var(--border);padding:12px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);outline:none;resize:vertical;line-height:1.9;}
+.currency-table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+.currency-table th{background:rgba(139,94,60,.12);border:1px solid var(--border);padding:7px 10px;font-size:10px;letter-spacing:2px;color:var(--ink-faded);text-transform:uppercase;}
+.currency-table td{border:1px solid var(--parchment-shadow);padding:6px 8px;font-size:13px;}
+.currency-table td input{background:transparent;border:none;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:100%;outline:none;}
+.currency-ref{background:rgba(200,150,12,.07);border:1px solid var(--gold);padding:12px;font-size:12px;color:var(--ink-faded);line-height:1.9;margin-top:10px;}
+
+/* 일지 */
+.log-entry{border:1px solid var(--border);margin-bottom:14px;background:rgba(255,255,255,.12);}
+.log-hd{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(139,94,60,.10);border-bottom:1px solid var(--border);}
+.log-date-in{background:transparent;border:none;border-bottom:1px solid var(--parchment-shadow);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:160px;outline:none;font-weight:600;}
+.log-del{margin-left:auto;background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:15px;}
+.log-del:hover{color:var(--red-ink);}
+.log-notes{width:100%;min-height:140px;background:transparent;border:none;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);resize:vertical;outline:none;line-height:1.9;padding:12px;}
+
+/* 하단 바 */
+.bottom-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-top:2px solid var(--border);background:rgba(139,94,60,.06);flex-wrap:wrap;gap:8px;}
+.save-status{font-size:11px;font-style:italic;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--parchment);border:2px solid var(--border-dark);box-shadow:0 0 0 4px var(--border),0 20px 60px rgba(0,0,0,.5);padding:26px;width:340px;max-width:90vw;}
+.modal h3{font-family:'IM Fell English',serif;font-size:18px;color:var(--red-ink);margin-bottom:14px;}
+.modal label{display:block;font-size:10px;letter-spacing:1px;color:var(--ink-light);margin-bottom:3px;margin-top:10px;text-transform:uppercase;}
+.modal input,.modal select{width:100%;background:rgba(255,255,255,.4);border:1px solid var(--border);padding:6px 10px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);outline:none;}
+.modal-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+
+/* NPC portrait */
+.npc-portrait{width:30px;height:30px;background:rgba(139,94,60,.15);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:16px;}
+
+@media(max-width:600px){
+  .dashboard,.finance-4,.ledger-grid{grid-template-columns:1fr;}
+  .dash-panel.full{grid-column:1;}
+  .domain-title{font-size:32px;}
+  .tab-content{padding:14px;}
+  .bottom-bar{padding:10px 14px;}
+}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--parchment-dark);} ::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* 화폐 단위 전환 토글 */
+.currency-toggle{display:flex;gap:0;border:1px solid var(--border);overflow:hidden;}
+.cur-btn{padding:4px 10px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.cur-btn:last-child{border-right:none;}
+.cur-btn.active{background:var(--ink);color:var(--parchment);}
+.cur-btn:hover:not(.active){background:rgba(200,150,12,.12);}
+.cur-unit-label{font-size:10px;color:var(--ink-light);font-style:italic;margin-left:6px;}
+
+/* 부채 상환 버튼 */
+.repay-btn{padding:3px 8px;border:1px solid var(--gold);background:none;font-family:'Noto Serif KR',serif;font-size:11px;color:var(--gold);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.repay-btn:hover{background:rgba(200,150,12,.15);}
+
+/* 건물 수입/지출 칸 */
+.bld-fin-in{background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink);width:70px;text-align:right;outline:none;}
+.bld-fin-in:focus{border-color:var(--gold);}
+.bld-income-col{color:#2e6b2e;}
+.bld-expense-col{color:var(--red-ink);}
+.bld-fin-summary{display:flex;gap:16px;padding:8px 12px;background:rgba(139,94,60,.06);border:1px solid var(--border);margin-top:8px;font-size:13px;flex-wrap:wrap;}
+.bld-fin-summary span{display:flex;align-items:center;gap:6px;}
+
+/* 화폐 단위 테이블 변경 */
+.cur-rate-hint{font-size:10px;color:var(--ink-light);font-style:italic;margin-top:4px;}
+
+/* 건물 카테고리 토글 */
+.bld-cat-tabs{display:flex;gap:0;border:1px solid var(--border);overflow:hidden;margin-bottom:14px;flex-wrap:wrap;}
+.bld-cat-btn{padding:6px 14px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.bld-cat-btn:last-child{border-right:none;}
+.bld-cat-btn.active{background:var(--ink);color:var(--parchment);font-weight:700;}
+.bld-cat-btn:hover:not(.active){background:rgba(200,150,12,.12);}
+.bld-category-section{display:none;}
+.bld-category-section.active{display:block;}
+
+/* 자원 생산 지정 */
+.prod-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border:1px solid var(--border);font-size:11px;background:rgba(139,94,60,.08);margin:2px;}
+.prod-tag-del{background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:11px;padding:0 2px;}
+.prod-tag-del:hover{color:var(--red-ink);}
+.prod-cell{min-width:140px;}
+
+/* 시장 팝업 */
+.market-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;}
+.market-overlay.open{display:flex;}
+.market-modal{background:var(--parchment);border:2px solid var(--border-dark);box-shadow:0 0 0 4px var(--border),0 20px 60px rgba(0,0,0,.5);padding:24px;width:520px;max-width:95vw;max-height:88vh;overflow-y:auto;background-image:linear-gradient(160deg,#f7efd8 0%,#f2e8c9 40%,#eadb9f 100%);}
+.market-modal h3{font-family:'IM Fell English',serif;font-size:20px;color:var(--red-ink);margin-bottom:6px;}
+.market-capital-bar{font-size:13px;color:var(--ink-faded);margin-bottom:14px;padding:6px 10px;border-left:3px solid var(--gold);background:rgba(200,150,12,.08);}
+.market-mode-toggle{display:flex;gap:0;border:1px solid var(--border);overflow:hidden;margin-bottom:14px;width:fit-content;}
+.mkt-mode-btn{padding:6px 20px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink-light);cursor:pointer;transition:all .2s;}
+.mkt-mode-btn:last-child{border-right:none;}
+.mkt-mode-btn.active{background:var(--ink);color:var(--parchment);font-weight:700;}
+.market-res-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.mkt-res-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);background:rgba(139,94,60,.04);cursor:pointer;transition:all .2s;}
+.mkt-res-row:hover{background:rgba(200,150,12,.10);border-color:var(--gold);}
+.mkt-res-row.selected{background:rgba(200,150,12,.18);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);}
+.mkt-res-icon{font-size:20px;width:30px;text-align:center;}
+.mkt-res-info{flex:1;}
+.mkt-res-name{font-size:13px;font-weight:700;}
+.mkt-res-stock{font-size:11px;color:var(--ink-light);}
+.mkt-res-price{font-size:12px;color:var(--ink-faded);text-align:right;}
+.mkt-input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.mkt-input-row label{font-size:11px;color:var(--ink-light);letter-spacing:1px;min-width:50px;}
+.mkt-num-in{background:rgba(255,255,255,.4);border:1px solid var(--border);padding:5px 8px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:100px;outline:none;}
+.mkt-total-bar{padding:8px 12px;border:1px solid var(--border-dark);background:rgba(44,26,14,.05);font-size:13px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;}
+.mkt-btn{padding:8px 22px;border:1px solid var(--border-dark);background:var(--ink);color:var(--parchment);font-family:'Noto Serif KR',serif;font-size:13px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.mkt-btn:hover{background:var(--red-ink);}
+.mkt-btn.buy{background:#2e6b2e;border-color:#2e6b2e;}
+.mkt-btn.buy:hover{background:#1e4a1e;}
+.mkt-btn.sec{background:transparent;color:var(--ink);border-color:var(--border);}
+.mkt-btn.sec:hover{background:rgba(139,94,60,.15);}
+
+/* 자원 조정 모달 */
+.adj-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
+.adj-overlay.open{display:flex;}
+.adj-modal{background:var(--parchment);border:2px solid var(--border-dark);box-shadow:0 0 0 4px var(--border),0 16px 50px rgba(0,0,0,.45);padding:22px;width:360px;max-width:95vw;}
+.adj-modal h3{font-family:'IM Fell English',serif;font-size:17px;color:var(--red-ink);margin-bottom:12px;}
+.adj-modal label{display:block;font-size:10px;letter-spacing:1px;color:var(--ink-light);margin-bottom:3px;margin-top:10px;text-transform:uppercase;}
+.adj-modal input,.adj-modal select{width:100%;background:rgba(255,255,255,.4);border:1px solid var(--border);padding:6px 10px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);outline:none;}
+
+/* 임시 거래 로그 */
+.trade-log-wrap{margin-top:10px;}
+.trade-log-row{font-size:11px;padding:4px 8px;border-left:2px solid #5a9a5a;margin-bottom:4px;color:var(--ink-faded);background:rgba(90,154,90,.06);}
+.trade-log-row.minus{border-left-color:var(--red-ink);background:rgba(139,26,26,.05);}
+
+/* 자원 카드 하단 버튼 */
+.res-adj-btn{padding:2px 8px;border:1px solid var(--border);background:none;font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-light);cursor:pointer;transition:all .2s;}
+.res-adj-btn:hover{background:rgba(200,150,12,.12);border-color:var(--gold);}
+.res-price-in{font-size:11px;width:100%;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:center;font-family:'Noto Serif KR',serif;outline:none;color:var(--ink-faded);margin-top:3px;}
+.res-price-in:focus{border-color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="ledger">
+
+<!-- 헤더 -->
+<div class="title-block">
+  <div class="title-label">Domain Ledger · 영지 관리 대장</div>
+  <div class="domain-title" id="domainTitle" contenteditable="true">아르카디아 영지</div>
+  <div class="header-meta">
+    <div class="meta-item"><label>영주</label><input type="text" id="lordName" placeholder="이름"></div>
+    <div class="meta-item"><label>현재 날짜</label><input type="text" id="currentDate" placeholder="건국 N년 N월 N일"></div>
+    <div class="meta-item"><label>영지 등급</label><input type="text" id="domainRank" placeholder="남작령"></div>
+  </div>
+</div>
+
+<!-- 탭 -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('overview')">📜 현황</button>
+  <button class="tab-btn" onclick="switchTab('ledger')">💰 회계</button>
+  <button class="tab-btn" onclick="switchTab('resources')">⚖️ 자원</button>
+  <button class="tab-btn" onclick="switchTab('buildings')">🏰 건물</button>
+  <button class="tab-btn" onclick="switchTab('npc')">👤 인물</button>
+  <button class="tab-btn" onclick="switchTab('quest')">⚔️ 이벤트</button>
+  <button class="tab-btn" onclick="switchTab('inventory')">🎒 인벤토리</button>
+  <button class="tab-btn" onclick="switchTab('world')">🌍 세계설정</button>
+  <button class="tab-btn" onclick="switchTab('log')">📖 일지</button>
+</div>
+
+<!-- ══ 현황 ══ -->
+<div class="tab-content active" id="tab-overview">
+  <div class="dashboard">
+    <!-- 재정 요약 -->
+    <div class="dash-panel full">
+      <div class="dash-ph">💰 재정 현황
+        <div id="ov-cur-toggle" class="currency-toggle" style="margin-left:auto"></div>
+      </div>
+      <div class="dash-pb">
+        <div class="finance-4">
+          <div class="fin-cell"><span class="fc-lbl" id="ov-lbl-capital">자본 (보유)</span><input class="fc-val" id="ov-capital" readonly></div>
+          <div class="fin-cell red"><span class="fc-lbl">부채 합계</span><input class="fc-val" id="ov-debt" readonly style="color:var(--red-ink)"></div>
+          <div class="fin-cell grn"><span class="fc-lbl" id="ov-lbl-income">월 수입</span><input class="fc-val" id="ov-income" readonly style="color:#2e6b2e"></div>
+          <div class="fin-cell"><span class="fc-lbl" id="ov-lbl-expense">월 지출</span><input class="fc-val" id="ov-expense" readonly></div>
+        </div>
+      </div>
+    </div>
+    <!-- 건물 -->
+    <div class="dash-panel">
+      <div class="dash-ph">🏰 건물 현황 <span class="cnt" id="dash-bc"></span></div>
+      <div class="dash-pb"><div class="mini-list" id="dash-buildings"></div></div>
+    </div>
+    <!-- 인물 -->
+    <div class="dash-panel">
+      <div class="dash-ph">👤 주요 인물 <span class="cnt" id="dash-nc"></span></div>
+      <div class="dash-pb"><div class="mini-list" id="dash-npcs"></div></div>
+    </div>
+    <!-- 이벤트 (진행중만) -->
+    <div class="dash-panel">
+      <div class="dash-ph">⚔️ 진행중 이벤트 <span class="cnt" id="dash-qc"></span></div>
+      <div class="dash-pb"><div class="mini-list" id="dash-quests"></div></div>
+    </div>
+    <!-- 자원 -->
+    <div class="dash-panel">
+      <div class="dash-ph">⚖️ 자원 요약</div>
+      <div class="dash-pb"><div class="mini-res-row" id="dash-resources"></div></div>
+    </div>
+    <!-- 특이사항 -->
+    <div class="dash-panel full">
+      <div class="dash-ph">📌 특이사항
+        <button class="add-btn" style="padding:2px 10px;font-size:11px" onclick="addSpecialNote()">＋ 추가</button>
+      </div>
+      <div class="dash-pb" style="padding:8px 12px"><div id="specialNotes"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 회계 ══ -->
+<div class="tab-content" id="tab-ledger">
+  <!-- 화폐 단위 전환 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--ink-light);letter-spacing:1px">표시 단위 ▶</span>
+    <div id="ledger-cur-toggle" class="currency-toggle"></div>
+    <span class="cur-unit-label" id="ledger-cur-hint">입력 시 은화 기준으로 저장됩니다</span>
+  </div>
+
+  <div class="section-title">자본 / 부채</div>
+  <div class="ledger-grid">
+    <div class="acct-box">
+      <label id="lbl-capital">자본 (보유 자산 합계) — <span id="lbl-capital-unit">은화</span></label>
+      <input class="big-in" type="text" id="capital" placeholder="0" oninput="onCapitalInput(this.value)">
+    </div>
+    <div class="acct-box debt-box">
+      <label id="lbl-debt">부채 합계 — <span id="lbl-debt-unit">은화</span></label>
+      <input class="big-in" type="text" id="debtTotal" placeholder="0" readonly style="color:var(--red-ink);cursor:default">
+    </div>
+    <div class="acct-box">
+      <label>월 수입 — <span id="lbl-income-unit">은화</span> <span style="font-size:9px;color:var(--ink-light)">(건물 합산)</span></label>
+      <input class="big-in" type="text" id="monthIncome" placeholder="0" oninput="onIncomeInput(this.value)">
+    </div>
+    <div class="acct-box">
+      <label>월 지출 — <span id="lbl-expense-unit">은화</span> <span style="font-size:9px;color:var(--ink-light)">(건물 합산)</span></label>
+      <input class="big-in" type="text" id="monthExpense" placeholder="0" oninput="onExpenseInput(this.value)">
+    </div>
+    <div class="acct-total">
+      <label>순 자산 (자본 − 부채)</label>
+      <div class="total-num" id="netAsset">—</div>
+      <div style="font-size:11px;color:var(--ink-light);margin-top:4px" id="netAsset-unit">단위: 은화</div>
+    </div>
+  </div>
+
+  <div class="section-title">수익 항목 상세</div>
+  <table class="data-table" id="incomeTable">
+    <thead><tr><th>항목명</th><th>월 수익 (은화)</th><th>비고</th><th></th></tr></thead>
+    <tbody id="incomeBody"></tbody>
+  </table>
+  <div class="bld-fin-summary" style="margin-bottom:8px">
+    <span>💰 수익 항목 합산 —</span>
+    <span style="color:#2e6b2e">월 수익: <b id="income-item-total">0</b> <span id="income-item-total-unit">은화</span></span>
+    <button class="add-btn" style="padding:3px 10px;font-size:11px;margin-left:auto" onclick="applyIncomeItems()">↳ 월 수입에 반영</button>
+  </div>
+  <button class="add-btn" onclick="addIncomeItem()">＋ 수익 항목 추가</button>
+
+  <div class="section-title" style="margin-top:20px">부채 항목 상세</div>
+  <table class="data-table" id="debtTable">
+    <thead><tr><th>항목명</th><th>원금 (은화)</th><th>누적 이자 (은화)</th><th>이자(월, 은화)</th><th>만기일</th><th>비고</th><th>상환</th><th></th></tr></thead>
+    <tbody id="debtBody"></tbody>
+  </table>
+  <button class="add-btn" onclick="addDebt()">＋ 부채 항목 추가</button>
+
+  <div class="section-title" style="margin-top:20px">월 경과</div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+    <div style="font-size:13px;color:var(--ink-faded)">월 경과 버튼을 누르면 <b>수입−지출</b>이 자본에 반영되고 <b>이자</b>가 각 부채에 가산됩니다.</div>
+  </div>
+  <button class="month-pass-btn" onclick="passMonth()">📅 1달 경과 →</button>
+  <div class="ledger-log" id="ledgerLog"></div>
+</div>
+
+<!-- ══ 자원 ══ -->
+<div class="tab-content" id="tab-resources">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+    <div class="section-title" style="margin-bottom:0;flex:1">보유 자원</div>
+    <button class="action-btn" onclick="openMarket()" style="padding:7px 18px">🏪 시장 열기</button>
+  </div>
+  <div class="resource-grid" id="resourceGrid"></div>
+  <button class="add-btn" onclick="openResModal()">＋ 자원 추가</button>
+
+  <!-- 임시 거래 로그 -->
+  <div class="trade-log-wrap" id="tradeLogWrap" style="margin-top:16px;display:none">
+    <div class="section-title" style="margin-bottom:8px">📋 이번 달 거래 로그 <span style="font-size:10px;color:var(--ink-light);font-weight:400">(월 경과 시 기록 이전 후 초기화)</span></div>
+    <div id="tradeLogList"></div>
+  </div>
+</div>
+
+<!-- ══ 건물 ══ -->
+<div class="tab-content" id="tab-buildings">
+  <div class="section-title">건물 / 시설</div>
+
+  <!-- 카테고리 토글 -->
+  <div class="bld-cat-tabs">
+    <button class="bld-cat-btn active" onclick="switchBldCat('all',this)">📋 전체</button>
+    <button class="bld-cat-btn" onclick="switchBldCat('base',this)">🏛️ 거점 시설</button>
+    <button class="bld-cat-btn" onclick="switchBldCat('profit',this)">💰 수익 시설</button>
+    <button class="bld-cat-btn" onclick="switchBldCat('resource',this)">⛏️ 자원 생산</button>
+    <button class="bld-cat-btn" onclick="switchBldCat('frontier',this)">🌿 개척지</button>
+  </div>
+
+  <div id="bld-category-all" class="bld-category-section active">
+    <table class="data-table"><thead><tr>
+      <th>📌</th><th>건물명</th><th>분류</th><th>등급</th><th>상태</th>
+      <th style="color:#2e6b2e" id="bld-th-income">수입/월</th>
+      <th style="color:var(--red-ink)" id="bld-th-expense">지출/월</th>
+      <th class="prod-cell">생산 자원</th><th>효과/비고</th><th></th>
+    </tr></thead><tbody id="buildingBody-all"></tbody></table>
+  </div>
+  <div id="bld-category-base" class="bld-category-section">
+    <table class="data-table"><thead><tr>
+      <th>📌</th><th>건물명</th><th>등급</th><th>상태</th>
+      <th style="color:#2e6b2e">수입/월</th><th style="color:var(--red-ink)">지출/월</th>
+      <th class="prod-cell">생산 자원</th><th>효과/비고</th><th></th>
+    </tr></thead><tbody id="buildingBody-base"></tbody></table>
+  </div>
+  <div id="bld-category-profit" class="bld-category-section">
+    <table class="data-table"><thead><tr>
+      <th>📌</th><th>건물명</th><th>등급</th><th>상태</th>
+      <th style="color:#2e6b2e">수입/월</th><th style="color:var(--red-ink)">지출/월</th>
+      <th class="prod-cell">생산 자원</th><th>효과/비고</th><th></th>
+    </tr></thead><tbody id="buildingBody-profit"></tbody></table>
+  </div>
+  <div id="bld-category-resource" class="bld-category-section">
+    <table class="data-table"><thead><tr>
+      <th>📌</th><th>건물명</th><th>등급</th><th>상태</th>
+      <th style="color:#2e6b2e">수입/월</th><th style="color:var(--red-ink)">지출/월</th>
+      <th class="prod-cell">생산 자원</th><th>효과/비고</th><th></th>
+    </tr></thead><tbody id="buildingBody-resource"></tbody></table>
+  </div>
+  <div id="bld-category-frontier" class="bld-category-section">
+    <table class="data-table"><thead><tr>
+      <th>📌</th><th>건물명</th><th>등급</th><th>상태</th>
+      <th style="color:#2e6b2e">수입/월</th><th style="color:var(--red-ink)">지출/월</th>
+      <th class="prod-cell">생산 자원</th><th>효과/비고</th><th></th>
+    </tr></thead><tbody id="buildingBody-frontier"></tbody></table>
+  </div>
+
+  <div class="bld-fin-summary" style="margin-top:10px">
+    <span>🏰 건물 합산 —</span>
+    <span style="color:#2e6b2e">월 수입: <b id="bld-total-income">0</b> <span id="bld-income-unit">은화</span></span>
+    <span style="color:var(--red-ink)">월 지출: <b id="bld-total-expense">0</b> <span id="bld-expense-unit">은화</span></span>
+    <span>순이익: <b id="bld-total-net">0</b> <span id="bld-net-unit">은화</span></span>
+    <button class="add-btn" style="padding:3px 10px;font-size:11px;margin-left:auto" onclick="applyBuildingFinance()">↳ 회계에 반영 (누적)</button>
+  </div>
+  <button class="add-btn" style="margin-top:10px" onclick="addBuilding()">＋ 건물 추가</button>
+</div>
+
+<!-- ══ 인물 ══ -->
+<div class="tab-content" id="tab-npc">
+  <div class="section-title">인물 / NPC</div>
+  <table class="data-table">
+    <thead><tr><th>📌</th><th>초상</th><th>이름</th><th>직책/관계</th><th>능력치/특기</th><th>상태/비고</th><th></th></tr></thead>
+    <tbody id="npcBody"></tbody>
+  </table>
+  <button class="add-btn" onclick="addNPC()">＋ 인물 추가</button>
+</div>
+
+<!-- ══ 이벤트 ══ -->
+<div class="tab-content" id="tab-quest">
+  <div class="section-title">이벤트 / 퀘스트</div>
+  <table class="data-table">
+    <thead><tr><th>상태</th><th>제목</th><th>발생일</th><th>내용/조건</th><th>보상/결과</th><th></th></tr></thead>
+    <tbody id="questBody"></tbody>
+  </table>
+  <button class="add-btn" onclick="addQuest()">＋ 이벤트 추가</button>
+</div>
+
+<!-- ══ 인벤토리 ══ -->
+<div class="tab-content" id="tab-inventory">
+  <div class="section-title">아이템 / 아티팩트</div>
+  <div class="inv-grid" id="invGrid"></div>
+  <button class="add-btn" onclick="addItem()">＋ 아이템 추가</button>
+</div>
+
+<!-- ══ 세계 설정 ══ -->
+<div class="tab-content" id="tab-world">
+  <div class="world-tabs">
+    <button class="world-tab-btn active" onclick="switchWorldTab('empire',this)">🏛️ 제국 설정</button>
+    <button class="world-tab-btn" onclick="switchWorldTab('kingdom',this)">👑 왕국/세력</button>
+    <button class="world-tab-btn" onclick="switchWorldTab('currency',this)">💱 화폐 / 물가</button>
+    <button class="world-tab-btn" onclick="switchWorldTab('misc',this)">📝 기타 설정</button>
+  </div>
+  <div class="world-tab-content active" id="wt-empire">
+    <textarea class="world-memo" id="world-empire" placeholder="제국의 이름, 지배 체제, 역사, 주요 인물, 특이사항 등을 자유롭게 기록하세요..." oninput="autosave()"></textarea>
+  </div>
+  <div class="world-tab-content" id="wt-kingdom">
+    <textarea class="world-memo" id="world-kingdom" placeholder="왕국/세력의 구도, 동맹, 적대 관계, 중요 거점 등을 기록하세요..." oninput="autosave()"></textarea>
+  </div>
+  <div class="world-tab-content" id="wt-currency">
+    <div class="section-title">화폐 단위</div>
+    <div class="currency-ref" style="margin-bottom:10px">
+      💡 <b>기준: 1 제국 은화</b> — 모든 숫자 계산은 은화 단위로 저장됩니다.<br>
+      아래 표에 각 화폐가 <b>은화 1개와 얼마나 교환</b>되는지 입력하세요.<br>
+      예) 금화 1개 = 은화 10개 → 은화 환산율 <b>10</b> / 동화 10개 = 은화 1개 → 환산율 <b>0.1</b>
+    </div>
+    <table class="currency-table" id="currencyTable">
+      <thead><tr><th>화폐명</th><th>단위 표기</th><th>은화 환산율 (1개 = 은화 N개)</th><th>비고</th><th></th></tr></thead>
+      <tbody id="currencyBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addCurrency()" style="margin-bottom:16px">＋ 화폐 단위 추가</button>
+    <div class="section-title">물가 기준</div>
+    <table class="currency-table" id="priceTable">
+      <thead><tr><th>품목</th><th>가격</th><th>현실 환산</th><th>비고</th><th></th></tr></thead>
+      <tbody id="priceBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addPrice()">＋ 물가 기준 추가</button>
+    <div class="currency-ref" id="currencyRef" style="margin-top:10px"></div>
+  </div>
+  <div class="world-tab-content" id="wt-misc">
+    <textarea class="world-memo" id="world-misc" placeholder="마법 체계, 종족 설정, 지리, 역사 연표 등 기타 세계관 설정을 기록하세요..." oninput="autosave()"></textarea>
+  </div>
+</div>
+
+<!-- ══ 일지 ══ -->
+<div class="tab-content" id="tab-log">
+  <div class="section-title">세션 일지</div>
+  <div id="logList"></div>
+  <button class="add-btn" onclick="addLog()">＋ 새 일지 추가</button>
+</div>
+
+<!-- 하단 바 -->
+<div class="bottom-bar">
+  <div>
+    <div class="save-status" id="saveStatus">🔴 Firebase 미설정</div>
+    <div id="syncIndicator" style="font-size:10px;color:var(--ink-light);font-style:italic;margin-top:2px"></div>
+  </div>
+  <div class="btn-group">
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadFromFile(event)">
+    <button class="action-btn sec" onclick="document.getElementById('fileInput').click()">📂 JSON 불러오기</button>
+    <button class="action-btn sec" onclick="saveToFile()">💾 JSON 백업</button>
+  </div>
+</div>
+</div><!-- /ledger -->
+
+<!-- 자원 모달 -->
+<div class="modal-overlay" id="resModal">
+  <div class="modal">
+    <h3>자원 추가</h3>
+    <label>아이콘(이모지)</label><input type="text" id="mIcon" value="📦" maxlength="2">
+    <label>자원명</label><input type="text" id="mName" placeholder="자원명">
+    <label>단위</label><input type="text" id="mUnit" placeholder="개">
+    <label>초기값</label><input type="text" id="mValue" value="0">
+    <div class="modal-btns">
+      <button class="action-btn sec" onclick="closeModal('resModal')">취소</button>
+      <button class="action-btn" onclick="confirmRes()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 시장 팝업 -->
+<div class="market-overlay" id="marketOverlay">
+  <div class="market-modal">
+    <h3>🏪 자원 시장</h3>
+    <div class="market-capital-bar">보유 자본: <b id="mkt-capital-display">0</b> <span id="mkt-capital-unit">은화</span></div>
+    <div class="market-mode-toggle">
+      <button class="mkt-mode-btn active" id="mkt-buy-btn" onclick="setMarketMode('buy')">🛒 구매</button>
+      <button class="mkt-mode-btn" id="mkt-sell-btn" onclick="setMarketMode('sell')">💸 판매</button>
+    </div>
+    <div class="market-res-list" id="mkt-res-list"></div>
+    <div id="mkt-input-section" style="display:none">
+      <div class="mkt-input-row">
+        <label>단가</label>
+        <input class="mkt-num-in" type="text" id="mkt-unit-price" readonly style="background:rgba(200,150,12,.08)">
+        <span id="mkt-price-unit" style="font-size:11px;color:var(--ink-light)">은화</span>
+      </div>
+      <div class="mkt-input-row">
+        <label>수량</label>
+        <input class="mkt-num-in" type="number" id="mkt-qty" min="1" value="1" oninput="calcMarketTotal()">
+        <span id="mkt-qty-unit" style="font-size:11px;color:var(--ink-light)"></span>
+      </div>
+      <div class="mkt-total-bar" id="mkt-total-bar">
+        합계: <b id="mkt-total-cost">0</b> <span id="mkt-total-unit">은화</span>
+        <span id="mkt-after-capital" style="color:var(--ink-faded)"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="mkt-btn buy" id="mkt-confirm-btn" onclick="confirmMarket()" style="display:none">✔ 확인</button>
+      <button class="mkt-btn sec" onclick="closeOverlay('marketOverlay')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 자원 수동 조정 모달 -->
+<div class="adj-overlay" id="adjOverlay">
+  <div class="adj-modal">
+    <h3 id="adj-title">자원 조정</h3>
+    <div style="font-size:13px;color:var(--ink-faded);margin-bottom:8px">현재 보유: <b id="adj-current">0</b> <span id="adj-unit"></span></div>
+    <label>조정 방향</label>
+    <select id="adj-dir">
+      <option value="plus">＋ 증가</option>
+      <option value="minus">－ 감소</option>
+    </select>
+    <label>수량</label>
+    <input type="number" id="adj-qty" min="1" value="1">
+    <label>사유</label>
+    <input type="text" id="adj-reason" placeholder="예) 퀘스트 보상, 세금 징수, 소비...">
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="action-btn sec" onclick="closeOverlay('adjOverlay')">취소</button>
+      <button class="action-btn" onclick="confirmAdj()">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 부채 상환 모달 -->
+<div class="modal-overlay" id="repayModal">
+  <div class="modal">
+    <h3>부채 상환</h3>
+    <div id="repay-debt-name" style="font-size:14px;color:var(--ink-faded);margin-bottom:4px"></div>
+    <div id="repay-debt-remain" style="font-size:13px;color:var(--red-ink);margin-bottom:10px"></div>
+    <label>상환 금액 (은화)</label>
+    <input type="text" id="repayAmount" placeholder="0" value="0">
+    <div style="font-size:11px;color:var(--ink-light);margin-top:4px">자본에서 차감되고 해당 부채 원금이 줄어듭니다. 부채가 0 이하가 되면 자동 삭제됩니다.</div>
+    <div class="modal-btns">
+      <button class="action-btn sec" onclick="closeModal('repayModal')">취소</button>
+      <button class="action-btn" onclick="confirmRepay()">상환</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  🔥 FIREBASE 설정
+// ══════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyAO-zMbqf448r9vytYidCAPBXdxvYXmSpg",
+  authDomain:        "foxtail-309da.firebaseapp.com",
+  projectId:         "foxtail-309da",
+  storageBucket:     "foxtail-309da.firebasestorage.app",
+  messagingSenderId: "406019218260",
+  appId:             "1:406019218260:web:c85ba09d6a0f4b19b286c1"
+};
+const DOMAIN_DOC_ID = "arcadia";
+
+// ──────────────────────────────────────────────
+//  기본 state
+// ──────────────────────────────────────────────
+let state = {
+  domainTitle:'아르카디아 영지', lordName:'', currentDate:'', domainRank:'남작령',
+  capital:'0', debtTotal:'0', monthIncome:'0', monthExpense:'0',
+  buildingIncome:'0', buildingExpense:'0',   // 건물 반영분 별도 추적
+  incomeApplied:'0',                          // 수익항목 반영분 별도 추적
+  debts:[], ledgerHistory:[],
+  incomeItems:[],
+  specialNotes:[], resources:[], buildings:[], npcs:[], quests:[],
+  inventory:[],
+  worldEmpire:'', worldKingdom:'', worldMisc:'',
+  tradeLog:[],   // 이번 달 임시 거래 로그
+  currencies:[
+    {name:'금화',   unit:'제국 금화',  silverRate:'10',  note:'제국 은화 10개 = 제국 금화 1개'},
+    {name:'은화',   unit:'제국 은화',  silverRate:'1',   note:'기준 화폐'},
+    {name:'동화',   unit:'제국 동화',  silverRate:'0.1', note:'제국 은화 1개 = 제국 동화 10개'}
+  ],
+  prices:[
+    {item:'성인 남성 월 임금', price:'5 동화', realValue:'250만원', note:'열심히 일한 기준'},
+    {item:'일반 식사 1끼',     price:'1 닢',   realValue:'약 5만원',  note:''}
+  ],
+  logs:[], _updatedAt:0
+};
+
+// ──────────────────────────────────────────────
+//  탭 전환
+// ──────────────────────────────────────────────
+const TAB_LIST = ['overview','ledger','resources','buildings','npc','quest','inventory','world','log'];
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const idx = TAB_LIST.indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function switchWorldTab(name, el) {
+  document.querySelectorAll('.world-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.world-tab-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('wt-'+name).classList.add('active');
+}
+
+// ──────────────────────────────────────────────
+//  화폐 단위 관리
+// ──────────────────────────────────────────────
+let activeCurrency = null; // null = 은화 기준
+
+function getSilverRate(cur) {
+  // 해당 화폐 1개가 은화 몇 개인지
+  const r = parseFloat(cur.silverRate);
+  return (r && r > 0) ? r : 1;
+}
+
+function silverToDisplay(silverVal) {
+  if (!activeCurrency) return silverVal;
+  const rate = getSilverRate(activeCurrency);
+  return roundTo4(silverVal / rate);
+}
+
+function displayToSilver(displayVal) {
+  if (!activeCurrency) return displayVal;
+  const rate = getSilverRate(activeCurrency);
+  return roundTo4(displayVal * rate);
+}
+
+function roundTo4(n) {
+  return Math.round(n * 10000) / 10000;
+}
+
+function getActiveCurrencyName() {
+  return activeCurrency ? activeCurrency.unit : '은화';
+}
+
+function buildCurrencyToggles() {
+  const curs = state.currencies || [];
+  ['ledger-cur-toggle','ov-cur-toggle'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = curs.map(c => {
+      const isActive = activeCurrency && activeCurrency.name === c.name;
+      const isSilver = !activeCurrency && c.silverRate === '1';
+      return `<button class="cur-btn ${isActive || isSilver ? 'active' : ''}" onclick="setCurrency('${c.name}')">${c.unit}</button>`;
+    }).join('');
+  });
+  // 힌트 업데이트
+  const hint = document.getElementById('ledger-cur-hint');
+  if (hint) hint.textContent = `입력 시 은화로 자동 환산 저장 (현재: ${getActiveCurrencyName()})`;
+  // 단위 라벨 업데이트
+  const unitName = getActiveCurrencyName();
+  ['lbl-capital-unit','lbl-debt-unit','lbl-income-unit','lbl-expense-unit'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = unitName;
+  });
+  const netU = document.getElementById('netAsset-unit');
+  if (netU) netU.textContent = `단위: ${unitName}`;
+  // 현황탭 재정 라벨 단위 업데이트
+  const ovLabels = [
+    ['ov-lbl-capital', `자본 (보유) — ${unitName}`],
+    ['ov-lbl-income',  `월 수입 — ${unitName}`],
+    ['ov-lbl-expense', `월 지출 — ${unitName}`],
+  ];
+  ovLabels.forEach(([id, text]) => { const e = document.getElementById(id); if(e) e.textContent = text; });
+}
+
+function setCurrency(name) {
+  const cur = (state.currencies||[]).find(c => c.name === name);
+  if (!cur) return;
+  activeCurrency = (cur.silverRate === '1') ? null : cur;
+  buildCurrencyToggles();
+  applyFields();
+  calcTotal();
+  renderDebt();
+  renderIncomeItems();
+  calcBuildingFinance();
+  renderDashboard();
+}
+
+// ──────────────────────────────────────────────
+//  회계 계산
+// ──────────────────────────────────────────────
+function calcTotal() {
+  const cap  = parseNum(state.capital);
+  const debt = parseNum(state.debtTotal);
+  const net  = cap - debt;
+  const dispNet = silverToDisplay(net);
+  const el   = document.getElementById('netAsset');
+  if (el) {
+    el.textContent = formatNum(dispNet);
+    el.style.color = net < 0 ? 'var(--red-ink)' : net === 0 ? 'var(--ink)' : '#2e6b2e';
+  }
+  // 현황 탭 동기
+  const setOv = (id, silverVal) => { const e = document.getElementById(id); if(e) e.value = formatNum(silverToDisplay(parseNum(silverVal))); };
+  setOv('ov-capital',  state.capital || '0');
+  setOv('ov-debt',     state.debtTotal || '0');
+  setOv('ov-income',   state.monthIncome || '0');
+  setOv('ov-expense',  state.monthExpense || '0');
+}
+
+// 입력 시 현재 단위 → 은화 환산 저장
+function onCapitalInput(val) {
+  const silver = displayToSilver(parseNum(val));
+  state.capital = String(silver);
+  calcTotal(); autosave();
+}
+function onIncomeInput(val) {
+  const silver = displayToSilver(parseNum(val));
+  state.monthIncome = String(silver);
+  calcTotal(); autosave();
+}
+function onExpenseInput(val) {
+  const silver = displayToSilver(parseNum(val));
+  state.monthExpense = String(silver);
+  calcTotal(); autosave();
+}
+
+function parseNum(s) {
+  if (!s) return 0;
+  return parseFloat(String(s).replace(/[^0-9.\-]/g,'')) || 0;
+}
+function formatNum(n) {
+  if (n === undefined || n === null || isNaN(n)) return '0';
+  // 소수점 4자리까지, 불필요한 0 제거
+  const rounded = Math.round(n * 10000) / 10000;
+  return rounded.toLocaleString('ko-KR', {maximumFractionDigits:4});
+}
+
+function passMonth() {
+  if (!confirm('1달을 경과시키겠습니까?\n수입/지출이 자본에 반영되고 각 부채에 이자가 누적됩니다.\n자원 생산 건물의 산출물이 자원탭에 추가됩니다.\n이번 달 거래 로그는 회계 기록으로 이전됩니다.')) return;
+  collectFields();
+  const income  = parseNum(state.monthIncome);
+  const expense = parseNum(state.monthExpense);
+  let cap = parseNum(state.capital);
+
+  // 수익 항목 합산 반영
+  const incomeItemTotal = (state.incomeItems||[]).reduce((a,it) => a + parseNum(it.amount||'0'), 0);
+  const totalIncome = income + incomeItemTotal;
+  cap += totalIncome - expense;
+
+  // 이자 처리
+  let totalInterest = 0;
+  state.debts = (state.debts||[]).map(d => {
+    const interest = parseNum(d.interest||'0');
+    if (interest > 0) {
+      d.accruedInterest = String(parseNum(d.accruedInterest||'0') + interest);
+      totalInterest += interest;
+    }
+    return d;
+  });
+  if (totalInterest > 0) cap -= totalInterest;
+
+  // 부채 합계 재계산
+  const newDebt = (state.debts||[]).reduce((a,d) => a + parseNum(d.amount) + parseNum(d.accruedInterest||'0'), 0);
+  state.capital   = String(cap);
+  state.debtTotal = String(newDebt);
+
+  // ─ 자원 생산 건물 처리 ─
+  const prodLogs = [];
+  (state.buildings||[]).forEach(b => {
+    if ((b.category||'base')!=='resource') return;
+    if (b.status==='손상'||b.status==='파손'||b.status==='방치됨') return;
+    (b.productions||[]).forEach(p => {
+      const res = (state.resources||[]).find(r=>r.name===p.resName);
+      if (!res) return;
+      const amt = parseFloat(p.amount)||0;
+      res.value = String(parseFloat(res.value||'0') + amt);
+      prodLogs.push(`${b.name} → ${p.resName} +${amt}${p.unit||'개'}`);
+    });
+  });
+
+  // ─ 거래 로그 → ledgerHistory 이전 후 초기화 ─
+  const tradeLogs = state.tradeLog || [];
+  const tradeLogMsgs = tradeLogs.map(l=>l.msg);
+  state.tradeLog = [];
+
+  const logMsg = `[${state.currentDate||'?'}] 월 경과 — 정기수입 ${formatNum(income)}, 수익항목 ${formatNum(incomeItemTotal)}, 지출 ${formatNum(expense)}, 이자 ${formatNum(totalInterest)} → 자본 ${formatNum(cap)} / 부채 ${formatNum(newDebt)} 은화`;
+  const prodMsg = prodLogs.length ? `[${state.currentDate||'?'}] 자원 생산 — ${prodLogs.join(' / ')}` : null;
+  const newHistory = [logMsg];
+  if (prodMsg) newHistory.push(prodMsg);
+  newHistory.push(...tradeLogMsgs);
+  state.ledgerHistory = [...newHistory, ...(state.ledgerHistory||[])].slice(0, 60);
+
+  applyFields();
+  renderResources();
+  renderDebt();
+  renderLedgerLog();
+  calcTotal();
+  renderDashboard();
+  autosave();
+}
+
+// ──────────────────────────────────────────────
+//  렌더
+// ──────────────────────────────────────────────
+function render() {
+  applyFields();
+  renderResources();
+  renderBuildings();
+  renderNPCs();
+  renderQuests();
+  renderLogs();
+  renderSpecialNotes();
+  renderInventory();
+  renderDebt();
+  renderIncomeItems();
+  renderLedgerLog();
+  renderCurrencies();
+  renderPrices();
+  renderWorldMemos();
+  renderDashboard();
+  renderTradeLog();
+  calcTotal();
+  buildCurrencyToggles();
+  calcBuildingFinance();
+}
+
+function renderDashboard() {
+  // 재정 — 단위 변환 적용
+  const setOv = (id, silverVal) => { const e = document.getElementById(id); if(e) e.value = formatNum(silverToDisplay(parseNum(silverVal))); };
+  setOv('ov-capital',  state.capital  || '0');
+  setOv('ov-debt',     state.debtTotal|| '0');
+  setOv('ov-income',   state.monthIncome  || '0');
+  setOv('ov-expense',  state.monthExpense || '0');
+
+  // 건물 (핀된 것만)
+  const dashB = document.getElementById('dash-buildings');
+  const dashBC = document.getElementById('dash-bc');
+  if (dashB) {
+    const pinned = (state.buildings||[]).filter(b => b.pinned);
+    dashB.innerHTML = pinned.map(b => {
+      const sc = b.status==='정상'?'s-normal':b.status==='건설중'?'s-build':['손상','파손','약탈당함','방치됨'].includes(b.status)?'s-bad':'s-etc';
+      return `<div class="mini-row"><span class="mr-name">${b.name}</span><span class="mr-sub">${b.level}</span><span class="status-tag ${sc}">${b.status}</span></div>`;
+    }).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">📌 핀 된 건물 없음</div>';
+    if (dashBC) dashBC.textContent = `핀 ${pinned.length}/${(state.buildings||[]).length}`;
+  }
+
+  // 인물 (핀된 것만)
+  const dashN = document.getElementById('dash-npcs');
+  const dashNC = document.getElementById('dash-nc');
+  if (dashN) {
+    const pinned = (state.npcs||[]).filter(n => n.pinned);
+    dashN.innerHTML = pinned.map(n => `
+      <div class="mini-row">
+        <div class="mini-npc-icon">${n.icon||'👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:6px;align-items:baseline"><span class="mr-name">${n.name}</span><span class="mr-sub">${n.role}</span></div>
+          <div style="font-size:10px;color:var(--ink-faded);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.note||''}</div>
+        </div>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">📌 핀 된 인물 없음</div>';
+    if (dashNC) dashNC.textContent = `핀 ${pinned.length}/${(state.npcs||[]).length}`;
+  }
+
+  // 이벤트 — 진행중만
+  const dashQ = document.getElementById('dash-quests');
+  const dashQC = document.getElementById('dash-qc');
+  if (dashQ) {
+    const active = (state.quests||[]).filter(q => q.status==='진행중');
+    dashQ.innerHTML = active.map(q => `
+      <div class="mini-row">
+        <span class="mq-badge mq-진행중">진행중</span>
+        <span class="mr-name">${q.title}</span>
+        <span class="mr-sub">${q.date}</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">진행중인 이벤트 없음</div>';
+    if (dashQC) dashQC.textContent = `${active.length}건`;
+  }
+
+  // 자원
+  const dashR = document.getElementById('dash-resources');
+  if (dashR) {
+    dashR.innerHTML = (state.resources||[]).map(r => `
+      <div class="mini-res"><span>${r.icon}</span><span style="font-size:10px;color:var(--ink-light)">${r.name}</span><span style="font-weight:700">${r.value}</span></div>
+    `).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">자원 없음</div>';
+  }
+}
+
+function renderResources() {
+  const grid = document.getElementById('resourceGrid');
+  if (!grid) return;
+  grid.innerHTML = (state.resources||[]).map((r,i) => `
+    <div class="res-card">
+      <button class="del-btn" onclick="delItem('resources',${i})">✕</button>
+      <span class="res-icon">${r.icon}</span>
+      <span class="res-name-lbl">${r.name}</span>
+      <input class="res-val" type="text" value="${r.value}" oninput="state.resources[${i}].value=this.value;renderDashboard();autosave()">
+      <span class="res-unit">${r.unit}</span>
+      <input class="res-price-in" type="text" value="${r.price||''}" placeholder="단가 (은화)"
+        title="시장 단가 (은화 기준)" oninput="state.resources[${i}].price=this.value;autosave()">
+      <div style="display:flex;gap:4px;justify-content:center;margin-top:6px">
+        <button class="res-adj-btn" onclick="openAdj(${i})">± 조정</button>
+      </div>
+    </div>`).join('');
+  renderTradeLog();
+}
+
+function renderTradeLog() {
+  const wrap = document.getElementById('tradeLogWrap');
+  const list = document.getElementById('tradeLogList');
+  if (!list) return;
+  const logs = state.tradeLog || [];
+  if (wrap) wrap.style.display = logs.length ? '' : 'none';
+  list.innerHTML = logs.map(l =>
+    `<div class="trade-log-row ${l.type==='minus'?'minus':''}">${l.msg}</div>`
+  ).join('');
+}
+
+// 건물 카테고리 전환
+let activeBldCat = 'all';
+function switchBldCat(cat, el) {
+  activeBldCat = cat;
+  document.querySelectorAll('.bld-cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.bld-category-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('bld-category-'+cat).classList.add('active');
+}
+
+const BLD_CAT_LABELS = {base:'거점 시설',profit:'수익 시설',resource:'자원 생산',frontier:'개척지'};
+
+function renderBuildings() {
+  const cats = ['all','base','profit','resource','frontier'];
+  const unit = getActiveCurrencyName();
+
+  // 단위 헤더 업데이트
+  ['bld-income-unit','bld-expense-unit','bld-net-unit'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=unit;});
+
+  cats.forEach(cat => {
+    const tbodyId = 'buildingBody-' + cat;
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    const list = cat==='all'
+      ? (state.buildings||[])
+      : (state.buildings||[]).filter(b=>(b.category||'base')===cat);
+
+    tbody.innerHTML = list.map(b => {
+      const idx = (state.buildings||[]).indexOf(b);
+      const sc = b.status==='정상'?'s-normal':b.status==='건설중'?'s-build':
+        ['손상','파손','약탈당함','방치됨'].includes((b.status||'').trim())?'s-bad':'s-etc';
+      const dispIncome  = formatNum(silverToDisplay(parseNum(b.income||'0')));
+      const dispExpense = formatNum(silverToDisplay(parseNum(b.expense||'0')));
+      const prods = (b.productions||[]);
+      const prodTags = prods.map((p,pi)=>`
+        <span class="prod-tag">${p.resName} +${p.amount}/${p.unit||'개'}/월
+          <button class="prod-tag-del" onclick="delBldProd(${idx},${pi})">✕</button>
+        </span>`).join('');
+      const catOptHtml = Object.entries(BLD_CAT_LABELS).map(([k,v])=>
+        `<option value="${k}"${(b.category||'base')===k?' selected':''}>${v}</option>`).join('');
+      return `
+      <tr>
+        <td style="text-align:center">
+          <button class="tpin ${b.pinned?'pinned':''}" onclick="togglePin('buildings',${idx})" title="현황판에 표시">${b.pinned?'📌':'📍'}</button>
+        </td>
+        ${cat==='all'?`<td contenteditable="true" oninput="state.buildings[${idx}].name=this.innerText;autosave()">${b.name||''}</td>
+        <td><select style="background:transparent;border:1px solid var(--parchment-shadow);font-family:inherit;font-size:11px;padding:2px 4px;outline:none" onchange="state.buildings[${idx}].category=this.value;renderBuildings();autosave()">${catOptHtml}</select></td>`:
+        `<td contenteditable="true" oninput="state.buildings[${idx}].name=this.innerText;autosave()">${b.name||''}</td>`}
+        <td contenteditable="true" oninput="state.buildings[${idx}].level=this.innerText;autosave()">${b.level||''}</td>
+        <td contenteditable="true" oninput="state.buildings[${idx}].status=this.innerText.trim();autosave()" class="${sc}">${b.status||''}</td>
+        <td style="text-align:right">
+          <input class="bld-fin-in bld-income-col" type="text" value="${dispIncome}"
+            oninput="state.buildings[${idx}].income=String(displayToSilver(parseNum(this.value)));calcBuildingFinance();autosave()" title="월 수입 (${unit})">
+        </td>
+        <td style="text-align:right">
+          <input class="bld-fin-in bld-expense-col" type="text" value="${dispExpense}"
+            oninput="state.buildings[${idx}].expense=String(displayToSilver(parseNum(this.value)));calcBuildingFinance();autosave()" title="월 지출 (${unit})">
+        </td>
+        <td class="prod-cell">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px">
+            ${prodTags}
+            <button class="add-btn" style="padding:1px 6px;font-size:10px" onclick="openAddProd(${idx})">＋</button>
+          </div>
+        </td>
+        <td contenteditable="true" oninput="state.buildings[${idx}].note=this.innerText;autosave()">${b.note||''}</td>
+        <td><button class="tdel" onclick="delItem('buildings',${idx})">✕</button></td>
+      </tr>`;
+    }).join('');
+  });
+  calcBuildingFinance();
+}
+
+function calcBuildingFinance() {
+  let totalIn = 0, totalOut = 0;
+  (state.buildings||[]).forEach(b => {
+    totalIn  += parseNum(b.income  || '0');
+    totalOut += parseNum(b.expense || '0');
+  });
+  const net = totalIn - totalOut;
+  const unit = getActiveCurrencyName();
+  const ei = document.getElementById('bld-total-income');
+  const eo = document.getElementById('bld-total-expense');
+  const en = document.getElementById('bld-total-net');
+  if (ei) ei.textContent = formatNum(silverToDisplay(totalIn));
+  if (eo) eo.textContent = formatNum(silverToDisplay(totalOut));
+  if (en) { en.textContent = formatNum(silverToDisplay(net)); en.style.color = net < 0 ? 'var(--red-ink)' : net > 0 ? '#2e6b2e' : 'var(--ink)'; }
+}
+
+// 생산 자원 추가/삭제
+let _prodTargetIdx = -1;
+function openAddProd(bldIdx) {
+  _prodTargetIdx = bldIdx;
+  const resNames = (state.resources||[]).map(r=>r.name);
+  if (resNames.length===0) { alert('자원탭에 자원을 먼저 추가하세요.'); return; }
+  const resName = prompt('생산 자원 선택 (자원명 그대로 입력):\n' + resNames.join(', '));
+  if (!resName) return;
+  const res = (state.resources||[]).find(r=>r.name===resName.trim());
+  if (!res) { alert('해당 자원을 찾을 수 없습니다.'); return; }
+  const amountStr = prompt(`월 생산량 입력 (단위: ${res.unit||'개'}):`, '1');
+  if (!amountStr) return;
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount)||amount<=0) { alert('올바른 수량을 입력하세요.'); return; }
+  if (!state.buildings[bldIdx].productions) state.buildings[bldIdx].productions=[];
+  state.buildings[bldIdx].productions.push({resName:res.name, amount:String(amount), unit:res.unit||'개'});
+  renderBuildings(); autosave();
+}
+function delBldProd(bldIdx, prodIdx) {
+  state.buildings[bldIdx].productions.splice(prodIdx,1);
+  renderBuildings(); autosave();
+}
+
+function applyBuildingFinance() {
+  let totalIn = 0, totalOut = 0;
+  (state.buildings||[]).forEach(b => {
+    totalIn  += parseNum(b.income  || '0');
+    totalOut += parseNum(b.expense || '0');
+  });
+  // 독립 누적: 건물 반영분만 교체 후 전체 월 수입/지출 재계산
+  state.buildingIncome  = String(totalIn);
+  state.buildingExpense = String(totalOut);
+  const incomeApplied = parseNum(state.incomeApplied || '0');
+  state.monthIncome  = String(totalIn + incomeApplied);
+  state.monthExpense = String(totalOut);
+  applyFields(); calcTotal(); autosave();
+  alert(`건물 합산 반영 완료!\n월 수입(건물): ${formatNum(silverToDisplay(totalIn))} ${getActiveCurrencyName()}\n월 지출(건물): ${formatNum(silverToDisplay(totalOut))} ${getActiveCurrencyName()}\n\n※ 수익 항목과 합산되어 월 수입에 적용됩니다.`);
+}
+
+function renderNPCs() {
+  const tbody = document.getElementById('npcBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.npcs||[]).map((n,i) => `
+    <tr>
+      <td style="text-align:center">
+        <button class="tpin ${n.pinned?'pinned':''}" onclick="togglePin('npcs',${i})" title="현황판에 표시">${n.pinned?'📌':'📍'}</button>
+      </td>
+      <td><div class="npc-portrait" contenteditable="true" oninput="state.npcs[${i}].icon=this.innerText;autosave()">${n.icon||'👤'}</div></td>
+      <td contenteditable="true" oninput="state.npcs[${i}].name=this.innerText;autosave()">${n.name}</td>
+      <td contenteditable="true" oninput="state.npcs[${i}].role=this.innerText;autosave()">${n.role}</td>
+      <td contenteditable="true" oninput="state.npcs[${i}].stats=this.innerText;autosave()">${n.stats}</td>
+      <td contenteditable="true" oninput="state.npcs[${i}].note=this.innerText;autosave()" style="max-width:200px">${n.note}</td>
+      <td><button class="tdel" onclick="delItem('npcs',${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderQuests() {
+  const tbody = document.getElementById('questBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.quests||[]).map((q,i) => `
+    <tr>
+      <td>
+        <select onchange="state.quests[${i}].status=this.value;autosave();renderQuests();renderDashboard()"
+          style="background:transparent;border:1px solid currentColor;font-size:11px;padding:2px 4px;font-family:inherit;outline:none;color:${
+            q.status==='진행중'?'var(--gold)':q.status==='완료'?'#3a7a3a':q.status==='실패'?'var(--red-ink)':'var(--ink-light)'}">
+          ${['진행중','완료','대기','실패'].map(s=>`<option${s===q.status?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td contenteditable="true" oninput="state.quests[${i}].title=this.innerText;autosave()" style="font-weight:600">${q.title}</td>
+      <td contenteditable="true" oninput="state.quests[${i}].date=this.innerText;autosave()">${q.date}</td>
+      <td contenteditable="true" oninput="state.quests[${i}].desc=this.innerText;autosave()">${q.desc}</td>
+      <td contenteditable="true" oninput="state.quests[${i}].reward=this.innerText;autosave()">${q.reward}</td>
+      <td><button class="tdel" onclick="delItem('quests',${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderLogs() {
+  const list = document.getElementById('logList');
+  if (!list) return;
+  list.innerHTML = (state.logs||[]).map((l,i) => `
+    <div class="log-entry">
+      <div class="log-hd">
+        <span style="font-size:11px;color:var(--ink-light);font-style:italic">날짜</span>
+        <input class="log-date-in" type="text" value="${l.date||''}" onchange="state.logs[${i}].date=this.value;autosave()">
+        <button class="log-del" onclick="delItem('logs',${i})">✕</button>
+      </div>
+      <textarea class="log-notes" oninput="state.logs[${i}].notes=this.value;autosave()">${l.notes||''}</textarea>
+    </div>`).join('');
+}
+
+function renderSpecialNotes() {
+  const el = document.getElementById('specialNotes');
+  if (!el) return;
+  el.innerHTML = (state.specialNotes||[]).map((n,i) => `
+    <div class="snote-wrap">
+      <div class="snote" contenteditable="true" oninput="state.specialNotes[${i}]=this.innerText;autosave()">${n}</div>
+      <button class="snote-del" onclick="delSpecialNote(${i})" title="삭제">✕</button>
+    </div>`).join('');
+}
+
+function renderInventory() {
+  const grid = document.getElementById('invGrid');
+  if (!grid) return;
+  const arr = state.inventory || [];
+  grid.innerHTML = arr.map((item,i) => `
+    <div class="inv-card">
+      <button class="inv-del" onclick="delInvItem(${i})">✕</button>
+      <input class="inv-name" type="text" value="${item.name||''}" placeholder="아이템명" onchange="getInv()[${i}].name=this.value;autosave()">
+      <input class="inv-type" type="text" value="${item.type||''}" placeholder="종류 (아티팩트 / 도구 / 문서 ...)" onchange="getInv()[${i}].type=this.value;autosave()">
+      <textarea class="inv-desc" placeholder="설명, 효과, 입수 경위 등..." onchange="getInv()[${i}].desc=this.value;autosave()">${item.desc||''}</textarea>
+    </div>`).join('');
+}
+
+function getInv() { if (!state.inventory) state.inventory=[]; return state.inventory; }
+
+function renderDebt() {
+  const tbody = document.getElementById('debtBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.debts||[]).map((d,i) => {
+    const principal = parseNum(d.amount);
+    const accrued   = parseNum(d.accruedInterest||'0');
+    const dispP = formatNum(silverToDisplay(principal));
+    const dispA = formatNum(silverToDisplay(accrued));
+    const unit  = getActiveCurrencyName();
+    return `
+    <tr>
+      <td contenteditable="true" oninput="state.debts[${i}].name=this.innerText;autosave()">${d.name||''}</td>
+      <td>
+        <input type="text" value="${dispP}" style="width:80px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;outline:none"
+          oninput="state.debts[${i}].amount=String(displayToSilver(parseNum(this.value)));recalcDebt();autosave()">
+        <span style="font-size:10px;color:var(--ink-light)">${unit}</span>
+      </td>
+      <td style="color:var(--red-ink);font-size:12px">${dispA} <span style="font-size:10px;color:var(--ink-light)">${unit}</span></td>
+      <td>
+        <input type="text" value="${formatNum(silverToDisplay(parseNum(d.interest||'0')))}" style="width:70px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;outline:none"
+          oninput="state.debts[${i}].interest=String(displayToSilver(parseNum(this.value)));autosave()">
+        <span style="font-size:10px;color:var(--ink-light)">${unit}</span>
+      </td>
+      <td contenteditable="true" oninput="state.debts[${i}].due=this.innerText;autosave()">${d.due||''}</td>
+      <td contenteditable="true" oninput="state.debts[${i}].note=this.innerText;autosave()">${d.note||''}</td>
+      <td><button class="repay-btn" onclick="openRepayModal(${i})">상환</button></td>
+      <td><button class="tdel" onclick="delDebt(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function recalcDebt() {
+  const total = (state.debts||[]).reduce((a,d) => a + parseNum(d.amount) + parseNum(d.accruedInterest||'0'), 0);
+  state.debtTotal = String(total);
+  const el = document.getElementById('debtTotal');
+  if (el) el.value = formatNum(silverToDisplay(total));
+  calcTotal();
+}
+
+function renderLedgerLog() {
+  const el = document.getElementById('ledgerLog');
+  if (!el) return;
+  el.innerHTML = (state.ledgerHistory||[]).map(l => `<div class="ledger-log-row">${l}</div>`).join('');
+}
+
+function renderCurrencies() {
+  const tbody = document.getElementById('currencyBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.currencies||[]).map((c,i) => `
+    <tr>
+      <td><input type="text" value="${c.name||''}" onchange="state.currencies[${i}].name=this.value;buildCurrencyToggles();renderCurrencyRef();autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><input type="text" value="${c.unit||''}" onchange="state.currencies[${i}].unit=this.value;buildCurrencyToggles();autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><input type="text" value="${c.silverRate||''}" onchange="state.currencies[${i}].silverRate=this.value;buildCurrencyToggles();renderCurrencyRef();autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none" placeholder="예) 10, 1, 0.1"></td>
+      <td><input type="text" value="${c.note||''}" onchange="state.currencies[${i}].note=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><button class="tdel" onclick="delCurrency(${i})">✕</button></td>
+    </tr>`).join('');
+  renderCurrencyRef();
+  buildCurrencyToggles();
+}
+
+function renderCurrencyRef() {
+  const el = document.getElementById('currencyRef');
+  if (!el) return;
+  const lines = (state.currencies||[]).map(c => {
+    const r = parseFloat(c.silverRate);
+    let rel = '';
+    if (r > 0) {
+      if (r >= 1) rel = `${c.unit} 1개 = 은화 ${r}개`;
+      else rel = `은화 1개 = ${c.unit} ${roundTo4(1/r)}개`;
+    }
+    return `${c.name} (${c.unit}) — ${rel}${c.note ? ' | ' + c.note : ''}`;
+  });
+  el.innerHTML = '<b>화폐 요약 (기준: 1 제국 은화)</b><br>' + lines.join('<br>');
+}
+
+function renderPrices() {
+  const tbody = document.getElementById('priceBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.prices||[]).map((p,i) => `
+    <tr>
+      <td><input type="text" value="${p.item||''}" onchange="state.prices[${i}].item=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><input type="text" value="${p.price||''}" onchange="state.prices[${i}].price=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><input type="text" value="${p.realValue||''}" onchange="state.prices[${i}].realValue=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><input type="text" value="${p.note||''}" onchange="state.prices[${i}].note=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><button class="tdel" onclick="delPrice(${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderWorldMemos() {
+  const set = (id, key) => { const e = document.getElementById(id); if(e) e.value = state[key]||''; };
+  set('world-empire','worldEmpire');
+  set('world-kingdom','worldKingdom');
+  set('world-misc','worldMisc');
+}
+
+// ──────────────────────────────────────────────
+//  추가/삭제
+// ──────────────────────────────────────────────
+function togglePin(arr, idx) {
+  state[arr][idx].pinned = !state[arr][idx].pinned;
+  if (arr==='buildings') renderBuildings();
+  else if (arr==='npcs') renderNPCs();
+  renderDashboard();
+  autosave();
+}
+
+function delItem(arr, idx) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  state[arr].splice(idx, 1);
+  render();
+  autosave();
+}
+
+function delSpecialNote(idx) { state.specialNotes.splice(idx,1); renderSpecialNotes(); autosave(); }
+function addSpecialNote() { state.specialNotes.push('※ '); renderSpecialNotes(); autosave(); }
+function addBuilding() {
+  state.buildings.push({name:'새 건물',category:'base',level:'1등급',status:'건설중',note:'',income:'0',expense:'0',pinned:false,productions:[]});
+  renderBuildings(); autosave();
+}
+function addDebt() {
+  if(!state.debts) state.debts=[];
+  state.debts.push({name:'새 부채',amount:'0',accruedInterest:'0',interest:'0',due:'',note:''});
+  renderDebt(); autosave();
+}
+function addNPC() { state.npcs.push({icon:'👤',name:'이름',role:'직책',stats:'—',note:'',pinned:false}); renderNPCs(); autosave(); }
+function addQuest() { state.quests.push({status:'대기',title:'새 이벤트',date:state.currentDate,desc:'',reward:''}); renderQuests(); autosave(); }
+function addLog() { state.logs.unshift({date:(state.currentDate||'')+'',notes:''}); renderLogs(); autosave(); }
+function addItem() { if(!state.inventory) state.inventory=[]; state.inventory.push({name:'',type:'',desc:''}); renderInventory(); autosave(); }
+function delInvItem(idx) { if(!confirm('삭제?')) return; getInv().splice(idx,1); renderInventory(); autosave(); }
+function addIncomeItem() { if(!state.incomeItems) state.incomeItems=[]; state.incomeItems.push({name:'',amount:'0',note:''}); renderIncomeItems(); autosave(); }
+function delIncomeItem(idx) { if(!confirm('삭제?')) return; state.incomeItems.splice(idx,1); renderIncomeItems(); autosave(); }
+
+function renderIncomeItems() {
+  const tbody = document.getElementById('incomeBody');
+  if (!tbody) return;
+  const unit = getActiveCurrencyName();
+  tbody.innerHTML = (state.incomeItems||[]).map((it,i) => `
+    <tr>
+      <td contenteditable="true" oninput="state.incomeItems[${i}].name=this.innerText;autosave()">${it.name||''}</td>
+      <td>
+        <input type="text" value="${formatNum(silverToDisplay(parseNum(it.amount||'0')))}"
+          style="width:80px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;outline:none"
+          oninput="state.incomeItems[${i}].amount=String(displayToSilver(parseNum(this.value)));calcIncomeItemTotal();autosave()">
+        <span style="font-size:10px;color:var(--ink-light)">${unit}</span>
+      </td>
+      <td contenteditable="true" oninput="state.incomeItems[${i}].note=this.innerText;autosave()">${it.note||''}</td>
+      <td><button class="tdel" onclick="delIncomeItem(${i})">✕</button></td>
+    </tr>`).join('');
+  calcIncomeItemTotal();
+}
+
+function calcIncomeItemTotal() {
+  const total = (state.incomeItems||[]).reduce((a,it) => a + parseNum(it.amount||'0'), 0);
+  const el = document.getElementById('income-item-total');
+  const unitEl = document.getElementById('income-item-total-unit');
+  if (el) el.textContent = formatNum(silverToDisplay(total));
+  if (unitEl) unitEl.textContent = getActiveCurrencyName();
+}
+
+function applyIncomeItems() {
+  const total = (state.incomeItems||[]).reduce((a,it) => a + parseNum(it.amount||'0'), 0);
+  // 독립 누적: 수익항목 반영분만 교체 후 전체 월 수입 재계산
+  state.incomeApplied = String(total);
+  const buildingIncome = parseNum(state.buildingIncome || '0');
+  state.monthIncome = String(total + buildingIncome);
+  applyFields(); calcTotal(); autosave();
+  alert(`수익 항목 합산 반영 완료!\n월 수입(수익항목): ${formatNum(silverToDisplay(total))} ${getActiveCurrencyName()}\n\n※ 건물 수입과 합산되어 월 수입에 적용됩니다.`);
+}
+function delDebt(idx) { if(!confirm('삭제?')) return; state.debts.splice(idx,1); recalcDebt(); renderDebt(); autosave(); }
+function addCurrency() { state.currencies.push({name:'',unit:'',silverRate:'1',note:''}); renderCurrencies(); autosave(); }
+function delCurrency(idx) { state.currencies.splice(idx,1); renderCurrencies(); autosave(); }
+function addPrice() { state.prices.push({item:'',price:'',realValue:'',note:''}); renderPrices(); autosave(); }
+function delPrice(idx) { state.prices.splice(idx,1); renderPrices(); autosave(); }
+
+// ──────────────────────────────────────────────
+//  자원 모달
+// ──────────────────────────────────────────────
+function openResModal() {
+  // 폼 초기화
+  document.getElementById('mIcon').value = '📦';
+  document.getElementById('mName').value = '';
+  document.getElementById('mUnit').value = '';
+  document.getElementById('mValue').value = '0';
+  document.getElementById('resModal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+
+// ──────────────────────────────────────────────
+//  🏪 시장
+// ──────────────────────────────────────────────
+let mktMode = 'buy';   // 'buy' | 'sell'
+let mktSelIdx = -1;    // 선택된 자원 인덱스
+
+function openMarket() {
+  mktMode = 'buy';
+  mktSelIdx = -1;
+  document.getElementById('mkt-buy-btn').classList.add('active');
+  document.getElementById('mkt-sell-btn').classList.remove('active');
+  document.getElementById('mkt-confirm-btn').style.display='none';
+  document.getElementById('mkt-input-section').style.display='none';
+  renderMarketCapital();
+  renderMarketResList();
+  document.getElementById('marketOverlay').classList.add('open');
+}
+
+function renderMarketCapital() {
+  const unit = getActiveCurrencyName();
+  const cap = silverToDisplay(parseNum(state.capital||'0'));
+  const el = document.getElementById('mkt-capital-display');
+  const uel = document.getElementById('mkt-capital-unit');
+  if (el) el.textContent = formatNum(cap);
+  if (uel) uel.textContent = unit;
+}
+
+function setMarketMode(mode) {
+  mktMode = mode;
+  mktSelIdx = -1;
+  document.getElementById('mkt-buy-btn').classList.toggle('active', mode==='buy');
+  document.getElementById('mkt-sell-btn').classList.toggle('active', mode==='sell');
+  document.getElementById('mkt-confirm-btn').style.display='none';
+  document.getElementById('mkt-confirm-btn').className = `mkt-btn ${mode==='buy'?'buy':''}`;
+  document.getElementById('mkt-confirm-btn').textContent = mode==='buy'?'🛒 구매':'💸 판매';
+  document.getElementById('mkt-input-section').style.display='none';
+  renderMarketResList();
+}
+
+function renderMarketResList() {
+  const el = document.getElementById('mkt-res-list');
+  if (!el) return;
+  const unit = getActiveCurrencyName();
+  el.innerHTML = (state.resources||[]).map((r,i) => {
+    const price = parseNum(r.price||'0');
+    const dispPrice = price>0 ? `단가: ${formatNum(silverToDisplay(price))} ${unit}` : '단가 미설정';
+    return `<div class="mkt-res-row ${mktSelIdx===i?'selected':''}" onclick="selectMarketRes(${i})">
+      <span class="mkt-res-icon">${r.icon}</span>
+      <div class="mkt-res-info">
+        <div class="mkt-res-name">${r.name}</div>
+        <div class="mkt-res-stock">보유: ${r.value} ${r.unit||'개'}</div>
+      </div>
+      <div class="mkt-res-price">${dispPrice}</div>
+    </div>`;
+  }).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic;padding:8px">자원이 없습니다. 자원탭에서 먼저 추가하세요.</div>';
+}
+
+function selectMarketRes(idx) {
+  const r = (state.resources||[])[idx];
+  if (!r) return;
+  const price = parseNum(r.price||'0');
+  if (price<=0) { alert(`"${r.name}"의 단가가 설정되어 있지 않습니다.\n자원탭의 카드에서 단가를 먼저 입력해주세요.`); return; }
+  mktSelIdx = idx;
+  renderMarketResList();
+  const unit = getActiveCurrencyName();
+  document.getElementById('mkt-unit-price').value = formatNum(silverToDisplay(price));
+  document.getElementById('mkt-price-unit').textContent = unit;
+  document.getElementById('mkt-qty-unit').textContent = r.unit||'개';
+  document.getElementById('mkt-qty').value = '1';
+  document.getElementById('mkt-input-section').style.display='';
+  const confirmBtn = document.getElementById('mkt-confirm-btn');
+  confirmBtn.style.display='';
+  confirmBtn.className = `mkt-btn ${mktMode==='buy'?'buy':''}`;
+  confirmBtn.textContent = mktMode==='buy'?'🛒 구매':'💸 판매';
+  calcMarketTotal();
+}
+
+function calcMarketTotal() {
+  if (mktSelIdx<0) return;
+  const r = (state.resources||[])[mktSelIdx];
+  if (!r) return;
+  const price = parseNum(r.price||'0');
+  const qty   = Math.max(0, parseFloat(document.getElementById('mkt-qty').value)||0);
+  const total = price * qty;
+  const unit  = getActiveCurrencyName();
+  const capSilver = parseNum(state.capital||'0');
+  const dispTotal = formatNum(silverToDisplay(total));
+  document.getElementById('mkt-total-cost').textContent = dispTotal;
+  document.getElementById('mkt-total-unit').textContent = unit;
+  if (mktMode==='buy') {
+    const afterCap = silverToDisplay(capSilver - total);
+    document.getElementById('mkt-after-capital').textContent = `거래 후 자본: ${formatNum(afterCap)} ${unit}`;
+    document.getElementById('mkt-after-capital').style.color = capSilver - total < 0 ? 'var(--red-ink)' : 'var(--ink-faded)';
+  } else {
+    const afterCap = silverToDisplay(capSilver + total);
+    document.getElementById('mkt-after-capital').textContent = `거래 후 자본: ${formatNum(afterCap)} ${unit}`;
+    document.getElementById('mkt-after-capital').style.color = '#2e6b2e';
+  }
+}
+
+function confirmMarket() {
+  if (mktSelIdx<0) return;
+  const r = state.resources[mktSelIdx];
+  const price = parseNum(r.price||'0');
+  const qty   = Math.max(0, parseFloat(document.getElementById('mkt-qty').value)||0);
+  if (qty<=0) { alert('수량을 1 이상 입력하세요.'); return; }
+  const totalSilver = price * qty;
+  const capSilver   = parseNum(state.capital||'0');
+  const unit = getActiveCurrencyName();
+
+  if (mktMode==='buy') {
+    if (totalSilver > capSilver) { alert(`자본이 부족합니다.\n필요: ${formatNum(silverToDisplay(totalSilver))} ${unit}\n보유: ${formatNum(silverToDisplay(capSilver))} ${unit}`); return; }
+    const newVal = parseFloat(r.value||'0') + qty;
+    r.value = String(newVal);
+    state.capital = String(capSilver - totalSilver);
+    const msg = `[${state.currentDate||'?'}] 🛒 구매 — ${r.name} ${qty}${r.unit||'개'} (${formatNum(silverToDisplay(totalSilver))} ${unit} 지출)`;
+    pushTradeLog(msg, 'minus');
+  } else {
+    const curVal = parseFloat(r.value||'0');
+    if (qty > curVal) { alert(`보유량이 부족합니다.\n보유: ${curVal}${r.unit||'개'}`); return; }
+    r.value = String(curVal - qty);
+    state.capital = String(capSilver + totalSilver);
+    const msg = `[${state.currentDate||'?'}] 💸 판매 — ${r.name} ${qty}${r.unit||'개'} (${formatNum(silverToDisplay(totalSilver))} ${unit} 수령)`;
+    pushTradeLog(msg, 'plus');
+  }
+  applyFields(); calcTotal(); renderResources(); renderDashboard(); autosave();
+  renderMarketCapital();
+  renderMarketResList();
+  document.getElementById('mkt-input-section').style.display='none';
+  document.getElementById('mkt-confirm-btn').style.display='none';
+  mktSelIdx = -1;
+}
+
+// ──────────────────────────────────────────────
+//  ± 자원 수동 조정
+// ──────────────────────────────────────────────
+let _adjResIdx = -1;
+function openAdj(idx) {
+  _adjResIdx = idx;
+  const r = state.resources[idx];
+  document.getElementById('adj-title').textContent = `${r.icon} ${r.name} 조정`;
+  document.getElementById('adj-current').textContent = r.value;
+  document.getElementById('adj-unit').textContent = r.unit||'개';
+  document.getElementById('adj-dir').value = 'plus';
+  document.getElementById('adj-qty').value = '1';
+  document.getElementById('adj-reason').value = '';
+  document.getElementById('adjOverlay').classList.add('open');
+}
+function confirmAdj() {
+  if (_adjResIdx<0) return;
+  const r = state.resources[_adjResIdx];
+  const dir    = document.getElementById('adj-dir').value;
+  const qty    = parseFloat(document.getElementById('adj-qty').value)||0;
+  const reason = document.getElementById('adj-reason').value.trim()||'사유 없음';
+  if (qty<=0) { alert('수량을 1 이상 입력하세요.'); return; }
+  const cur = parseFloat(r.value||'0');
+  if (dir==='minus' && qty>cur) { alert(`보유량(${cur})보다 많이 감소시킬 수 없습니다.`); return; }
+  r.value = String(dir==='plus' ? cur+qty : cur-qty);
+  const sign = dir==='plus' ? '+' : '-';
+  const msg = `[${state.currentDate||'?'}] ${dir==='plus'?'📥':'📤'} ${r.name} ${sign}${qty}${r.unit||'개'} — ${reason}`;
+  pushTradeLog(msg, dir==='minus'?'minus':'plus');
+  renderResources(); renderDashboard(); autosave();
+  closeOverlay('adjOverlay');
+}
+
+function pushTradeLog(msg, type) {
+  if (!state.tradeLog) state.tradeLog=[];
+  state.tradeLog.push({msg, type, date:Date.now()});
+  renderTradeLog();
+}
+
+document.getElementById('marketOverlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeOverlay('marketOverlay');});
+document.getElementById('adjOverlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeOverlay('adjOverlay');});
+
+let repayTargetIdx = -1;
+function openRepayModal(idx) {
+  repayTargetIdx = idx;
+  const d = state.debts[idx];
+  const principal = parseNum(d.amount);
+  const accrued   = parseNum(d.accruedInterest||'0');
+  const unit = getActiveCurrencyName();
+  document.getElementById('repay-debt-name').textContent = `항목: ${d.name || '(이름 없음)'}`;
+  document.getElementById('repay-debt-remain').innerHTML =
+    `원금: ${formatNum(silverToDisplay(principal))} ${unit} &nbsp;|&nbsp; 누적 이자: <span style="color:var(--red-ink)">${formatNum(silverToDisplay(accrued))} ${unit}</span><br>합계: ${formatNum(silverToDisplay(principal+accrued))} ${unit}`;
+  document.getElementById('repayAmount').value = '0';
+  document.getElementById('repayModal').classList.add('open');
+}
+function confirmRepay() {
+  const idx = repayTargetIdx;
+  if (idx < 0 || idx >= (state.debts||[]).length) return;
+  const amount = parseNum(document.getElementById('repayAmount').value);
+  if (amount <= 0) { alert('상환 금액을 입력하세요.'); return; }
+
+  const curCap = parseNum(state.capital);
+  if (amount > curCap) {
+    if (!confirm(`⚠️ 보유 자본(${formatNum(silverToDisplay(curCap))} ${getActiveCurrencyName()})이 부족합니다.\n최대 상환 가능액으로 진행하시겠습니까?`)) return;
+  }
+
+  const d = state.debts[idx];
+  // 입력이 현재 단위 기준이면 은화로 변환
+  const amountSilver = displayToSilver(amount);
+  const principal   = parseNum(d.amount);
+  const accrued     = parseNum(d.accruedInterest||'0');
+  const totalDebt   = principal + accrued;
+  const actualRepay = Math.min(amountSilver, Math.min(curCap, totalDebt));
+
+  // 누적이자 먼저 차감, 이후 원금 차감
+  let remaining = actualRepay;
+  const newAccrued = Math.max(0, accrued - remaining);
+  remaining = Math.max(0, remaining - accrued);
+  const newPrincipal = Math.max(0, principal - remaining);
+
+  state.capital = String(curCap - actualRepay);
+  d.amount = String(newPrincipal);
+  d.accruedInterest = String(newAccrued);
+
+  const logMsg = `[${state.currentDate||'?'}] 상환 — "${d.name||'부채'}" ${formatNum(silverToDisplay(actualRepay))} ${getActiveCurrencyName()} 상환 → 잔여 원금 ${formatNum(silverToDisplay(newPrincipal))}, 미납이자 ${formatNum(silverToDisplay(newAccrued))} ${getActiveCurrencyName()}`;
+  state.ledgerHistory = [logMsg, ...(state.ledgerHistory||[])].slice(0, 30);
+
+  if (newPrincipal <= 0 && newAccrued <= 0) {
+    state.debts.splice(idx, 1);
+    alert(`"${d.name||'부채'}" 완전 상환 완료! 부채 항목이 삭제되었습니다.`);
+  }
+  recalcDebt();
+  renderDebt();
+  renderLedgerLog();
+  applyFields();
+  calcTotal();
+  autosave();
+  closeModal('repayModal');
+}
+document.getElementById('repayModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal('repayModal'); });
+function confirmRes() {
+  if (!state.resources) state.resources=[];
+  state.resources.push({
+    icon:document.getElementById('mIcon').value||'📦',
+    name:document.getElementById('mName').value||'자원',
+    unit:document.getElementById('mUnit').value||'',
+    value:document.getElementById('mValue').value||'0',
+    price:''
+  });
+  renderResources(); renderDashboard(); autosave(); closeModal('resModal');
+}
+document.getElementById('resModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal('resModal'); });
+
+// ──────────────────────────────────────────────
+//  필드 수집/적용
+// ──────────────────────────────────────────────
+function collectFields() {
+  state.domainTitle  = document.getElementById('domainTitle').innerText;
+  state.lordName     = document.getElementById('lordName').value;
+  state.currentDate  = document.getElementById('currentDate').value;
+  state.domainRank   = document.getElementById('domainRank').value;
+  // capital/debtTotal/monthIncome/monthExpense는 onInput에서 은화 기준으로 이미 state에 저장됨
+  state.worldEmpire  = document.getElementById('world-empire')?.value || state.worldEmpire;
+  state.worldKingdom = document.getElementById('world-kingdom')?.value || state.worldKingdom;
+  state.worldMisc    = document.getElementById('world-misc')?.value    || state.worldMisc;
+}
+
+function applyFields() {
+  document.getElementById('domainTitle').innerText = state.domainTitle||'';
+  document.getElementById('lordName').value = state.lordName||'';
+  document.getElementById('currentDate').value = state.currentDate||'';
+  document.getElementById('domainRank').value = state.domainRank||'';
+  const disp = v => formatNum(silverToDisplay(parseNum(v)));
+  const setV = (id, silverVal) => { const e=document.getElementById(id); if(e) e.value=disp(silverVal); };
+  setV('capital',      state.capital      || '0');
+  setV('debtTotal',    state.debtTotal    || '0');
+  setV('monthIncome',  state.monthIncome  || '0');
+  setV('monthExpense', state.monthExpense || '0');
+  const setTa = (id, k) => { const e=document.getElementById(id); if(e) e.value=state[k]||''; };
+  setTa('world-empire','worldEmpire');
+  setTa('world-kingdom','worldKingdom');
+  setTa('world-misc','worldMisc');
+}
+
+// ──────────────────────────────────────────────
+//  Firebase
+// ──────────────────────────────────────────────
+let db=null, isSyncing=false;
+
+async function initFirebase() {
+  const configured = FIREBASE_CONFIG.apiKey !== "여기에_apiKey_입력";
+  if (!configured) { setStatus('🔴 Firebase 미설정','error'); loadFromLocal(); return; }
+  try {
+    const {initializeApp} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const {getFirestore,doc,setDoc,onSnapshot} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(app);
+    setStatus('🟡 연결 중...','info');
+    let firstLoad = true;
+    const docRef = doc(db,'domains',DOMAIN_DOC_ID);
+    onSnapshot(docRef, snap => {
+      if (!snap.exists()) { pushToFirebase(); return; }
+      const remote = snap.data();
+      const rt = remote._updatedAt||0, lt = state._updatedAt||0;
+      if (firstLoad || (!isSyncing && rt > lt)) {
+        firstLoad=false; state=remote; applyFields(); render();
+        setStatus(`🟢 불러오기 완료`,'ok');
+        document.getElementById('syncIndicator').textContent='';
+      } else if (isSyncing) {
+        firstLoad=false; setStatus('🟢 저장 완료','ok');
+        document.getElementById('syncIndicator').textContent='';
+      } else { firstLoad=false; }
+    }, err => { console.error(err); setStatus('🔴 Firebase 오류','error'); });
+  } catch(e) { console.error(e); setStatus('🔴 Firebase 로드 실패','error'); loadFromLocal(); }
+}
+
+async function pushToFirebase() {
+  if (!db) { saveToLocal(); return; }
+  try {
+    isSyncing=true; collectFields();
+    const {getFirestore,doc,setDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    state._updatedAt=Date.now();
+    await setDoc(doc(db,'domains',DOMAIN_DOC_ID), state);
+    setStatus('🟢 저장 완료','ok');
+  } catch(e) { console.error(e); setStatus('🔴 저장 실패','error'); }
+  finally { setTimeout(()=>{isSyncing=false;},500); }
+  localStorage.setItem('domainLedger', JSON.stringify(state));
+}
+
+function setStatus(msg,type) {
+  const el=document.getElementById('saveStatus'); if(!el) return;
+  el.textContent=msg;
+  el.style.color=type==='error'?'var(--red-ink)':type==='ok'?'#3a7a3a':'var(--gold)';
+}
+
+let autosaveTimer;
+function autosave() {
+  clearTimeout(autosaveTimer);
+  document.getElementById('syncIndicator').textContent='입력 중...';
+  autosaveTimer=setTimeout(()=>pushToFirebase(),1500);
+}
+
+function saveToLocal() {
+  collectFields(); localStorage.setItem('domainLedger', JSON.stringify(state));
+  setStatus('💾 로컬 저장','info');
+}
+
+function loadFromLocal() {
+  const s=localStorage.getItem('domainLedger');
+  if(s){try{state=JSON.parse(s);}catch{}}
+  render();
+}
+
+function saveToFile() {
+  collectFields();
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`${state.domainTitle||'영지'}_${(state.currentDate||'').replace(/\s/g,'_')}.json`; a.click();
+}
+
+function loadFromFile(event) {
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const loaded = JSON.parse(e.target.result);
+      // 구버전 호환: items → inventory, rate → silverRate
+      if (!loaded.inventory && loaded.items) loaded.inventory = loaded.items;
+      if (!loaded.inventory) loaded.inventory = [];
+      if (!loaded.debts) loaded.debts = [];
+      if (!loaded.incomeItems) loaded.incomeItems = [];
+      if (!loaded.ledgerHistory) loaded.ledgerHistory = [];
+      if (!loaded.currencies) loaded.currencies = [];
+      else loaded.currencies = loaded.currencies.map(c => {
+        if (!c.silverRate && c.rate && c.rate !== '—') c.silverRate = c.rate;
+        if (!c.silverRate) c.silverRate = '1';
+        return c;
+      });
+      if (!loaded.prices) loaded.prices = [];
+      if (loaded.buildings) loaded.buildings = loaded.buildings.map(b => ({income:'0',expense:'0',category:'base',productions:[],...b}));
+      // debts 구버전: accruedInterest 없으면 초기화
+      loaded.debts = loaded.debts.map(d => ({accruedInterest:'0',...d}));
+      if (!loaded.tradeLog) loaded.tradeLog = [];
+      if (!loaded.buildingIncome) loaded.buildingIncome = '0';
+      if (!loaded.buildingExpense) loaded.buildingExpense = '0';
+      if (!loaded.incomeApplied) loaded.incomeApplied = '0';
+      // 자원에 price 필드 없으면 초기화
+      if (loaded.resources) loaded.resources = loaded.resources.map(r=>({price:'',...r}));
+      delete loaded.items;
+      state = loaded;
+      applyFields(); render(); pushToFirebase();
+      document.getElementById('syncIndicator').textContent=`"${file.name}" 불러오기 완료`;
+    } catch { alert('파일 형식 오류'); }
+  };
+  reader.readAsText(file); event.target.value='';
+}
+
+// 헤더 필드 autosave 연결
+['lordName','currentDate','domainRank'].forEach(id => {
+  document.getElementById(id).addEventListener('input', ()=>autosave());
+});
+document.getElementById('domainTitle').addEventListener('input', ()=>autosave());
+
+// 초기 로드
+window.addEventListener('load', ()=>{ render(); initFirebase(); });
+</script>
+</body>
+</html>
