@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아르델 공화국 기록보관소</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   디자인 토큰
+   ========================================================= */
+:root{
+  --bg-primary:#14161c;
+  --bg-panel:#1b1e27;
+  --bg-panel-2:#222632;
+  --gold:#b08d57;
+  --gold-light:#c9a227;
+  --emerald:#1f6b5c;
+  --emerald-light:#2f9c86;
+  --ivory:#ede6d6;
+  --ivory-soft:rgba(237,230,214,0.66);
+  --ivory-faint:rgba(237,230,214,0.18);
+  --party-red:#b3433f;
+  --party-blue:#3b6ea5;
+  --party-neutral:#706a5d;
+
+  --font-display:'Noto Serif KR', serif;
+  --font-body:'Noto Sans KR', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+
+  --maxw:1080px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg-primary);
+  color:var(--ivory);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,.eyebrow{font-family:var(--font-display);}
+a{color:var(--gold-light);}
+::selection{background:var(--gold); color:var(--bg-primary);}
+:focus-visible{outline:1px solid var(--gold-light); outline-offset:3px;}
+
+.reduced-motion *{
+  animation-duration:0.01ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:0.01ms !important;
+}
+
+/* =========================================================
+   로딩 화면
+   ========================================================= */
+.loading-screen{
+  position:fixed; inset:0; background:var(--bg-primary);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:2000; transition:opacity 0.6s ease;
+}
+.loading-screen::before{
+  content:''; position:absolute; width:480px;height:480px;
+  background:radial-gradient(circle, rgba(176,141,87,0.10), transparent 70%);
+  pointer-events:none;
+}
+.loading-screen.fade-out{opacity:0; pointer-events:none;}
+.emblem-svg{width:160px;height:160px;position:relative;z-index:1;}
+.emblem-svg .gear-ring{transform-origin:100px 100px; animation:rotateGear 6s linear infinite;}
+.emblem-svg .ring-mid{opacity:0.35;}
+.emblem-svg .rune-circle{stroke-dasharray:289; stroke-dashoffset:289; animation:drawCircle 1.6s ease-out 0.3s forwards;}
+.emblem-svg .emblem-center{transform-origin:100px 100px; opacity:0; transform:scale(0); animation:popIn 0.5s ease-out 1.7s forwards;}
+@keyframes rotateGear{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes drawCircle{from{stroke-dashoffset:289;}to{stroke-dashoffset:0;}}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+.welcome-text{margin-top:1.6rem; font-size:1.3rem; letter-spacing:0.04em; color:var(--ivory); opacity:0; animation:fadeUp 0.6s ease-out 1.9s forwards; position:relative; z-index:1;}
+.welcome-sub{margin-top:0.5rem; font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--gold-light); opacity:0; animation:fadeUp 0.6s ease-out 2.05s forwards; position:relative; z-index:1;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* =========================================================
+   메인 사이트
+   ========================================================= */
+#main-site{opacity:0; transition:opacity 0.6s ease;}
+#main-site.visible{opacity:1;}
+
+.topbar{position:sticky; top:0; z-index:100; background:rgba(20,22,28,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--ivory-faint);}
+.topbar-inner{max-width:var(--maxw); margin:0 auto; padding:1rem 1.5rem 0; display:flex; flex-direction:column; gap:0.8rem;}
+.brand{display:flex; align-items:center; gap:0.6rem; font-family:var(--font-display); font-size:1rem; letter-spacing:0.06em; color:var(--ivory);}
+.brand-emblem{width:24px;height:24px; flex-shrink:0;}
+.brand small{display:block; font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.2em; color:var(--gold-light); font-weight:400;}
+
+.tabs{position:relative; display:flex; gap:0.5rem; overflow-x:auto; scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{background:none; border:none; color:var(--ivory-soft); font-family:var(--font-body); font-size:0.85rem; letter-spacing:0.03em; padding:0.75rem 0.9rem; cursor:pointer; white-space:nowrap; transition:color 0.2s ease, transform 0.15s ease;}
+.tab-btn:active{transform:scale(0.94);}
+.tab-btn:hover{color:var(--ivory);}
+.tab-btn.active{color:var(--gold-light);}
+.tab-underline{position:absolute; bottom:0; left:0; height:2px; background:var(--gold-light); transition:left 0.3s ease, width 0.3s ease;}
+
+main{max-width:var(--maxw); margin:0 auto; padding:3rem 1.5rem 6rem;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block; animation:panelFadeIn 0.4s ease;}
+@keyframes panelFadeIn{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:translateY(0);}}
+
+.eyebrow{font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--gold-light); margin:0 0 0.8rem;}
+.section-title{font-size:1.8rem; font-weight:600; margin:0 0 1rem; color:var(--ivory);}
+.section-divider{width:48px; height:1px; background:var(--gold); margin:0 0 2rem;}
+.placeholder-note{font-family:var(--font-mono); font-size:0.72rem; color:var(--emerald-light); border:1px dashed rgba(47,156,134,0.4); padding:0.6rem 0.9rem; border-radius:2px; margin-bottom:2rem; display:inline-block;}
+.subsection-title{font-family:var(--font-display); font-size:1.15rem; color:var(--ivory); margin:2.5rem 0 1.2rem; padding-top:1.6rem; border-top:1px solid var(--ivory-faint);}
+
+/* 공용: 상세 패널 안의 이름/설명 텍스트 */
+.detail-name{font-family:var(--font-display); font-size:1.25rem; color:var(--ivory); margin:0 0 0.6rem;}
+.detail-desc{color:var(--ivory-soft); font-size:0.9rem;}
+
+/* 공용: 작은 아바타/이름/역할 (캐릭터 칩 등에서 재사용) */
+.card-avatar{width:38px; height:38px; border:1px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:0.9rem; color:var(--gold-light); margin-bottom:0.6rem;}
+.card-name{font-family:var(--font-display); font-size:0.95rem; color:var(--ivory); margin:0 0 0.2rem;}
+.card-role{font-size:0.78rem; color:var(--ivory-soft);}
+
+/* ---- 세계관 설명 ---- */
+.lore-text{max-width:620px; color:var(--ivory-soft); font-size:0.98rem;}
+.lore-quote{border-left:2px solid var(--gold); padding:0.4rem 0 0.4rem 1.2rem; margin:2rem 0; font-family:var(--font-display); font-size:1.1rem; color:var(--ivory);}
+
+/* ---- 세계 지도 ---- */
+.map-area{
+  position:relative; width:100%; aspect-ratio:16/9;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(31,107,92,0.18), transparent 55%),
+    radial-gradient(circle at 75% 65%, rgba(176,141,87,0.12), transparent 50%),
+    linear-gradient(160deg, #1a1d25, #11131a);
+  border:1px solid var(--ivory-faint); overflow:hidden;
+}
+.map-bg-image{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
+.map-pin{position:absolute; transform:translate(-50%, -50%); cursor:pointer; display:flex; flex-direction:column; align-items:center; background:none; border:none; padding:4px; z-index:1;}
+.map-pin .pin-dot{transition:background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;}
+.map-pin:hover .pin-dot{transform:scale(1.2);}
+.map-pin:active .pin-dot{transform:scale(0.9);}
+.pin-dot{width:18px; height:18px; background:var(--gold-light); border:2px solid rgba(20,22,28,0.85); border-radius:50%; animation:pinPulse 2.4s ease-out infinite; transition:background 0.2s ease, box-shadow 0.2s ease;}
+@keyframes pinPulse{0%{box-shadow:0 0 0 0 rgba(201,162,39,0.45);}70%{box-shadow:0 0 0 14px rgba(201,162,39,0);}100%{box-shadow:0 0 0 0 rgba(201,162,39,0);}}
+.pin-label{margin-top:0.35rem; font-size:0.7rem; font-family:var(--font-mono); color:var(--ivory); background:rgba(20,22,28,0.85); padding:0.1rem 0.4rem; white-space:nowrap; opacity:0; transition:opacity 0.2s ease;}
+.map-pin:hover .pin-label{opacity:1;}
+.map-pin.active .pin-dot{background:var(--emerald-light); box-shadow:0 0 0 4px rgba(47,156,134,0.25);}
+
+.city-detail{margin-top:1.5rem; background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.6rem; display:flex; gap:1.6rem; animation:panelFadeIn 0.3s ease;}
+.city-detail.empty{justify-content:center; align-items:center; min-height:120px; color:var(--ivory-soft); font-family:var(--font-mono); font-size:0.8rem; border-style:dashed; text-align:center;}
+.city-image{align-self:flex-start; position:relative; overflow:hidden; flex:0 0 240px; aspect-ratio:4/3; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.7rem; color:var(--ivory-soft); text-align:center; padding:0.5rem;}
+.city-info{flex:1; min-width:0;}
+.city-features{display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;}
+.feature-tag{font-family:var(--font-mono); font-size:0.7rem; color:var(--gold-light); border:1px solid var(--gold); padding:0.2rem 0.6rem; border-radius:2px;}
+
+/* ---- 아르델 공화국 (정치/경제) ---- */
+.stats-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:1px; background:var(--ivory-faint); margin-bottom:1rem;}
+.stat-card{background:var(--bg-panel); padding:1.4rem; animation:panelFadeIn 0.45s ease both;}
+.stat-card:nth-child(2){animation-delay:0.06s;}
+.stat-card:nth-child(3){animation-delay:0.12s;}
+.stat-card:nth-child(4){animation-delay:0.18s;}
+.stat-value{font-family:var(--font-mono); font-size:1.6rem; color:var(--gold-light);}
+.stat-label{font-size:0.75rem; color:var(--ivory-soft); margin-top:0.3rem;}
+
+.parliament-wrap{display:flex; flex-direction:column; align-items:center; gap:0.9rem;}
+#parliament-chart, #parliament-chart-upper{width:100%; max-width:480px; height:auto;}
+.parliament-legend{display:flex; gap:1.4rem; flex-wrap:wrap; justify-content:center;}
+.legend-item{display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--ivory-soft);}
+.legend-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+.party-cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:1rem; margin-top:1.6rem;}
+.party-card{background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.2rem; animation:panelFadeIn 0.45s ease both;}
+.party-card:nth-child(2){animation-delay:0.06s;}
+.party-card:nth-child(3){animation-delay:0.12s;}
+.party-dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-bottom:0.6rem;}
+.party-name{font-family:var(--font-display); font-size:1rem; color:var(--ivory); margin:0 0 0.4rem;}
+.party-desc{font-size:0.85rem; color:var(--ivory-soft);}
+
+.chamber-title{font-family:var(--font-display); font-size:1rem; color:var(--gold-light); margin:2.2rem 0 0.8rem;}
+
+.econ-charts{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:1.5rem; margin-top:0.5rem;}
+.chart-block{background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.2rem;}
+.chart-label{font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.1em; color:var(--gold-light); text-transform:uppercase; margin:0 0 0.8rem;}
+.line-chart, .bar-chart{width:100%; height:auto;}
+.line-chart path.line{stroke-dasharray:2000; stroke-dashoffset:2000; transition:stroke-dashoffset 1.4s ease-out;}
+.line-chart.in-view path.line{stroke-dashoffset:0;}
+.line-chart circle{opacity:0; transform-box:fill-box; transform-origin:center; transform:scale(0); transition:opacity 0.3s ease, transform 0.3s ease;}
+.line-chart.in-view circle{opacity:1; transform:scale(1);}
+.bar-chart rect.bar{transform-box:fill-box; transform-origin:50% 100%; transform:scaleY(0); transition:transform 0.9s ease-out;}
+.bar-chart.in-view rect.bar{transform:scaleY(1);}
+.axis-label{font-family:var(--font-mono); font-size:9px; fill:var(--ivory-soft);}
+
+/* ---- 조직 및 단체: 사이드 탭 레이아웃 ---- */
+.orgs-layout{display:flex; gap:2rem; align-items:flex-start;}
+.org-sidebar{flex:0 0 200px; display:flex; flex-direction:column; gap:0.2rem; border-right:1px solid var(--ivory-faint); padding-right:1rem;}
+.org-sidebar-btn{background:none; border:none; text-align:left; font-family:var(--font-body); font-size:0.88rem; color:var(--ivory-soft); padding:0.65rem 0.8rem; cursor:pointer; border-left:2px solid transparent; transition:color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;}
+.org-sidebar-btn:active{transform:scale(0.97);}
+.org-sidebar-btn:hover{color:var(--ivory);}
+.org-sidebar-btn.active{color:var(--gold-light); border-left-color:var(--gold-light); background:rgba(176,141,87,0.06);}
+
+.org-content{flex:1; min-width:0;}
+.org-detail{display:flex; gap:1.6rem; margin-bottom:2rem; animation:panelFadeIn 0.3s ease;}
+.org-image{align-self:flex-start; position:relative; overflow:hidden; flex:0 0 220px; aspect-ratio:4/3; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.7rem; color:var(--ivory-soft); text-align:center; padding:0.5rem;}
+.org-detail .org-text{flex:1; min-width:0;}
+.eyebrow-small{font-family:var(--font-mono); font-size:0.65rem; letter-spacing:0.2em; color:var(--gold-light); text-transform:uppercase; margin:0 0 0.4rem;}
+.org-title{font-family:var(--font-display); font-size:1.3rem; color:var(--ivory); margin:0 0 0.6rem;}
+.org-desc{color:var(--ivory-soft); font-size:0.92rem;}
+
+.sub-orgs{margin:0 0 2rem;}
+.sub-org-card{background:var(--bg-panel); border:1px solid var(--ivory-faint); border-left:2px solid var(--gold); padding:1.1rem 1.3rem; margin-bottom:0.8rem; animation:panelFadeIn 0.4s ease both;}
+.sub-org-card:last-child{margin-bottom:0;}
+.sub-org-title{font-family:var(--font-display); font-size:1rem; color:var(--ivory); margin:0 0 0.3rem;}
+.sub-org-desc{font-size:0.88rem; color:var(--ivory-soft); margin:0;}
+
+.char-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:0.8rem; margin-bottom:1.5rem;}
+.char-chip{background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1rem; cursor:pointer; transition:border-color 0.2s ease, background 0.2s ease, transform 0.2s ease; animation:panelFadeIn 0.4s ease both;}
+.char-chip:hover{border-color:var(--gold); transform:translateY(-2px);}
+.char-chip:active{transform:translateY(0) scale(0.97);}
+.char-chip.active{border-color:var(--gold-light); background:rgba(176,141,87,0.06);}
+.char-chip:nth-child(2){animation-delay:0.05s;}
+.char-chip:nth-child(3){animation-delay:0.1s;}
+.char-chip:nth-child(4){animation-delay:0.15s;}
+.char-chip:nth-child(5){animation-delay:0.2s;}
+.char-chip:nth-child(6){animation-delay:0.25s;}
+.char-chip:nth-child(7){animation-delay:0.3s;}
+.char-chip:nth-child(8){animation-delay:0.35s;}
+
+.char-detail{display:flex; gap:1.6rem; background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.6rem; animation:panelFadeIn 0.3s ease;}
+.char-detail.empty{justify-content:center; align-items:center; min-height:100px; color:var(--ivory-soft); font-family:var(--font-mono); font-size:0.8rem; border-style:dashed; text-align:center;}
+.char-image{align-self:flex-start; position:relative; overflow:hidden; flex:0 0 160px; aspect-ratio:3/4; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.7rem; color:var(--ivory-soft); text-align:center; padding:0.5rem;}
+
+/* 도시/조직/캐릭터 이미지 자리 공용: 실제 파일(이름.png)이 있으면 표시, 없으면 파일명 안내 텍스트만 보임 */
+.city-image img, .org-image img, .char-image img{display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.5s ease;}
+.img-fallback{position:relative; z-index:1;}
+.char-detail .char-text{flex:1; min-width:0;}
+
+@media (max-width:768px){
+  .orgs-layout{flex-direction:column;}
+  .org-content{flex:1 1 auto;}
+  .org-sidebar{flex-direction:row; flex:0 0 auto; overflow-x:auto; border-right:none; border-bottom:1px solid var(--ivory-faint); padding-right:0; padding-bottom:0.6rem; gap:0.3rem;}
+  .org-sidebar-btn{border-left:none; border-bottom:2px solid transparent; white-space:nowrap;}
+  .org-sidebar-btn.active{border-left-color:transparent; border-bottom-color:var(--gold-light);}
+  .org-detail, .char-detail{flex-direction:column;}
+  .org-image, .char-image{flex:0 0 auto; width:100%; aspect-ratio:16/9;}
+}
+@media (max-width:640px){
+  .section-title{font-size:1.4rem;}
+  .tab-btn{font-size:0.78rem; padding:0.65rem 0.6rem;}
+  .city-detail{flex-direction:column;}
+  .city-image{flex:0 0 auto; width:100%; aspect-ratio:16/9;}
+}
+</style>
+</head>
+<body>
+
+<!-- 로딩 화면 -->
+<div class="loading-screen" id="loading-screen">
+  <svg class="emblem-svg" viewBox="0 0 200 200">
+    <circle class="gear-ring" cx="100" cy="100" r="78" fill="none" stroke="var(--gold)" stroke-width="10" stroke-dasharray="14 10"/>
+    <circle class="ring-mid" cx="100" cy="100" r="62" fill="none" stroke="var(--ivory)" stroke-width="1"/>
+    <circle class="rune-circle" cx="100" cy="100" r="46" fill="none" stroke="var(--emerald-light)" stroke-width="2" stroke-linecap="round"/>
+    <polygon class="emblem-center" points="100,84 116,100 100,116 84,100" fill="var(--gold-light)"/>
+  </svg>
+  <div class="welcome-text">아르델 공화국에 어서오세요</div>
+  <div class="welcome-sub">ARCHIVE ACCESS</div>
+</div>
+
+<!-- 메인 사이트 -->
+<div id="main-site">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg class="brand-emblem" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="78" fill="none" stroke="var(--gold)" stroke-width="10" stroke-dasharray="14 10"/>
+          <circle cx="100" cy="100" r="46" fill="none" stroke="var(--emerald-light)" stroke-width="2"/>
+          <polygon points="100,84 116,100 100,116 84,100" fill="var(--gold-light)"/>
+        </svg>
+        <span>아르델 공화국 기록보관소<small>ARDEL REPUBLIC ARCHIVE</small></span>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab-btn" data-tab="lore">세계관 설명</button>
+        <button class="tab-btn" data-tab="republic">아르델 공화국</button>
+        <button class="tab-btn" data-tab="map">세계 지도</button>
+        <button class="tab-btn" data-tab="orgs">조직 및 단체</button>
+        <span class="tab-underline" id="tab-underline"></span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 1. 세계관 설명 -->
+    <section class="tab-panel" id="panel-lore">
+      <p class="eyebrow">OVERVIEW</p>
+      <h2 class="section-title">세계관 설명</h2>
+      <div class="section-divider"></div>
+
+      <p class="lore-text">700여 년 전, 대륙은 드래곤과 엘프, 드워프, 뱀파이어 등 다양한 인외 종족들이 지배하던 시대였다. 인간은 그들의 노예이자 때로는 식량으로 취급받으며 살아갔고, 인외 종족들은 영토와 인간 노예를 두고 자기들끼리 끝없는 전쟁을 벌이고 있었다.</p>
+
+      <p class="lore-text">그러던 어느 날, 작은 마을과 촌락들이 흩어져 있던 땅 위에 거대한 균열이 생겨났다. 균열에서 끊임없이 뿜어져 나오는 마력은 동물과 식물을 가리지 않고 오염시켜 마물로 만들었고, 세상은 인간과 인외를 가리지 않고 마물들의 유린 속으로 빠져들었다.</p>
+
+      <p class="lore-text">그 혼란 속에서 처음으로 몸속에 마력을 저장하고 다스려 마물을 몰아낸 인간이 나타났다. 사람들은 그를 용사라 부르며 따랐다. 균열이 불러온 혼란은 수백 년간 이어진 인외의 지배 구조를 무너뜨렸고, 용사를 중심으로 인간은 처음으로 스스로 일어설 힘을 갖게 되었다.</p>
+
+      <p class="lore-text">용사는 대륙을 떠돌며 마물을 처리했고, 그 곁에는 마법을 다룰 줄 알게 된 이들이 모여들어 사람들을 규합하는 교단을 이루었다.</p>
+
+      <div class="lore-quote">"균열은 모든 것을 무너뜨렸고, 그 잿더미 위에서 인간은 처음으로 스스로 일어섰다."</div>
+
+      <p class="lore-text">마침내 용사는 균열을 무너뜨려 봉인했지만, 그 폭발에 휩쓸려 함께 사라졌다. 교단은 용사가 남긴 자리 위에 나라를 세웠다 — 인외의 지배에서 벗어난 인간 최초의 나라, 아르델의 시작이었다.</p>
+
+      <p class="lore-text">교단은 용사가 언젠가 돌아올 것이라 믿으며 스스로를 리벨리온이라 칭했다. 그날까지 제국을 평화롭게 지키기 위해 그들은 황제의 임명권만을 쥔 채 정치 전면에서 물러나, 본래의 사명인 사람들을 위한 헌신에 집중하기로 했다.</p>
+
+      <p class="lore-text">700년이 지난 지금, 아르델은 마법으로 강성해졌지만 동시에 그 마법에 잠식되어 가고 있었다. 점점 복잡해지는 마법은 극소수의 대마법사만이 다룰 수 있게 되었고, 부와 권력은 그들 — 황가와 귀족 — 에게만 집중되었다. 마법을 쓰지 못하는 이들은 농노 이상의 취급을 받지 못했다.</p>
+
+      <p class="lore-text">그 와중에 제국은 크로노스 황국을 상대로 전쟁을 일으켰으나 패배했고, 그 여파는 제국 전역으로 퍼져 사람들의 삶을 더욱 무겁게 짓눌렀다. 전쟁의 패배로 대마법사들의 권위는 크게 흔들렸고, 그 틈을 메트로가 세운 마도공학 산업이 메우며 급격히 성장해 나갔다.</p>
+
+      <p class="lore-text">태어날 때부터 운명이 정해지는 이 체제에 대한 불만은 서부에서 시작된 마도공학 혁명을 거대한 흐름으로 키워냈다. 교단과 황가는 이를 막을 수 없었고, 결국 비밀리에 준비해 온 용사의 부활을 앞당기기로 한다.</p>
+
+      <p class="lore-text">새벽, 황궁 광장에서 부활 의식이 치러졌다. 그러나 그것은 교단이 황제와 궁정 마법사들을 속여 막대한 마력의 제물로 바친 의식이었다. 부활한 용사는 교단의 의도와 다르게 행동했고, 하룻밤 사이 제국의 대마법사와 황가의 핏줄 대부분이 소멸하는 대사건으로 끝났다.</p>
+
+      <p class="lore-text">혼란에 빠진 아르델을 교단이 다시 장악하려는 순간, 기존 귀족들이 스스로 귀족 지위를 포기하고 의회 설립을 선언하며 한 남자 — 메트로 — 를 초대 대통령으로 추대했다. 교단과 시민들 모두 처음엔 이 혁명정부를 인정하지 않았지만, 귀족들의 지위 포기와 의회 설립이 시민들의 지지를 얻으며 아르델 공화국이 선포되었다. 지금으로부터 3년 전의 일이며, 현재는 742년이다. 아르델과 교단은 여전히 팽팽한 소강상태에 있다.</p>
+
+      <p class="lore-text">아르델이 위치한 이 대륙에는 아르델 외에 다른 나라가 존재하지 않으며, 지금도 소수의 인외 종족이 남아 있을 뿐 이미 인간이 권력의 중심을 차지한 지 오래다. 드래곤과 인간이 손을 잡고 자신들의 대륙을 정복한 크로노스 황국은 바다 건너 다른 대륙에 위치해, 인외가 다수를 차지하는 정반대의 사회를 이루고 있다. 한때 제국이 크로노스 황국과 전쟁을 벌여 패배했지만, 지금은 약간의 교류가 가능한 수준으로 관계가 회복되었다 — 크로노스 황국은 추후 별도의 세계관으로 설정될 예정이다.</p>
+    </section>
+
+    <!-- 2. 아르델 공화국 (정치/경제) -->
+    <section class="tab-panel" id="panel-republic">
+      <p class="eyebrow">STATE OF THE REPUBLIC</p>
+      <h2 class="section-title">아르델 공화국</h2>
+      <div class="section-divider"></div>
+      <span class="placeholder-note">TODO: upperHouseParties/lowerHouseParties 실제 정당 데이터, 연도별 경제 지표(economyYears/economyIndex/industryOutput)를 추후 실제 데이터로 교체하세요</span>
+
+      <div class="stats-grid" id="republic-stats"></div>
+
+      <p class="lore-text">
+        인외의 지배 아래 살아가던 인간이 700여 년 전 용사의 부름에 응해 세운, 인간 최초의 나라 — Republic of Ardel. 천 년 제국을 꿈꾼 지 742년, 부패한 아르델 제국은 단 하룻밤의 사건으로 혁명을 거쳐 공화국이 되었다. 공화국이 선포된 지는 이제 3년째다. 초대 대통령 메트로(메트로 산업의 실소유주)가 혁명정부의 추대로 자리에 올랐으며, 혁명을 주도한 것은 그의 어릴적 친구이자 메트로 산업의 투자자였던 귀족, 앨리시아 폰 하르트만이었다. 교단(리벨리온)과는 여전히 팽팽한 소강상태가 이어지고 있다.
+      </p>
+
+      <h3 class="subsection-title">정치 상황</h3>
+      <p class="lore-text">
+        공화국 정부는 의회와 법원이 분리되어 있으나, 법원은 의회가 지정한 판사들로 구성된 사실상의 하위 기관이라 실질적으로는 의회가 공화국을 지배하고 있다고 볼 수 있다. 의회는 상원(귀족의회)과 하원(시민의회)의 양원으로 나뉜다.
+      </p>
+
+      <h4 class="chamber-title">상원 · 귀족의회 (70석)</h4>
+      <p class="lore-text">
+        황가 시절 토지를 소유했던 귀족 가문들이 귀족의 권리를 포기하는 대신 가문당 1~2명씩 선출해 만든 의회로, 각 지역의 이권을 대변한다. 1년 단위로 지역 사업·예산 계획을 수립해 중앙정부로부터 예산과 자원을 배정받으며, 결정 사항은 하원의 재검토를 거쳐 행정부가 집행한다. 상원 2/3 이상이 반대하면 하원의 의결을 중단시키거나 대통령의 결정을 거부할 수 있는 거부권을 가진다.
+      </p>
+      <p class="lore-text">
+        공화국 개혁 과정에서 귀족들은 자신들 토지의 30%만 남기고, 나머지는 의회가 인수한 황가의 자산과 메트로 산업의 자금을 동원해 최저가로 매입했다. 매입한 토지는 시민들에게 10년간 임대한 뒤 자가로 전환해주는 정책과 저리 대출을 통해 대부분 재분배되었다.
+      </p>
+      <div class="parliament-wrap">
+        <svg id="parliament-chart-upper" viewBox="0 0 400 220"></svg>
+        <div class="parliament-legend" id="upper-legend"></div>
+      </div>
+
+      <h4 class="chamber-title">하원 · 시민의회 (200석)</h4>
+      <p class="lore-text">
+        기존 정치 세력이 아닌 공화국 평민들이 주를 이루는 의회로, 군사·세금·정책 예산 승인 등 대통령의 주요 국가정책에 대한 허가 권한을 가진다. 새로운 지식인들로 이루어졌다고는 하나 실제로는 귀족들의 교육 아래 정당에 소속된 이들이 대부분이라, 다음 선거가 가장 치열할 것으로 예상된다.
+      </p>
+      <div class="parliament-wrap">
+        <svg id="parliament-chart" viewBox="0 0 400 220"></svg>
+        <div class="parliament-legend" id="parliament-legend"></div>
+      </div>
+      <div class="party-cards" id="party-cards"></div>
+
+      <h3 class="subsection-title">경제 상황</h3>
+      <p class="lore-text">
+        화폐 단위는 1C(크레딧) = 1USD. 아르델의 연간 총생산은 6조 4,000억 C이며, 이 중 35%인 2조 2,000억 C가 메트로 산업 한 곳에서 나오는, 단일 기업에 급격히 의존된 경제 구조다. 수도 아렌 기준 4인 가족이 풍족하게 한 달을 보내려면 12,400C가 필요하지만, 전국 평균 한 달 봉급은 1,200C에 불과하다. 지방의 한 달 생활비(2,400C)조차 평균 봉급의 두 배에 달해, 도시와 지방 사이의 소득 격차가 극심하다.
+      </p>
+      <div class="econ-charts">
+        <div class="chart-block">
+          <p class="chart-label">경제 성장 지수 (연도별)</p>
+          <svg class="line-chart" id="line-chart" viewBox="0 0 480 220"></svg>
+        </div>
+        <div class="chart-block">
+          <p class="chart-label">주요 산업 생산량 (연도별)</p>
+          <svg class="bar-chart" id="bar-chart" viewBox="0 0 480 220"></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 세계 지도 -->
+    <section class="tab-panel" id="panel-map">
+      <p class="eyebrow">CARTOGRAPHY</p>
+      <h2 class="section-title">세계 지도</h2>
+      <div class="section-divider"></div>
+      <span class="placeholder-note">TODO: 배경을 실제 지도 이미지로 교체하세요 (도시 9곳 데이터는 모두 입력됨)</span>
+      <div class="map-area" id="map-area">
+        <img class="map-bg-image" src="지도.png" alt="아르델 공화국 지도" onerror="this.style.display='none';">
+      </div>
+      <div class="city-detail empty" id="city-detail">지도에서 도시를 선택하면 이곳에 이미지와 정보가 표시됩니다.</div>
+    </section>
+
+    <!-- 4. 조직 및 단체 -->
+    <section class="tab-panel" id="panel-orgs">
+      <p class="eyebrow">FACTIONS &amp; PEOPLE</p>
+      <h2 class="section-title">조직 및 단체</h2>
+      <div class="section-divider"></div>
+      <span class="placeholder-note">TODO: organizations, characters 배열을 실제 데이터로 교체하세요 (characters의 orgId로 소속 연결)</span>
+      <div class="orgs-layout">
+        <nav class="org-sidebar" id="org-sidebar"></nav>
+        <div class="org-content">
+          <div class="org-detail" id="org-detail"></div>
+          <div class="sub-orgs" id="sub-orgs"></div>
+          <div class="char-grid" id="char-grid"></div>
+          <div class="char-detail empty" id="char-detail">캐릭터를 선택하면 이곳에 이미지와 정보가 표시됩니다.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   placeholder 데이터 — 2단계(내용 채우기)에서 이 배열들만
+   실제 세계관 데이터로 교체하면 됩니다. 구조는 유지하세요.
+   ========================================================= */
+
+// 세계 지도 — 첨부된 지도 이미지 레이아웃 기준 좌표 (그리에즈노는 정확한 위치 확인 후 추가)
+const mapPoints = [
+  { name:'아렌', x:78, y:60, features:['수도','인구 2,000만+','인공 정령 인프라'],
+    desc:'아르델의 수도. 황궁과 교단 본부, 마법대학이 함께 자리하며, 공화국 정부 또한 황궁을 대통령 집무실 겸 행정부로 사용하고 있다. 인구는 2천만 명을 넘으며, 인공 정령이 도시 인프라 전체를 관리해 지방에서는 상상하기 힘든 편리함을 누린다. 도심에는 지상 130m가 넘는 황궁과 그 앞으로 3km 가까이 뻗은 상업·금융가 "황금 광장", 세계 최대 규모의 복합 터미널 "서 아렌 종합 역사"가 있으며, 그 외에도 공화국 기계화 군단, 리벨리온 중앙 수도회, 리벨리온 마법대학, 아렌 중앙 대학 등 주요 기관이 모여 있다.' },
+  { name:'카이로니움', x:20, y:56, features:['서부 최대 도시','마도공학 산업'],
+    desc:'원래 2천여 명이 모여 살던 작은 마을이었으나, 메트로 산업의 대규모 생산시설이 들어서며 500만 명 이상이 밀집한 서부 최대 도시로 성장했다. 황야와 사막 지형이지만 마력석과 고농도 마력수가 풍부해 "마도공학자"를 자처하는 이들이 활발히 활동하며, 순수 마법을 고집하는 동부와는 사이가 좋지 않다.' },
+  { name:'나우카', x:27, y:13, features:['북부 광산지대','북부 노동당 거점'],
+    desc:'북부 산맥의 광산 지대를 끼고 있는 도시로, 북부 노동당 총재 아우구스트 루이사의 거점이다. 광업과 제철을 기반으로 한 산업연맹(북부연합)의 중심지다.' },
+  { name:'하르트만', x:34, y:88, features:['하르트만 가문 영지','아티팩트 가공 기술','메트로·앨리시아의 고향'],
+    desc:'앨리시아 폰 하르트만 가문의 영지에 자리한 도시로, 오래전부터 마정석을 가공해 아티팩트를 만들어내는 곳이었다. 아티팩트는 순도 높은 마력석으로 마법사의 마법을 보조하거나 특정 기능을 돕는 물건으로, 이 가공 기술은 훗날 마도공학의 기초가 되었다. 평민 메트로와 귀족 앨리시아 모두의 고향이며, 예로부터 살기 좋은 곳으로 평가받아 왔다.' },
+  { name:'루벤부르크', x:57, y:29, features:['메트로 산업 본사','금융·기업 중심지'],
+    desc:'거대 길드와 상회, 명문가들의 자금, 그리고 메트로 산업의 본사가 모여 있는 도시. 인외와 무능력자도 차별 없이 고용하는 자유로운 분위기로 알려져 있지만, 실제로 이곳에서 일하는 이들은 자신이 벌어오는 돈으로만 자신을 증명한다고 여긴다. 법이 닿지 않는 영역에서는 장 마감 전 주식증서를 강제로 빼앗는 식의 적대적 인수합병도 벌어진다.' },
+  { name:'베데스덴', x:76, y:86, features:['자유도시 (치외법권)','인외 다수 거주'],
+    desc:'치외법권이 인정되는 자유도시로, 마물로 규정되지 않고 살아남은 인외들이 제국의 눈을 피해 정착하며 시작됐다. 빈부와 무관하게 누구든 치료해주는 "여우병원(베데스덴 종합병원)"과, 상인들의 자금을 지키기 위해 만들어져 점차 자경대 역할까지 맡게 된 "아르델 상인은행", 두 세력이 도시를 지탱한다. 둘은 대립한다기보다 서로 돕는 사이다. 다만 그만큼 뒷골목 범죄와 인외 간의 분쟁도 잦고, 공화국 전환기를 맞아 독립을 주장하는 목소리도 나오고 있다.' },
+  { name:'렌코', x:80, y:34, features:['휴양도시','은퇴 귀족 거주지'],
+    desc:'아렌 북쪽에 자리한 작은 휴양도시로, 은퇴한 귀족들이 모여 산다.' },
+  { name:'델리온', x:51, y:59, features:['중앙 곡창지대','카지노 산업','신디케이트 활동지역'],
+    desc:'대륙 중앙의 곡창지대이자 대형 카지노 산업이 자리한 지역. 오랫동안 관리가 소홀했던 틈을 타 "신디케이트"라 불리는 아그리마피아 조직이 기존 지주들을 몰아내고 농산물 유통을 장악하며 세력을 키우고 있다.' },
+  { name:'그리에즈노', x:42, y:35, features:['비공정 조선소 마을','500년 역사','유일한 고품질 비공정 생산지'],
+    desc:'델리온과 카이로니움을 잇는 길 위, 산맥 한가운데 자리한 소규모 마을. 마을 전체가 사실상 하나의 비공정 조선소처럼 운영되며, 산 위에서 비공정을 만들어 그대로 띄워 보낸다. 500년이 넘는 역사를 가진 곳으로, 부유석을 채굴해 세계 최초로 비공정을 만들어낸 지역이자 지금도 고품질 비공정을 만들 수 있는 유일한 곳이다. 전 지역의 길드와 옛 제국 귀족들의 주문으로 조선소는 늘 바쁘게 돌아가며, 공화국은 비공정을 국가의 근간 산업으로 삼아 이곳의 조선소를 더 크고 많이 만들려는 계획을 세우고 있다.' },
+];
+
+// 공화국 기본 정보
+const republicStats = [
+  { value:'2억 1,100만', label:'인구' },
+  { value:'1C = 1USD', label:'화폐 단위' },
+  { value:'아렌', label:'수도' },
+  { value:'혼합형 (독일식)', label:'정치 체제 · 양원제' },
+];
+
+// 하원(시민의회, 200석) 정당별 의석
+const lowerHouseParties = [
+  { name:'아르델 공화당', seats:112, color:'var(--party-red)', desc:'공화국 의회 제1여당. 총재는 앨리시아 폰 하르트만. 공화국의 시작을 이끈 앨리시아와 메트로가 주축이 된 제1여당으로, 교단의 영향에서 벗어나려는 귀족들과 황제를 잃고 갈 곳을 잃은 보수주의자, 중남부 지역 의원들이 대거 포진해 있다. 메트로의 전폭적인 지지자이자 행동가들이며, 아르델을 개선하기 위해 스스로 귀족 지위를 포기하기로 뜻을 모았다.' },
+  { name:'북부 노동당', seats:74, color:'var(--party-blue)', desc:'공화국 의회 제2야당. 총재는 아우구스트 루이사. 북부 산맥의 광산을 기점으로 발전한 산업연맹(북부연합)을 기반으로, 메트로 중심의 대규모 제조업 정책에 1차 산업(광업·농업) 도시들이 배척될 것을 염려해 결성됐다. 의회 내 충돌은 적은 편이나, 물러설 수 없는 상황에는 모든 수단을 동원하겠다는 입장을 고수한다.' },
+  { name:'무소속', seats:14, color:'var(--party-neutral)', desc:'특정 정당에 소속되지 않은 의원들.' },
+];
+
+// 상원(귀족의회, 70석) 정당/소속별 합계
+const upperHouseParties = [
+  { name:'아르델 공화당', seats:47, color:'var(--party-red)' },
+  { name:'북부 노동당', seats:15, color:'var(--party-blue)' },
+  { name:'무소속', seats:8, color:'var(--party-neutral)' },
+];
+
+// 경제 그래프용 연도별 데이터 — TODO: 실제 연도/수치로 교체
+// 경제 그래프용 연도별 데이터 — 메트로 산업 설립(727년)부터 현재(742년)까지 3년 단위
+const economyYears   = ['727년','730년','733년','736년','739년','742년'];
+const economyIndex   = [20, 28, 45, 70, 95, 105];   // 경제 성장 지수 (최종 727년 대비 5.25배)
+const industryOutput = [15, 22, 35, 55, 80, 90];    // 주요 산업 생산량 (최종 727년 대비 6배)
+
+// 조직 — TODO: 실제 조직 데이터로 교체 (image는 추후 건물/엠블럼 등 실제 이미지로)
+const organizations = [
+  { id:'org1', name:'메트로 산업', tagline:'공업 · 마도공학 기업', desc:'메트로가 17세에 하르트만 가문의 지원을 받아 설립한 공업 회사. 순도 낮은 마력석을 연소해 운동 에너지로 전환하는 마력 엔진을 개발해 "마력의 공업화"라는 개념을 처음으로 펼쳤다. 15년이 지난 지금은 엔진·열차·자동차·비공정은 물론 철근 콘크리트 고층 건축, 정교한 공작 기계, 화학 단지까지 거느린 거대 복합기업으로, 평민이 일군 부로는 인류 역사상 최대 규모다. 의회 보수 파벌은 한 개인에게 집중된 힘을 경계해 국유화를 요구하고 있으나 받아들여지지 않고 있다.',
+    subOrgs:[
+      { name:'메트로 산업 자산관리팀', tagline:'메트로 산업 사병 · 민간 용병 집단', desc:'원래는 대륙 곳곳에서 벌어지는 도적과 마물의 습격에 대응하기 위해 고용한 용병·모험가 인력이었으나, 그 수가 1만 명을 넘어서자 메트로 산업은 이들을 별도의 자회사 개념으로 분리해 관리하기 시작했다. 군 규모로 성장한 이 보안 인력은 대도시는 물론 주요 도로의 치안까지 함께 담당하면서, 메트로 산업이 관할하는 도심과 도로의 교역을 크게 활성화시키는 효과까지 가져왔다. "순백의 기사"라 불리는 이들은 방어뿐 아니라 향후 위협이 될 만한 시설과 집단을 선제 타격하는 임무도 맡으며, 기존 기술력을 뛰어넘는 최신 장비로 무장한 사병이다. 행정력이 미치지 못해 생긴 치안 공백 속에서 메트로 산업의 자산을 지키기 위해 만들어졌지만, 지금은 마물 위협을 막는 방위군, 대통령을 지켜야 할 경호 인력, 아직 제대로 규모를 갖추지 못한 공화국 기계화 군단의 역할까지 대신해 아르델 곳곳에 파견되고 있다.' },
+    ]
+  },
+  { id:'org2', name:'리벨리온 교단', tagline:'국교 · 종교 단체', desc:'아르델 건국을 주도한 교단. 과거 용사를 따르며 사람들을 구원하던 이들이 시초로, 용사가 돌아올 그날까지 자신들의 힘으로 위협에 맞서겠다는 신념 아래 지금까지 이어져 왔다. 본래 국가를 직접 운영하기보다 가장 뛰어난 이를 황제로 선출해 보좌하는 역할을 맡아왔으며, 수도부터 대륙 끝까지 촘촘한 교회망으로 지방정부 역할까지 겸하고 빈자와 고아를 거두어들인다. 다만 모든 성소는 기도하는 이들로부터 미미한 마력을 추출해 중앙으로 모으는 숨겨진 기능을 가지고 있으며, 이를 통해 막대한 고급 마법과 아티팩트를 다룰 수 있다. 교황 아래 치천사, 4명의 대천사, 수십 명의 천사가 있어 교단의 뜻을 거스르는 이들을 처리한다. 개혁정부가 자신들과의 상의 없이 대통령을 세운 것에 일부 과격 파벌은 강하게 반발하고 있다는 소문이 있다.' },
+  { id:'org3', name:'아르델 정부', tagline:'공화국 행정부 · 의회', desc:'아르델 공화국의 행정부와 의회를 통칭한다. 행정부의 수장인 대통령 메트로를 중심으로, 의회는 상원(귀족의회)과 하원(시민의회)으로 나뉘며 그 안에서 제1여당인 아르델 공화당(총재 앨리시아 폰 하르트만)과 제2야당인 북부 노동당(총재 아우구스트 루이사)이 경쟁한다. 대통령의 경호를 담당하는 경호팀(제국 시절 근위대) 또한 이곳에 속한다. 상원 기준 공화당 47/노동당 15/무소속 8석, 하원 기준 공화당 112/노동당 74/무소속 14석.' },
+  { id:'org5', name:'신디케이트', tagline:'범죄 조직 · 델리온 지하세계 지배세력', desc:'델리온을 중심으로 아르델 중부 일대를 장악한 거대 범죄 조직. 과거 무법지대였던 델리온의 두 거대 조직 — 사업체 운영 조직 아르카디아와 일레르의 소규모 무법자 무리 — 가 합쳐져 탄생했으며, 정규 조직원 6만여 명에 하부 조직원까지 합치면 10만여 명을 거느려 "조직"이라 부르기 민망할 정도로 거대해졌다. 델리온의 대규모 농경지를 장악해 식량 판매로 막대한 이익을 거두는 것은 물론, 불법 도박장과 마약, 납치, 인신매매, 청부살인까지 손대지 않는 범죄가 없다. 한때는 자신들을 막을 세력이 없다는 자신감으로 거침없이 세를 넓혔으나, 제국이 공화국으로 바뀐 지금은 한동안 조용히 상황을 살피는 모습을 보이고 있다 — 내부 정비를 위해서라는 분석도 있고, 베데스덴처럼 자신들을 합법적인 특별도시로 만들어 의회에 진출하려는 움직임이라는 추측도 있다.' },
+  { id:'org7', name:'하르트만 후견단', tagline:'비밀 후견 조직 · 황녀 보호', desc:'앨리시아 폰 하르트만이 개인적으로 꾸린 비공식 후견 조직. 균열 사건으로 황가 전체가 하룻밤 사이 사라지기 전, 앨리시아는 위협을 미리 감지하고 당시 황녀였던 샤를을 몰래 구출해 숨겨두었다. 교단이 고아들에게 붙이는 성씨 "아르델"을 그대로 사용해, 황녀를 평범한 고아처럼 보이게 만드는 가장 안전한 위장을 택했다. 표면적으로는 하르트만 가문이 거두는 피후견인을 돌보는 모임처럼 보이지만, 실제로는 황가의 마지막 생존자를 지키는 것이 유일한 목적이다. 제국 근위대장이었던 이리나 아크록스가 직접 황녀의 경호와 보호를 맡고 있으며, 조직의 존재와 황녀의 생존 사실을 아는 이는 극히 드물다.' },
+];
+
+// 캐릭터 — TODO: 실제 캐릭터 데이터로 교체 (orgId로 소속 조직 연결)
+const characters = [
+  { name:'메트로', role:'대통령 · 메트로 산업 실소유주', bio:'30세. 마력 적성이 인생의 부와 명예를 가르는 시대에 마력이 전혀 없는 장인의 아들로 태어났다. 톱니와 바퀴, 피스톤으로 "기계"를 만들던 아버지를 흥미롭게 본 공작가 아만다 가문의 지원으로 부족함 없는 유년을 보냈지만, 마력을 전혀 못 쓴다는 이유로 악마의 아들이라 불리며 따돌림과 폭력에 시달렸고, 12살이 되기 전 부모 모두 강도에게 살해당했다. 아만다 가문 내부에서도 저주받은 아이라며 외면당했으나, 장녀 앨리시아의 도움으로 책과 작은 지원을 받아 공부를 이어갔다. 이후 마력석의 열원에 공학 기술을 접목해 엔진을 개발, 메트로 산업을 세워 침체된 제국을 수많은 공장과 산업으로 되살린 시대의 명장이자 사업가로 성공했다. 비바람이 몰아치던 밤, 황제와 대마법사들이 동시에 실종된 다음 날 아침 앨리시아가 그를 찾아오며 모든 것이 바뀌었다. 힘든 일을 겪을 때마다 웃는 버릇이 있어 기쁘든 슬프든 화가 나든 늘 입꼬리가 올라가 있다. 또래와 어울리지 못한 유년기 탓에 가끔 엉뚱한 생각을 하지만 철없는 것과는 다르며, 상대가 예상 못한 행동을 할 때가 있다. 심각한 일중독으로, 눈앞의 문제를 해결하는 것이 유일한 삶의 목표다. 불확실성을 싫어하고 실리를 중시하며, 관료제를 거치지 않고 곧바로 행동하기 위해 독재에 가까운 정치 시스템을 만들었다.', orgId:'org1' },
+  { name:'캐릭터 이름 2', role:'직책 / 역할', bio:'두 번째 예시 캐릭터입니다.', orgId:'org1' },
+  { name:'카를로스 4세', role:'리벨리온 교단 교황', bio:'42세. "카를로스"는 차기 교황이 될 아이에게 붙는 이름으로, 보통 6~7세 무렵 정해져 교육을 받는다. 그 또한 교단이 거둔 고아로, 친부모의 얼굴조차 모른 채 자랐다. 또래보다 성숙하고 자신의 것을 양보하며 모든 것을 용사의 축복으로 여기는 신실함으로 어른들의 기대를 한몸에 받았으나, 그가 교황이 되었을 무렵 제국은 이미 부패할 대로 부패했고 교단조차 고아들을 다 거두지 못하는 상황이었다. 그 속에서 젊은 시절부터 꽤 잔인한 선택들을 거듭하며 늘 용사가 있었다면 하는 생각을 떨치지 못했고, 결국 교단과 제국의 모든 자원을 동원해 용사를 되찾기로 결정했다 — 이 계획은 의도치 않게 중단되었다. 누구에게나 친절하고 가진 것을 베풀며 최대한 많은 이에게 복음을 전하려 하고, 누군가 용사를 욕해도 화내기보다 "저들은 모를 뿐"이라며 웃어넘긴다. 다만 자신의 계획은 절대다수를 위한 일이라 믿기에, 방해되는 이는 곧바로 처리한다.', orgId:'org2' },
+  { name:'시론 아르델', role:'리벨리온 이단심판관', bio:'19세. 용사의 이름을 더럽히거나 교단의 뜻을 음해하는 자, 마물에 타락한 자를 찾아내는 이단심판관이지만, 늘 사방에 신경을 곤두세워야 하는 다른 심판관들과 달리 심판해야 할 이단이 있다면 그저 곧바로 철의 심판을 내릴 뿐이다. 이동 중 마물의 습격에서 홀로 살아남았을 때 교단 사람이 구해주었고, 고아가 된 그녀는 그대로 교단에게 키워졌다. 교단은 그녀에게 고향이자 가족이며 지켜야 할 유일하게 소중한 곳이다. 신앙심이 깊어 예배 시간에 자주 모습을 보이고, 흔히 이단이라 불리는 자들과도 평소엔 잘 지내는 편이지만 명이 떨어지면 주저 없이 심판을 내린다. 호기심이 많아 심판부터 내린 뒤 이유를 물어보곤 하며, 단것을 좋아해 선물하면 고통 없이 보내줄 의향이 있다고 말한다. 마력을 전혀 못 쓰는 몇 안 되는 사람 중 하나로, 잠입과 권총 사격술에 능하다.', orgId:'org2' },
+  { name:'앨리시아 폰 하르트만', role:'공화국 상원 의원 · 아르델 공화당 총재', bio:'33세. 제국 시절부터 이어진 명문가 중 하나인 아만다 가문의 장녀로, 마법과 경영, 사교 등 귀족이 배워야 할 모든 것을 어린 시절에 마쳤다. 오만에 빠지지 않고 귀족이 평민에게 다해야 할 의무를 다하려 했으며, 집 근처에 살던 메트로를 자신이 지켜야 할 평민이자 낯선 기술을 만들어내는 신비로운 존재로 여겨 가능한 모든 지원을 아끼지 않았다. 그의 기술이 대마법사가 되지 못하는 평민들을 위해 쓰이리라 믿었지만, 제국은 그녀의 바람과 달리 점점 부패해갔다. 조바심내지 않고 언젠가 닥칠 일을 천천히 준비해두었고, 그 일이 예상치 못한 방식으로 닥치자 곧바로 제국을 공화국으로 바꾸어냈다. 귀족으로서의 자존심은 없지만 자신을 무시하는 말에는 매섭게 쏘아붙이며, 간단한 마법 외에 사람 한두 명을 가볍게 들어 올리는 염동력을 구사한다. 한 번 정한 뜻을 잘 굽히지 않으며, 그녀의 말은 이미 몇 번이고 시뮬레이션을 거친 것이라 설득하기가 쉽지 않다.', orgId:'org3' },
+  { name:'캐릭터 이름 6', role:'직책 / 역할', bio:'여섯 번째 예시 캐릭터입니다.', orgId:'org3' },
+  { name:'아우구스트 루이사', role:'북부 노동당 총재', bio:'북부 나우카의 지주. 북부 산맥의 광업·제철·인프라 재정비를 끊임없이 주장하지만 합리적인 선에서 대화를 마무리할 수 있는 수완가라, 의회 내 충돌은 적은 편이다. 다만 물러설 수 없는 상황에서는 모든 수단을 동원하겠다는 뜻을 내비치곤 한다.', orgId:'org3' },
+  { name:'이리나 아크록스', role:'하르트만 후견단 · 황녀 경호', bio:'29세. 시골에서 마물을 잡으며 실력을 쌓다 수도로 상경해 제국 근위병이 되었다. 황제와 측근을 지킨다는 자부심으로 늘 최선을 다했지만, 하룻밤 사이 황가 전체가 사라지며 모든 것이 무너졌다. 자신이 지키지 못했다는 죄책감에 시달리던 그녀를 앨리시아 폰 하르트만이 찾아와, 위협이 들이닥치기 전 황녀를 구출해 보호하는 임무를 맡겼다. 제국 제일의 검 중 하나로 꼽히는 실력자이며, 황제 공백기에는 생계를 위해 상위 마물 토벌 용병대 선봉에 서기도 했다 — 명예도 목표도 없던 그 시절을 잊고 싶어 하지만 몸은 그때를 기억한다. 지금은 신분을 숨긴 황녀 샤를 아르델의 유일한 경호이자 보호자로, 다시는 누군가를 놓치지 않겠다는 마음으로 자는 시간을 제외하면 그녀의 곁을 떠나지 않으며 끝없이 잔소리한다.', orgId:'org7' },
+  { name:'샤를 아르델', role:'황가의 생존자 · 신분 비공개', bio:'17세. 균열 사건 이후 하룻밤 사이 황가 전체가 사라졌을 때, 앨리시아 폰 하르트만이 일이 벌어지기 전 그녀를 미리 구출해 숨겨두었다. 교단이 고아들에게 붙이는 성씨 "아르델"을 그대로 받아, 누구의 눈에도 띄지 않는 평범한 이름 뒤에 신분을 감추고 있다. 자신을 길러주던 황가가 통째로 사라진 그 사건의 배후가 누구인지 — 뒤에서 자신들을 조종해온 교단인지, 혼란을 틈타 혁명을 완성시킨 앨리시아인지 — 깊은 의심을 품고 있으며, 정작 자신을 구하고 지금도 보호하고 있는 것이 바로 그 앨리시아라는 사실은 아직 모른다. 이리나 아크록스가 유일한 경호이자 보호자로 곁을 지키고 있다.', orgId:'org7' },
+  { name:'엘로이즈 베르디에', role:'신디케이트 회장 · 최고 통솔자', bio:'30세. 원래 델리온의 사업체 운영 조직 아르카디아의 막내였으나, 정체된 분위기와 보수적인 간부들에게 답답함을 느껴 도망쳐 일레르의 작은 무법자 무리에 합류했다. 자유롭다 못해 조직이라 부르기도 애매했던 그곳에 직접 규칙을 세우고 운영하며 거대한 규모로 키워냈고, 결국 본래 소속이었던 아르카디아를 역으로 흡수해 전례 없는 거대 범죄조직을 만들어냈다. 특출난 전투 능력은 없지만 유연한 사고와 빠른 판단력, 사람을 설득하는 재주로 일레르 같은 뛰어난 인물들을 끌어들여 조직을 이끈다. 자신에게 남다른 능력이 없다는 콤플렉스에 시달리며 줄담배를 피우지만, 정작 일레르를 다루고 셰키나를 논리로 설득해온 것 자체가 지도자로서의 자질임을 스스로는 잘 깨닫지 못한다. 목표에 방해되는 존재는 가차없이 제거하며, 가시덩굴로 묶어 호수에 던지는 방식을 선호한다.', orgId:'org5' },
+  { name:'셰키나 베르베르', role:'신디케이트 부회장', bio:'26세. 과거 아르카디아의 중간 간부였으나, 막내였던 엘로이즈가 조직을 이탈하자 그 책임으로 일반 조직원으로 강등됐다. 이후 임무 중 큰 화상을 입어 신체 대부분을 아티팩트로 대체했다. 신디케이트가 아르카디아를 흡수한 뒤 자신을 강등시켰던 옛 간부들을 비밀리에 모두 처리했지만, 화상의 고통과 아티팩트로 바뀐 자신의 팔을 볼 때마다 그 모든 일의 시작이었던 엘로이즈를 향한 복수심을 키워가고 있다. 사업장 관리와 계산에 능하고, 강철 같은 왼팔과 두 다리에서 나오는 힘은 괴력에 가깝다 — "작은 골렘"이라 불리지만 본인은 그 별명을 싫어한다. 과거의 경험 때문에 조직을 떠나려는 이들을 절대 용납하지 않으며, 모두가 보는 앞에서 처형하는 모습이 자주 목격된다.', orgId:'org5' },
+  { name:'일레르 트레믈레', role:'신디케이트 행동대장', bio:'42세. 뱀 3, 인간 5, 용 2의 피가 섞인 델리온 최강의 무력을 가진 존재. 본래 뒷골목 잡배 무리에 불과했던 자신의 조직이 신입으로 들어온 엘로이즈에 의해 완전히 달라지는 과정을 지켜보며 흥미를 느끼고 그녀에게 모든 권한을 넘겼다. 즉흥적으로 움직이지만 압도적인 무력과 직감이 그 판단을 늘 옳게 만들어왔다. 술과 유흥, 쾌락을 솔직하게 즐기는 자유분방한 생활을 하며, 뱀과 용의 피 때문에 체온이 낮아 더운 것을 싫어한다.', orgId:'org5' },
+];
+
+/* =========================================================
+   렌더링 — 세계 지도 (클릭 시 지도 아래에 상세 표시)
+   ========================================================= */
+function renderCityDetail(city){
+  const box = document.getElementById('city-detail');
+  if(!city){
+    box.className = 'city-detail empty';
+    box.textContent = '지도에서 도시를 선택하면 이곳에 이미지와 정보가 표시됩니다.';
+    return;
+  }
+  box.className = 'city-detail';
+  box.innerHTML = `
+    <div class="city-image">
+      <span class="img-fallback">${city.name}.png</span>
+      <img src="${city.name}.png" alt="${city.name}" onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));" onerror="this.style.display='none';">
+    </div>
+    <div class="city-info">
+      <h3 class="detail-name">${city.name}</h3>
+      <div class="city-features">${(city.features||[]).map(f=>`<span class="feature-tag">${f}</span>`).join('')}</div>
+      <p class="detail-desc">${city.desc}</p>
+    </div>
+  `;
+}
+
+function renderMapPoints(){
+  const area = document.getElementById('map-area');
+  mapPoints.forEach(p=>{
+    const pin = document.createElement('button');
+    pin.className = 'map-pin';
+    pin.style.left = p.x + '%';
+    pin.style.top = p.y + '%';
+    pin.innerHTML = `<span class="pin-dot"></span><span class="pin-label">${p.name}</span>`;
+    pin.addEventListener('click', ()=>{
+      document.querySelectorAll('.map-pin').forEach(el=> el.classList.remove('active'));
+      pin.classList.add('active');
+      renderCityDetail(p);
+    });
+    area.appendChild(pin);
+  });
+}
+
+/* =========================================================
+   렌더링 — 아르델 공화국 (정치/경제)
+   ========================================================= */
+function renderRepublicStats(){
+  document.getElementById('republic-stats').innerHTML = republicStats.map(s=>
+    `<div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`
+  ).join('');
+}
+
+function renderHemicycle(svgId, legendId, partiesArr){
+  const svg = document.getElementById(svgId);
+  const cx = 200, cy = 195;
+  const rInner = 42, rOuter = 172;
+  const rows = 6;
+  const totalSeats = partiesArr.reduce((s,p)=>s+p.seats,0);
+
+  const radii = [];
+  for(let i=0;i<rows;i++) radii.push(rInner + i*(rOuter-rInner)/(rows-1));
+  const radiusSum = radii.reduce((a,b)=>a+b,0);
+
+  let seatsPerRow = radii.map(r=> Math.round(totalSeats * r/radiusSum));
+  const diff = totalSeats - seatsPerRow.reduce((a,b)=>a+b,0);
+  seatsPerRow[seatsPerRow.length-1] += diff;
+
+  let dots = [];
+  for(let i=0;i<rows;i++){
+    const n = seatsPerRow[i];
+    const r = radii[i];
+    if(n<=0) continue;
+    for(let j=0;j<n;j++){
+      const angle = n===1 ? 90 : j*(180/(n-1));
+      const rad = angle*Math.PI/180;
+      dots.push({ x: cx + r*Math.cos(rad), y: cy - r*Math.sin(rad), angle });
+    }
+  }
+  dots.sort((a,b)=> b.angle - a.angle);
+
+  let partyIdx = 0, remaining = partiesArr[0].seats;
+  dots.forEach(d=>{
+    while(remaining<=0 && partyIdx < partiesArr.length-1){ partyIdx++; remaining = partiesArr[partyIdx].seats; }
+    d.color = partiesArr[partyIdx].color;
+    remaining--;
+  });
+
+  svg.innerHTML = dots.map(d=>
+    `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.4" fill="${d.color}"/>`
+  ).join('');
+
+  document.getElementById(legendId).innerHTML = partiesArr.map(p=>
+    `<span class="legend-item"><span class="legend-dot" style="background:${p.color}"></span>${p.name} (${p.seats}석)</span>`
+  ).join('');
+}
+
+function renderPartyCards(){
+  document.getElementById('party-cards').innerHTML = lowerHouseParties.map(p=>`
+    <div class="party-card">
+      <span class="party-dot" style="background:${p.color}"></span>
+      <h4 class="party-name">${p.name}</h4>
+      <p class="party-desc">${p.desc}</p>
+    </div>
+  `).join('');
+}
+
+function renderLineChart(){
+  const svg = document.getElementById('line-chart');
+  const padLeft=40, padBottom=30, padTop=10, padRight=20;
+  const w = 480-padLeft-padRight, h = 220-padTop-padBottom;
+  const max = Math.max(...economyIndex) * 1.1;
+  const xStep = w/(economyIndex.length-1);
+
+  const points = economyIndex.map((v,i)=>({ x: padLeft + i*xStep, y: padTop + h - (v/max)*h }));
+  const pathD = points.map((p,i)=> (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const dotDelayStep = 1.1/(points.length-1);
+  const dots = points.map((p,i)=> `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--emerald-light)" style="transition-delay:${(0.2+i*dotDelayStep).toFixed(2)}s"/>`).join('');
+  const labels = economyYears.map((yr,i)=> `<text x="${points[i].x.toFixed(1)}" y="${(padTop+h+18).toFixed(1)}" class="axis-label" text-anchor="middle">${yr}</text>`).join('');
+  const baseline = `<line x1="${padLeft}" y1="${padTop+h}" x2="${padLeft+w}" y2="${padTop+h}" stroke="var(--ivory-faint)" stroke-width="1"/>`;
+
+  svg.innerHTML = baseline + `<path class="line" d="${pathD}" fill="none" stroke="var(--gold-light)" stroke-width="2"/>` + dots + labels;
+  requestAnimationFrame(()=> requestAnimationFrame(()=> svg.classList.add('in-view')));
+}
+
+function renderBarChart(){
+  const svg = document.getElementById('bar-chart');
+  const padLeft=40, padBottom=30, padTop=10, padRight=20;
+  const w = 480-padLeft-padRight, h = 220-padTop-padBottom;
+  const max = Math.max(...industryOutput) * 1.15;
+  const gap = w/industryOutput.length;
+  const barWidth = gap*0.55;
+
+  let bars='', labels='';
+  industryOutput.forEach((v,i)=>{
+    const barH = (v/max)*h;
+    const x = padLeft + i*gap + (gap-barWidth)/2;
+    const y = padTop + (h-barH);
+    bars += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" fill="var(--gold)" style="transition-delay:${(i*0.08).toFixed(2)}s"/>`;
+    labels += `<text x="${(x+barWidth/2).toFixed(1)}" y="${(padTop+h+18).toFixed(1)}" class="axis-label" text-anchor="middle">${economyYears[i]}</text>`;
+  });
+  const baseline = `<line x1="${padLeft}" y1="${padTop+h}" x2="${padLeft+w}" y2="${padTop+h}" stroke="var(--ivory-faint)" stroke-width="1"/>`;
+
+  svg.innerHTML = baseline + bars + labels;
+  requestAnimationFrame(()=> requestAnimationFrame(()=> svg.classList.add('in-view')));
+}
+
+/* =========================================================
+   렌더링 — 조직 및 단체 (사이드 탭 + 인라인 상세)
+   ========================================================= */
+function renderOrgSidebar(){
+  const sidebar = document.getElementById('org-sidebar');
+  sidebar.innerHTML = organizations.map(org=>
+    `<button class="org-sidebar-btn" data-org="${org.id}">${org.name}</button>`
+  ).join('');
+  sidebar.querySelectorAll('.org-sidebar-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> selectOrg(btn.dataset.org));
+  });
+}
+
+function renderOrgDetail(org){
+  document.getElementById('org-detail').innerHTML = `
+    <div class="org-image">
+      <span class="img-fallback">${org.name}.png</span>
+      <img src="${org.name}.png" alt="${org.name}" onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));" onerror="this.style.display='none';">
+    </div>
+    <div class="org-text">
+      <p class="eyebrow-small">${org.tagline}</p>
+      <h3 class="org-title">${org.name}</h3>
+      <p class="org-desc">${org.desc}</p>
+    </div>
+  `;
+}
+
+function renderSubOrgs(org){
+  const box = document.getElementById('sub-orgs');
+  if(!org.subOrgs || !org.subOrgs.length){ box.innerHTML=''; return; }
+  box.innerHTML = `<p class="eyebrow-small">하부 조직</p>` + org.subOrgs.map(s=>`
+    <div class="sub-org-card">
+      <h4 class="sub-org-title">${s.name}</h4>
+      <p class="sub-org-desc">${s.desc}</p>
+    </div>
+  `).join('');
+}
+
+function renderCharGrid(orgId){
+  const grid = document.getElementById('char-grid');
+  const list = characters.filter(c=> c.orgId === orgId);
+  grid.innerHTML = list.map(ch=>`
+    <div class="char-chip" data-name="${ch.name}">
+      <div class="card-avatar">${ch.name.trim().charAt(0)}</div>
+      <h4 class="card-name">${ch.name}</h4>
+      <p class="card-role">${ch.role}</p>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.char-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      grid.querySelectorAll('.char-chip').forEach(c=> c.classList.remove('active'));
+      chip.classList.add('active');
+      const ch = list.find(c=> c.name === chip.dataset.name);
+      renderCharDetail(ch);
+    });
+  });
+}
+
+function renderCharDetail(ch){
+  const box = document.getElementById('char-detail');
+  if(!ch){
+    box.className = 'char-detail empty';
+    box.textContent = '캐릭터를 선택하면 이곳에 이미지와 정보가 표시됩니다.';
+    return;
+  }
+  box.className = 'char-detail';
+  box.innerHTML = `
+    <div class="char-image">
+      <span class="img-fallback">${ch.name}.png</span>
+      <img src="${ch.name}.png" alt="${ch.name}" onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));" onerror="this.style.display='none';">
+    </div>
+    <div class="char-text">
+      <h3 class="detail-name">${ch.name}</h3>
+      <p class="card-role">${ch.role}</p>
+      <p class="detail-desc">${ch.bio}</p>
+    </div>
+  `;
+}
+
+function selectOrg(orgId){
+  document.querySelectorAll('.org-sidebar-btn').forEach(b=> b.classList.toggle('active', b.dataset.org === orgId));
+  const org = organizations.find(o=> o.id === orgId);
+  renderOrgDetail(org);
+  renderSubOrgs(org);
+  renderCharGrid(orgId);
+  renderCharDetail(null);
+}
+
+function initOrgsTab(){
+  renderOrgSidebar();
+  if(organizations.length) selectOrg(organizations[0].id);
+}
+
+/* =========================================================
+   탭 전환
+   ========================================================= */
+const tabBtns = document.querySelectorAll('.tab-btn');
+const panels = document.querySelectorAll('.tab-panel');
+const underline = document.getElementById('tab-underline');
+const tabsNav = document.getElementById('tabs');
+
+function setActiveTab(tabName, btn){
+  tabBtns.forEach(b=> b.classList.toggle('active', b === btn));
+  panels.forEach(p=> p.classList.toggle('active', p.id === 'panel-' + tabName));
+  moveUnderline(btn);
+}
+function moveUnderline(btn){
+  const navRect = tabsNav.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  underline.style.left = (btnRect.left - navRect.left + tabsNav.scrollLeft) + 'px';
+  underline.style.width = btnRect.width + 'px';
+}
+tabBtns.forEach(btn=> btn.addEventListener('click', ()=> setActiveTab(btn.dataset.tab, btn)));
+window.addEventListener('resize', ()=>{
+  const active = document.querySelector('.tab-btn.active');
+  if(active) moveUnderline(active);
+});
+
+/* =========================================================
+   로딩 화면 처리
+   ========================================================= */
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(reduceMotion) document.documentElement.classList.add('reduced-motion');
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderMapPoints();
+  renderRepublicStats();
+  renderHemicycle('parliament-chart-upper', 'upper-legend', upperHouseParties);
+  renderHemicycle('parliament-chart', 'parliament-legend', lowerHouseParties);
+  renderPartyCards();
+  renderLineChart();
+  renderBarChart();
+  initOrgsTab();
+
+  setActiveTab('lore', tabBtns[0]);
+
+  const loadingScreen = document.getElementById('loading-screen');
+  const mainSite = document.getElementById('main-site');
+  const loadDuration = reduceMotion ? 300 : 3200;
+
+  document.body.style.overflow = 'hidden';
+  setTimeout(()=>{
+    loadingScreen.classList.add('fade-out');
+    mainSite.classList.add('visible');
+    document.body.style.overflow = '';
+    setTimeout(()=>{
+      loadingScreen.style.display = 'none';
+      moveUnderline(document.querySelector('.tab-btn.active'));
+    }, 650);
+  }, loadDuration);
+});
+</script>
+</body>
+</html>
