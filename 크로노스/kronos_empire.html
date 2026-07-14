@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>크로노스 황국 기록보관소</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   디자인 토큰 — 아이보리+골드 황국 테마
+   ========================================================= */
+:root{
+  --bg-primary:#f5f1e8;
+  --bg-panel:#ede8db;
+  --bg-panel-2:#e4dece;
+
+  --gold:#b8901e;
+  --gold-light:#c9a227;
+  --gold-deep:#8a6a12;
+  --crimson:#8c2c2c;
+  --crimson-light:#b03838;
+  --ivory:#2a2218;          /* 텍스트: 진한 브라운 */
+  --ivory-soft:rgba(42,34,24,0.62);
+  --ivory-faint:rgba(42,34,24,0.14);
+
+  --font-display:'Noto Serif KR', serif;
+  --font-body:'Noto Sans KR', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+
+  --maxw:1080px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg-primary);
+  color:var(--ivory);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,.eyebrow{font-family:var(--font-display);}
+a{color:var(--gold);}
+::selection{background:var(--gold-light); color:#fff;}
+:focus-visible{outline:1px solid var(--gold); outline-offset:3px;}
+
+.reduced-motion *{
+  animation-duration:0.01ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:0.01ms !important;
+}
+
+/* =========================================================
+   로딩 화면
+   ========================================================= */
+.loading-screen{
+  position:fixed; inset:0;
+  background:var(--bg-primary);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:2000; transition:opacity 0.6s ease;
+}
+.loading-screen::before{
+  content:''; position:absolute;
+  width:480px; height:480px;
+  background:radial-gradient(circle, rgba(184,144,30,0.12), transparent 65%);
+  pointer-events:none;
+}
+.loading-screen.fade-out{opacity:0; pointer-events:none;}
+
+/* 날개+불꽃 엠블럼 */
+.emblem-svg{width:160px; height:160px; position:relative; z-index:1;}
+.wing-left{
+  transform-origin:100px 100px;
+  opacity:0; transform:translateX(20px);
+  animation:wingReveal 0.7s ease-out 0.3s forwards;
+}
+.wing-right{
+  transform-origin:100px 100px;
+  opacity:0; transform:translateX(-20px);
+  animation:wingReveal 0.7s ease-out 0.5s forwards;
+}
+.flame-main{
+  stroke-dasharray:300; stroke-dashoffset:300;
+  animation:drawFlame 1.0s ease-out 0.9s forwards;
+}
+.emblem-center-k{
+  opacity:0; transform-origin:100px 100px; transform:scale(0);
+  animation:popIn 0.45s ease-out 1.7s forwards;
+}
+@keyframes wingReveal{from{opacity:0;}to{opacity:1; transform:translateX(0);}}
+@keyframes drawFlame{from{stroke-dashoffset:300;}to{stroke-dashoffset:0;}}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+.welcome-text{
+  margin-top:1.6rem; font-size:1.3rem; letter-spacing:0.04em;
+  color:var(--ivory); opacity:0;
+  animation:fadeUp 0.6s ease-out 1.9s forwards;
+  position:relative; z-index:1;
+}
+.welcome-sub{
+  margin-top:0.5rem; font-family:var(--font-mono); font-size:0.7rem;
+  letter-spacing:0.25em; text-transform:uppercase; color:var(--gold-light);
+  opacity:0; animation:fadeUp 0.6s ease-out 2.05s forwards;
+  position:relative; z-index:1;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* =========================================================
+   메인 사이트
+   ========================================================= */
+#main-site{opacity:0; transition:opacity 0.6s ease;}
+#main-site.visible{opacity:1;}
+
+.topbar{
+  position:sticky; top:0; z-index:100;
+  background:rgba(245,241,232,0.94);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--ivory-faint);
+}
+.topbar-inner{max-width:var(--maxw); margin:0 auto; padding:1rem 1.5rem 0; display:flex; flex-direction:column; gap:0.8rem;}
+
+.brand{display:flex; align-items:center; gap:0.7rem; font-family:var(--font-display); font-size:1rem; letter-spacing:0.05em; color:var(--ivory);}
+.brand-emblem{width:26px; height:26px; flex-shrink:0;}
+.brand small{display:block; font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.2em; color:var(--gold-light); font-weight:400;}
+
+.tabs{position:relative; display:flex; gap:0.5rem; overflow-x:auto; scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{background:none; border:none; color:var(--ivory-soft); font-family:var(--font-body); font-size:0.85rem; letter-spacing:0.03em; padding:0.75rem 0.9rem; cursor:pointer; white-space:nowrap; transition:color 0.2s ease, transform 0.15s ease;}
+.tab-btn:hover{color:var(--ivory);}
+.tab-btn.active{color:var(--gold);}
+.tab-btn:active{transform:scale(0.94);}
+.tab-underline{position:absolute; bottom:0; left:0; height:2px; background:var(--gold); transition:left 0.3s ease, width 0.3s ease;}
+
+main{max-width:var(--maxw); margin:0 auto; padding:3rem 1.5rem 6rem;}
+
+.tab-panel{display:none;}
+.tab-panel.active{display:block; animation:panelFadeIn 0.4s ease;}
+@keyframes panelFadeIn{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:translateY(0);}}
+
+/* =========================================================
+   공용 타이포그래피
+   ========================================================= */
+.eyebrow{font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--gold); margin:0 0 0.8rem;}
+.section-title{font-size:1.8rem; font-weight:600; margin:0 0 1rem; color:var(--ivory);}
+.section-divider{width:48px; height:1px; background:var(--gold); margin:0 0 2rem;}
+.subsection-title{font-family:var(--font-display); font-size:1.15rem; color:var(--ivory); margin:2.5rem 0 1.2rem; padding-top:1.6rem; border-top:1px solid var(--ivory-faint);}
+.lore-text{max-width:640px; color:var(--ivory-soft); font-size:0.98rem;}
+.lore-quote{border-left:2px solid var(--gold); padding:0.4rem 0 0.4rem 1.2rem; margin:2rem 0; font-family:var(--font-display); font-size:1.1rem; color:var(--ivory);}
+
+/* =========================================================
+   타임라인
+   ========================================================= */
+.timeline{position:relative; max-width:680px; margin-top:1rem; padding-left:2rem; border-left:2px solid var(--ivory-faint);}
+.timeline-item{position:relative; padding-bottom:2.6rem; opacity:0; transform:translateY(24px); transition:opacity 0.7s ease, transform 0.7s ease;}
+.timeline-item.visible{opacity:1; transform:translateY(0);}
+.timeline-item::before{content:''; position:absolute; left:-2.07rem; top:0.35rem; width:10px; height:10px; border-radius:50%; background:var(--gold); box-shadow:0 0 0 3px var(--bg-primary), 0 0 0 4px var(--gold-light);}
+.timeline-item:last-child{padding-bottom:0;}
+.timeline-year{font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.1em; color:var(--gold); margin:0 0 0.35rem;}
+.timeline-title{font-family:var(--font-display); font-size:1.08rem; color:var(--ivory); margin:0 0 0.5rem;}
+.timeline-desc{font-size:0.92rem; color:var(--ivory-soft); margin:0;}
+
+/* =========================================================
+   황국 개요 — 기본 정보 카드
+   ========================================================= */
+.stats-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:1px; background:var(--ivory-faint); margin-bottom:2rem;}
+.stat-card{background:var(--bg-panel); padding:1.4rem; animation:panelFadeIn 0.45s ease both;}
+.stat-card:nth-child(2){animation-delay:0.06s;}
+.stat-card:nth-child(3){animation-delay:0.12s;}
+.stat-card:nth-child(4){animation-delay:0.18s;}
+.stat-value{font-family:var(--font-mono); font-size:1.5rem; color:var(--gold);}
+.stat-label{font-size:0.75rem; color:var(--ivory-soft); margin-top:0.3rem;}
+
+/* 지역 카드 (북부/드래곤레어/남부) */
+.region-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1rem; margin-top:1.2rem;}
+.region-card{background:var(--bg-panel); border:1px solid var(--ivory-faint); border-left:3px solid var(--gold); padding:1.3rem;}
+.region-name{font-family:var(--font-display); font-size:1rem; color:var(--ivory); margin:0 0 0.4rem;}
+.region-tag{font-family:var(--font-mono); font-size:0.68rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.1em; margin:0 0 0.6rem;}
+.region-desc{font-size:0.88rem; color:var(--ivory-soft);}
+
+/* =========================================================
+   황실 탭 — 인물 카드
+   ========================================================= */
+.royal-list{display:flex; flex-direction:column; gap:2.2rem;}
+
+/* 귀족 의회 파벌 차트 */
+.noble-chart-wrap{background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.2rem; margin:1rem 0 1.2rem; display:flex; flex-direction:column; align-items:flex-start; gap:0.7rem;}
+.noble-chart-svg{width:100%; max-width:560px; height:auto;}
+.noble-legend{display:flex; gap:1.2rem; flex-wrap:wrap;}
+.noble-legend-item{display:flex; align-items:center; gap:0.4rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--ivory-soft);}
+.noble-legend-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+.royal-item{display:flex; gap:1.6rem;}
+.royal-image{align-self:flex-start; flex:0 0 140px; aspect-ratio:3/4; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.68rem; color:var(--ivory-soft); text-align:center; padding:0.4rem; position:relative; overflow:hidden; cursor:zoom-in;}
+.royal-image img{display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.5s ease; cursor:zoom-in;}
+.royal-image .img-fallback{position:relative; z-index:1;}
+.royal-info{flex:1; min-width:0;}
+.royal-eyebrow{font-family:var(--font-mono); font-size:0.65rem; letter-spacing:0.18em; color:var(--gold); text-transform:uppercase; margin:0 0 0.35rem;}
+.royal-name{font-family:var(--font-display); font-size:1.25rem; color:var(--ivory); margin:0 0 0.6rem;}
+.royal-divider{width:32px; height:1px; background:var(--gold); margin:0 0 0.9rem;}
+.royal-bio{font-size:0.9rem; color:var(--ivory-soft);}
+.royal-divider-line{border:none; border-top:1px solid var(--ivory-faint); margin:2.2rem 0 0;}
+
+/* 원로회 목록 */
+.council-list{list-style:none; margin:0; padding:0;}
+.council-item{display:flex; gap:1.6rem; padding:1.4rem 0; border-bottom:1px solid var(--ivory-faint);}
+.council-item:first-child{border-top:1px solid var(--ivory-faint);}
+.council-image{align-self:flex-start; flex:0 0 110px; aspect-ratio:3/4; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.62rem; color:var(--ivory-soft); text-align:center; padding:0.4rem; position:relative; overflow:hidden; cursor:zoom-in;}
+.council-image img{display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.5s ease; cursor:zoom-in;}
+.council-image .img-fallback{position:relative; z-index:1;}
+.council-info{flex:1; min-width:0;}
+.council-rank{font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin:0 0 0.35rem;}
+.council-name{font-family:var(--font-display); font-size:0.98rem; color:var(--ivory); margin:0 0 0.4rem;}
+.council-desc{font-size:0.86rem; color:var(--ivory-soft);}
+
+/* =========================================================
+   조직 및 단체 (사이드 탭 구조)
+   ========================================================= */
+.orgs-layout{display:flex; gap:2rem; align-items:flex-start;}
+.org-sidebar{flex:0 0 200px; display:flex; flex-direction:column; gap:0.2rem; border-right:1px solid var(--ivory-faint); padding-right:1rem;}
+.org-sidebar-btn{background:none; border:none; text-align:left; font-family:var(--font-body); font-size:0.88rem; color:var(--ivory-soft); padding:0.65rem 0.8rem; cursor:pointer; border-left:2px solid transparent; transition:color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;}
+.org-sidebar-btn:hover{color:var(--ivory);}
+.org-sidebar-btn.active{color:var(--gold); border-left-color:var(--gold); background:rgba(184,144,30,0.07);}
+.org-sidebar-btn:active{transform:scale(0.97);}
+
+.org-content{flex:1; min-width:0;}
+.org-detail{display:flex; gap:1.6rem; margin-bottom:2rem; animation:panelFadeIn 0.3s ease;}
+.org-image{align-self:flex-start; position:relative; overflow:hidden; flex:0 0 220px; aspect-ratio:4/3; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.7rem; color:var(--ivory-soft); text-align:center; padding:0.5rem; cursor:zoom-in;}
+.org-image img{display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.5s ease; cursor:zoom-in;}
+.org-image .img-fallback{position:relative; z-index:1;}
+.eyebrow-small{font-family:var(--font-mono); font-size:0.65rem; letter-spacing:0.2em; color:var(--gold); text-transform:uppercase; margin:0 0 0.4rem;}
+.org-title{font-family:var(--font-display); font-size:1.3rem; color:var(--ivory); margin:0 0 0.6rem;}
+.org-desc{color:var(--ivory-soft); font-size:0.92rem;}
+
+.sub-orgs{margin:0 0 2rem;}
+.sub-org-card{background:var(--bg-panel); border:1px solid var(--ivory-faint); border-left:2px solid var(--gold); padding:1.1rem 1.3rem; margin-bottom:0.8rem; animation:panelFadeIn 0.4s ease both;}
+.sub-org-card:last-child{margin-bottom:0;}
+.sub-org-title{font-family:var(--font-display); font-size:1rem; color:var(--ivory); margin:0 0 0.3rem;}
+.sub-org-desc{font-size:0.88rem; color:var(--ivory-soft); margin:0;}
+
+.char-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:0.8rem; margin-bottom:1.5rem;}
+.char-chip{background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1rem; cursor:pointer; transition:border-color 0.2s ease, background 0.2s ease, transform 0.2s ease; animation:panelFadeIn 0.4s ease both;}
+.char-chip:hover{border-color:var(--gold); transform:translateY(-2px);}
+.char-chip:active{transform:translateY(0) scale(0.97);}
+.char-chip.active{border-color:var(--gold); background:rgba(184,144,30,0.07);}
+.char-chip:nth-child(2){animation-delay:0.05s;}
+.char-chip:nth-child(3){animation-delay:0.1s;}
+.char-chip:nth-child(4){animation-delay:0.15s;}
+.char-chip:nth-child(5){animation-delay:0.2s;}
+.char-chip:nth-child(6){animation-delay:0.25s;}
+.card-avatar{width:38px; height:38px; border:1px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:0.9rem; color:var(--gold); margin-bottom:0.6rem;}
+.card-name{font-family:var(--font-display); font-size:0.95rem; color:var(--ivory); margin:0 0 0.2rem;}
+.card-role{font-size:0.78rem; color:var(--ivory-soft);}
+
+.char-detail{display:flex; gap:1.6rem; background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.6rem; animation:panelFadeIn 0.3s ease;}
+.char-detail.empty{justify-content:center; align-items:center; min-height:100px; color:var(--ivory-soft); font-family:var(--font-mono); font-size:0.8rem; border-style:dashed; text-align:center;}
+.char-image{align-self:flex-start; position:relative; overflow:hidden; flex:0 0 160px; aspect-ratio:3/4; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.7rem; color:var(--ivory-soft); text-align:center; padding:0.5rem; cursor:zoom-in;}
+.char-image img{display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.5s ease; cursor:zoom-in;}
+.char-image .img-fallback{position:relative; z-index:1;}
+.char-text{flex:1; min-width:0;}
+.detail-name{font-family:var(--font-display); font-size:1.25rem; color:var(--ivory); margin:0 0 0.6rem;}
+.detail-desc{color:var(--ivory-soft); font-size:0.9rem;}
+
+/* =========================================================
+   세계 지도
+   ========================================================= */
+.map-area{
+  position:relative; width:100%; aspect-ratio:16/9;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(184,144,30,0.14), transparent 55%),
+    radial-gradient(circle at 70% 60%, rgba(140,44,44,0.10), transparent 50%),
+    linear-gradient(160deg, #e8e0cc, #d8cebc);
+  border:1px solid var(--ivory-faint); overflow:hidden;
+}
+.map-bg-image{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; cursor:zoom-in;}
+.map-pin{position:absolute; transform:translate(-50%, -50%); cursor:pointer; display:flex; flex-direction:column; align-items:center; background:none; border:none; padding:4px; z-index:1;}
+.pin-dot{width:18px; height:18px; background:var(--gold); border:2px solid rgba(42,34,24,0.4); border-radius:50%; animation:pinPulse 2.4s ease-out infinite; transition:background 0.2s ease, transform 0.2s ease;}
+@keyframes pinPulse{0%{box-shadow:0 0 0 0 rgba(184,144,30,0.4);}70%{box-shadow:0 0 0 14px rgba(184,144,30,0);}100%{box-shadow:0 0 0 0 rgba(184,144,30,0);}}
+.map-pin:hover .pin-dot{transform:scale(1.2);}
+.map-pin:active .pin-dot{transform:scale(0.9);}
+.map-pin.active .pin-dot{background:var(--crimson-light); box-shadow:0 0 0 4px rgba(140,44,44,0.2);}
+.pin-label{margin-top:0.35rem; font-size:0.7rem; font-family:var(--font-mono); color:var(--ivory); background:rgba(245,241,232,0.9); padding:0.1rem 0.4rem; white-space:nowrap; opacity:0; transition:opacity 0.2s ease;}
+.map-pin:hover .pin-label{opacity:1;}
+
+.region-detail{margin-top:1.5rem; background:var(--bg-panel); border:1px solid var(--ivory-faint); padding:1.6rem; display:flex; gap:1.6rem; animation:panelFadeIn 0.3s ease;}
+.region-detail.empty{justify-content:center; align-items:center; min-height:120px; color:var(--ivory-soft); font-family:var(--font-mono); font-size:0.8rem; border-style:dashed; text-align:center;}
+.region-image{align-self:flex-start; position:relative; overflow:hidden; flex:0 0 240px; aspect-ratio:4/3; background:var(--bg-panel-2); border:1px solid var(--ivory-faint); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.7rem; color:var(--ivory-soft); text-align:center; padding:0.5rem; cursor:zoom-in;}
+.region-image img{display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.5s ease; cursor:zoom-in;}
+.region-image .img-fallback{position:relative; z-index:1;}
+.region-info{flex:1; min-width:0;}
+.region-features{display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;}
+.feature-tag{font-family:var(--font-mono); font-size:0.7rem; color:var(--gold); border:1px solid var(--gold); padding:0.2rem 0.6rem; border-radius:2px;}
+
+/* =========================================================
+   라이트박스
+   ========================================================= */
+.image-lightbox{position:fixed; inset:0; background:rgba(30,24,14,0.88); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:2rem; opacity:0; pointer-events:none; transition:opacity 0.25s ease; z-index:3200; cursor:zoom-out;}
+.image-lightbox.open{opacity:1; pointer-events:auto;}
+.image-lightbox img{max-width:92vw; max-height:92vh; object-fit:contain; box-shadow:0 0 50px rgba(0,0,0,0.4); border:1px solid rgba(184,144,30,0.3); transform:scale(0.93); transition:transform 0.25s ease;}
+.image-lightbox.open img{transform:scale(1);}
+
+/* 잠긴 항목 표시 */
+.council-item.is-locked{cursor:pointer;}
+.council-item.is-locked .council-name{display:flex; align-items:center; gap:0.5rem;}
+.council-lock-icon{font-size:0.78rem; color:var(--gold); opacity:0.85;}
+
+/* 비밀번호 입력 오버레이 */
+.secret-overlay{position:fixed; inset:0; background:rgba(30,24,14,0.88); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:1.5rem; opacity:0; pointer-events:none; transition:opacity 0.25s ease; z-index:3100;}
+.secret-overlay.open{opacity:1; pointer-events:auto;}
+.secret-panel{background:var(--bg-panel-2); border:1px solid var(--gold); padding:2rem; width:100%; max-width:340px; text-align:center; transform:scale(0.95); transition:transform 0.25s ease;}
+.secret-overlay.open .secret-panel{transform:scale(1);}
+.secret-panel-title{font-family:var(--font-display); font-size:1.05rem; color:var(--ivory); margin:0 0 1.2rem;}
+.secret-panel input[type="password"]{width:100%; box-sizing:border-box; background:var(--bg-panel); border:1px solid var(--ivory-faint); color:var(--ivory); font-family:var(--font-mono); font-size:0.9rem; padding:0.7rem 0.8rem; margin:0 0 1rem; text-align:center;}
+.secret-panel input[type="password"]:focus{outline:none; border-color:var(--gold);}
+.secret-panel-actions{display:flex; gap:0.6rem; justify-content:center;}
+.secret-panel-actions button{font-family:var(--font-mono); font-size:0.78rem; letter-spacing:0.08em; padding:0.6rem 1.1rem; background:none; border:1px solid var(--ivory-faint); color:var(--ivory-soft); cursor:pointer; transition:border-color 0.2s ease, color 0.2s ease;}
+.secret-panel-actions button:first-child{border-color:var(--gold); color:var(--gold);}
+.secret-panel-actions button:hover{border-color:var(--gold); color:var(--gold);}
+.secret-error{color:#c96a5a; font-size:0.78rem; margin:0.9rem 0 0;}
+
+/* 잠금 해제 후 콘텐츠 팝업 */
+.secret-content-panel{background:var(--bg-panel-2); border:1px solid var(--gold); padding:2rem; width:100%; max-width:640px; max-height:85vh; overflow-y:auto; position:relative; transform:scale(0.95); transition:transform 0.25s ease;}
+.secret-overlay.open .secret-content-panel{transform:scale(1);}
+.secret-close{position:absolute; top:0.8rem; right:1rem; background:none; border:none; color:var(--ivory-soft); font-size:1.4rem; line-height:1; cursor:pointer;}
+.secret-close:hover{color:var(--gold);}
+.secret-content-title{font-family:var(--font-display); font-size:1.1rem; color:var(--gold); margin:0 0 1.3rem;}
+.secret-gallery{display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:0.7rem; margin:0 0 1.4rem;}
+.secret-image{aspect-ratio:3/4; overflow:hidden; border:1px solid var(--ivory-faint); background:var(--bg-panel);}
+.secret-image img{width:100%; height:100%; object-fit:cover; cursor:zoom-in; display:block;}
+.secret-text{font-family:var(--font-mono); font-size:0.82rem; color:var(--ivory-soft); border-top:1px solid var(--ivory-faint); padding-top:1.2rem; white-space:pre-wrap;}
+
+/* =========================================================
+   반응형
+   ========================================================= */
+@media (max-width:768px){
+  .orgs-layout{flex-direction:column; min-width:0;}
+  .org-content{flex:1 1 auto;}
+  .org-sidebar{flex-direction:row; flex:0 0 auto; overflow-x:auto; -webkit-overflow-scrolling:touch; min-width:0; max-width:100%; border-right:none; border-bottom:1px solid var(--ivory-faint); padding-right:0; padding-bottom:0.6rem; gap:0.3rem;}
+  .org-sidebar-btn{border-left:none; border-bottom:2px solid transparent; white-space:nowrap;}
+  .org-sidebar-btn.active{border-left-color:transparent; border-bottom-color:var(--gold);}
+  .org-detail, .char-detail, .royal-item, .council-item, .region-detail{flex-direction:column;}
+  .org-image, .char-image, .region-image{flex:0 0 auto; width:100%; aspect-ratio:16/9;}
+  .royal-image, .council-image{flex:0 0 auto; width:100%; aspect-ratio:3/2;}
+}
+@media (max-width:640px){
+  .section-title{font-size:1.4rem;}
+  .tab-btn{font-size:0.78rem; padding:0.65rem 0.6rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- 로딩 화면 -->
+<div class="loading-screen" id="loading-screen">
+  <svg class="emblem-svg" viewBox="0 0 200 200">
+    <!-- 왼쪽 날개 -->
+    <path class="wing-left" d="M100,115 C85,100 55,85 35,75 C55,90 70,105 80,125 C85,118 92,116 100,115Z" fill="var(--gold-light)" opacity="0.85"/>
+    <path class="wing-left" d="M100,115 C88,95 65,72 42,58 C62,78 75,98 82,120 C87,117 93,115 100,115Z" fill="var(--gold)" opacity="0.6"/>
+    <!-- 오른쪽 날개 (좌우 대칭) -->
+    <path class="wing-right" d="M100,115 C115,100 145,85 165,75 C145,90 130,105 120,125 C115,118 108,116 100,115Z" fill="var(--gold-light)" opacity="0.85"/>
+    <path class="wing-right" d="M100,115 C112,95 135,72 158,58 C138,78 125,98 118,120 C113,117 107,115 100,115Z" fill="var(--gold)" opacity="0.6"/>
+    <!-- 중앙 불꽃 -->
+    <path class="flame-main" d="M100,140 C95,125 88,115 90,100 C92,88 98,80 100,70 C102,80 108,88 110,100 C112,115 105,125 100,140Z" fill="none" stroke="var(--crimson)" stroke-width="2" stroke-linecap="round"/>
+    <!-- 엠블럼 중앙 다이아몬드 -->
+    <polygon class="emblem-center-k" points="100,90 108,100 100,110 92,100" fill="var(--gold)"/>
+  </svg>
+  <div class="welcome-text">크로노스 황국에 어서오세요</div>
+  <div class="welcome-sub">KRONOS EMPIRE ARCHIVE</div>
+</div>
+
+<!-- 메인 사이트 -->
+<div id="main-site">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg class="brand-emblem" viewBox="0 0 200 200">
+          <path d="M100,115 C85,100 55,85 35,75 C55,90 70,105 80,125 C85,118 92,116 100,115Z" fill="var(--gold-light)" opacity="0.9"/>
+          <path d="M100,115 C115,100 145,85 165,75 C145,90 130,105 120,125 C115,118 108,116 100,115Z" fill="var(--gold-light)" opacity="0.9"/>
+          <path d="M100,138 C96,124 90,112 92,100 C94,89 98,82 100,72 C102,82 106,89 108,100 C110,112 104,124 100,138Z" fill="var(--crimson)" opacity="0.85"/>
+          <polygon points="100,92 107,100 100,108 93,100" fill="var(--gold)"/>
+        </svg>
+        <span>크로노스 황국 기록보관소<small>KRONOS EMPIRE ARCHIVE</small></span>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab-btn" data-tab="lore">세계관 설명</button>
+        <button class="tab-btn" data-tab="timeline">타임라인</button>
+        <button class="tab-btn" data-tab="empire">크로노스 황국</button>
+        <button class="tab-btn" data-tab="royal">황실</button>
+        <button class="tab-btn" data-tab="duchy">남부 대공령</button>
+        <button class="tab-btn" data-tab="council">원로회</button>
+        <button class="tab-btn" data-tab="map">세계 지도</button>
+        <span class="tab-underline" id="tab-underline"></span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 1. 세계관 설명 -->
+    <section class="tab-panel" id="panel-lore">
+      <p class="eyebrow">OVERVIEW</p>
+      <h2 class="section-title">세계관 설명</h2>
+      <div class="section-divider"></div>
+
+      <p class="lore-text">아르델에서 범선을 타고 3주에서 한 달은 가야 닿는 대륙, 루카만. 오래전부터 이 대륙은 수많은 소국들이 끊임없이 전쟁을 벌이며 무너지고 다시 세워지기를 반복했다. 그 혼란의 역사 끝에 마지막 패권국으로 남은 것이 크로노스 황국이다.</p>
+
+      <div class="lore-quote">"황제에게 충성을, 황제는 대륙에 번영을."</div>
+
+      <p class="lore-text">크로노스는 건국된 지 100여 년도 채 되지 않은 젊은 나라다. 그럼에도 넓은 땅과 효율적인 봉건제를 바탕으로 유례없는 전성기를 이루고 있다. 한 명의 황제와 그에게 충성을 맹세한 기사들, 귀족들의 신뢰 관계로 이루어진 절대 군주정이며, 드래곤 부족과의 협력이 이 나라를 특별하게 만든 결정적 요인이었다.</p>
+
+      <p class="lore-text">루카만 대륙에서 드래곤은 이종족의 개념을 넘어 신성시되는 존재다. 크로노스가 드래곤과 협력한다는 사실만으로도 수많은 도시가 자발적으로 귀속되었고, 덕분에 피비린내 나는 전면전 없이도 사람과 재산이 온전히 남은 채 강대국이 될 수 있었다. 황국 곳곳에서 드래곤의 흔적을 심심치 않게 찾아볼 수 있다.</p>
+
+      <p class="lore-text">크로노스는 마법학 중에서도 연금술의 대가다. 아티팩트에 필요한 정교한 마력석 조정, 각종 광석 가공, 인체 연성과 개조 기술에 능하며, 원석에서부터 아티팩트를 빚어내는 장인들이 전국에 즐비하다. 마법사 한 명이 수백 명분의 작업을 해내고, 연금술사는 강가의 돌도 광석으로 바꾸어내니 황국은 끝없이 성장했다. 그 부를 좇아 상인들이 몰려들고 있다.</p>
+
+      <p class="lore-text">그러나 최근 들어 공산품의 생산 방식과 기술 모든 면에서 아르델 공화국을 따라잡지 못하고 있으며, 무역 적자가 생겨나 이를 해결할 방법을 강구하는 중이다.</p>
+
+      <div class="lore-quote">"밝은 번영의 이면"</div>
+
+      <p class="lore-text">황국이 패권을 잡는 과정은 결코 깨끗하지 않았다. 인체 실험을 위한 고아 징발, 끝까지 저항한 도시의 몰살, 이종족 연구를 위한 비인도적 생체 실험 — 크로노스 또한 패권국이 되기 위해 수단과 방법을 가리지 않았다.</p>
+
+      <p class="lore-text">그리고 지금, 황제 레오폴드 2세가 진짜 인간 황제가 아니라 용족이 황제 행세를 하며 크로노스를 집어삼키려 한다는 소문이 나돌고 있다. 오래전부터 용을 신성시해온 이들과, 소수 용족에게 집중된 이권에 불만을 품은 이들, 그리고 용족을 두려워하는 이들이 뒤엉켜 황국은 서서히 분열하기 시작했다.</p>
+
+      <p class="lore-text">이들에게 공화국은 새로운 위협이다. 친구가 될지 적이 될지 — 서로가 서로를 조용히 파악하는 단계다.</p>
+
+      <h3 class="subsection-title">아르델 제국과의 전쟁</h3>
+      <p class="lore-text">크로노스가 대륙을 통일한 직후, 아르델 제국이 군대를 이끌고 침공해왔다. 새로 세워진 황국에 대한 시험이었는지, 드래곤과 인간의 연합이라는 전례 없는 국가에 대한 불안이었는지 — 어느 쪽이든 결과는 참패였다. 아르델 제국은 크로노스의 드래곤 전력이 어느 정도인지 전혀 파악하지 못한 채 전선을 열었고, 그 대가를 혹독하게 치렀다.</p>
+      <p class="lore-text">오히려 크로노스 입장에서 이 전쟁은 득이 됐다. 대륙 통일 직후 남아있던 내부 잡음과 귀속 도시들의 불안이, 외부의 침략을 함께 막아내는 과정에서 거의 정리됐다. 황국으로서의 결속이 한층 단단해졌고, 아르델은 협상으로 전쟁을 마무리하며 배상금을 지불했다. 크로노스의 실질적 피해는 미미했다.</p>
+      <p class="lore-text">지금의 아르델 공화국에 대한 크로노스의 시각은 그 제국과 분리되어 있다. 먼저 쳐들어온 건 이미 사라진 제국이고, 혁명으로 세워진 공화국은 다른 주체다 — 그래서 크로노스는 공화국을 경계하면서도, 아직 적이라 단정 짓지는 않고 있다.</p>
+    </section>
+
+    <!-- 2. 타임라인 -->
+    <section class="tab-panel" id="panel-timeline">
+      <p class="eyebrow">CHRONICLE</p>
+      <h2 class="section-title">타임라인</h2>
+      <div class="section-divider"></div>
+      <p class="lore-text">아래로 스크롤하면 순서대로 나타납니다.</p>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <!-- 3. 크로노스 황국 -->
+    <section class="tab-panel" id="panel-empire">
+      <p class="eyebrow">STATE OF THE EMPIRE</p>
+      <h2 class="section-title">크로노스 황국</h2>
+      <div class="section-divider"></div>
+
+      <div class="stats-grid" id="empire-stats"></div>
+
+      <p class="lore-text">
+        크로노스 황국은 황제를 정점으로 한 절대 군주정 국가다. 귀족과 기사들은 황제에게 충성을 맹세하며, 이 신뢰 관계가 황국의 근간을 이룬다. 넓은 영토를 효율적인 봉건제로 다스리며 유례없는 전성기를 누리고 있지만, 황제의 정체를 둘러싼 소문으로 내부 균열이 시작되고 있다.
+      </p>
+
+      <h3 class="subsection-title">귀족 의회 현황</h3>
+      <p class="lore-text">
+        크로노스 귀족 의회는 현재 80명으로 구성되어 있으며, 황태자의 혈통 논란과 용족의 세력 확장에 대한 두려움이 교차하면서 파벌 구도가 흔들리고 있다. 황실파와 귀족파가 비슷한 숫자를 유지하는 가운데, 뚜렷한 입장을 정하지 못한 중립파가 가장 큰 비중을 차지하게 됐다는 점이 지금 크로노스 정치의 핵심이다.
+      </p>
+      <div class="noble-chart-wrap">
+        <svg id="noble-chart" viewBox="0 0 560 260" class="noble-chart-svg"></svg>
+        <div class="noble-legend" id="noble-legend"></div>
+      </div>
+      <p class="lore-text">
+        황실파(24석)는 태후 세레스와 황태자 레오폴드 2세를 적극 지지하는 세력으로, 드래곤과의 공존이 크로노스의 번영을 이끌었다는 입장이다. 귀족파(24석)는 황가에 순수 인간이 없다는 사실에 불안을 느끼며 인간 중심의 황국 체제를 요구하고 있다. 중립파(32석)는 어느 쪽도 단호하게 지지하지 못한 채 상황을 관망하고 있으며, 이들의 향방이 황위 계승의 결정적 변수가 될 것으로 보인다.
+      </p>
+
+      <h3 class="subsection-title">지역 현황</h3>
+      <div class="region-grid">
+        <div class="region-card">
+          <p class="region-tag">북부 · 왕도권</p>
+          <h4 class="region-name">북부 왕도권</h4>
+          <p class="region-desc">황권이 미치는 중앙 도시와 그 주변 지역. 황궁, 귀족 의회, 용족 원로회 회의소가 모두 이곳에 있다.</p>
+        </div>
+        <div class="region-card" style="border-left-color:var(--crimson)">
+          <p class="region-tag" style="color:var(--crimson)">중앙 · 드래곤 레어</p>
+          <h4 class="region-name">거대 바위산 / 드래곤 레어</h4>
+          <p class="region-desc">대륙 중앙에 솟아오른 거대 바위산. 용족의 집거지이자 원로회가 실질적으로 거주하는 영역으로, 인간이 함부로 발을 들이지 않는다.</p>
+        </div>
+        <div class="region-card">
+          <p class="region-tag">남부 · 대공령</p>
+          <h4 class="region-name">남부 대공령</h4>
+          <p class="region-desc">남부 대공이 실효 지배하는 지역. 황자의 혈통에 의문을 품고 있는 대공은 인간 중심의 황국을 주장하며 중앙과 미묘한 긴장 관계를 유지하고 있다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 황실 -->
+    <section class="tab-panel" id="panel-royal">
+      <p class="eyebrow">THE IMPERIAL FAMILY</p>
+      <h2 class="section-title">황실</h2>
+      <div class="section-divider"></div>
+      <div class="royal-list" id="royal-list"></div>
+    </section>
+
+    <!-- 5. 남부 대공령 -->
+    <section class="tab-panel" id="panel-duchy">
+      <p class="eyebrow">THE SOUTHERN DUCHY</p>
+      <h2 class="section-title">남부 대공령</h2>
+      <div class="section-divider"></div>
+      <p class="lore-text">크로노스 황국의 남부를 실효 지배하는 대공 세력의 거점. 황자의 혈통에 의문을 품은 대공을 중심으로 인간 우월주의에 가까운 강경파가 모여들고 있으며, 중앙 황실과 드래곤 레어의 용족 원로회 모두를 경계하고 있다.</p>
+      <div class="royal-list" id="duchy-list"></div>
+    </section>
+
+    <!-- 6. 원로회 -->
+    <section class="tab-panel" id="panel-council">
+      <p class="eyebrow">THE ELDER COUNCIL</p>
+      <h2 class="section-title">용족 원로회</h2>
+      <div class="section-divider"></div>
+      <p class="lore-text">드래곤 레어(대륙 중앙의 거대 바위산)를 거점으로 존재하는 용족의 최고 의결 기관. 인간들의 정치에 원칙적으로 개입하지 않으며, 황국과는 불가침 동맹에 가까운 관계를 유지한다 — "인간의 일은 인간이"라는 것이 모토다. 다만 황자의 혈통 문제는 용족 내부에서도 예민하게 다루어지는 사안이다.</p>
+      <ul class="council-list" id="council-list"></ul>
+    </section>
+
+    <!-- 7. 세계 지도 -->
+    <section class="tab-panel" id="panel-map">
+      <p class="eyebrow">CARTOGRAPHY</p>
+      <h2 class="section-title">세계 지도</h2>
+      <div class="section-divider"></div>
+      <div class="map-area" id="map-area">
+        <img class="map-bg-image" src="크로노스_지도.png" alt="크로노스 황국 지도" onerror="this.style.display='none';" onclick="openLightbox(this.src, this.alt)">
+      </div>
+      <div class="region-detail empty" id="region-detail">지도에서 지역을 선택하면 이곳에 이미지와 정보가 표시됩니다.</div>
+    </section>
+
+  </main>
+</div>
+
+<!-- 라이트박스 -->
+<div class="image-lightbox" id="image-lightbox">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- 잠긴 기록 비밀번호 입력 -->
+<div class="secret-overlay" id="secret-password-overlay">
+  <div class="secret-panel">
+    <p class="secret-panel-title">🔒 잠긴 기록</p>
+    <input type="password" id="secret-password-input" placeholder="비밀번호">
+    <div class="secret-panel-actions">
+      <button onclick="checkSecretPassword()">확인</button>
+      <button onclick="closeSecretPassword()">취소</button>
+    </div>
+    <p class="secret-error" id="secret-error" style="display:none;">비밀번호가 틀렸습니다.</p>
+  </div>
+</div>
+
+<!-- 잠긴 기록 콘텐츠 -->
+<div class="secret-overlay" id="secret-content-overlay">
+  <div class="secret-content-panel">
+    <button class="secret-close" onclick="closeSecretContent()">×</button>
+    <p class="secret-content-title" id="secret-content-title"></p>
+    <div class="secret-gallery" id="secret-gallery"></div>
+    <div class="secret-text">루스, 원로 골드 드래곤.</p>
+인간 세상의 변화를 즐기며, 간혹 인간의 모습으로 폴리모프하여 인간들 틈에 섞여서 관찰하기를 즐긴다- 라고 알려져있다. 하지만 그 이면에는, 음란하고 방탕한 루스의 성질이 숨겨져 있다.  
+ 
+루스가 인간 세계에 관심을 주는 이유는, 기술 발전이나 문화 같은 이유가 아닌, 날이 갈 수록 색다른 모습을 보여주는 '성문화' 때문이다. 용들의 성문화는 말 그대로 '야생' 그 자체. 오로지 후손을 남기기 위한 지루하고 현학적이며 쾌락따윈 존재하지 않는 성문화를 가졌다. 그에 반해, 인간들의 성문화는 '쾌락'을 위한 것. 자손을 남기려는 본능은 잠깐 미뤄둔 문화에 루스는 매료되었다.  
+ 
+인간과의 성관계는 '이종간'에 가깝지만, 오히려 그렇기에, 임신의 걱정 없이 마음껏 성관계를 즐길 수 있는 인간들의 사회는, 루스에게 있어 그야말로 지상낙원. 
+ 
+아무 인간과 침대에서 뒹굴며 누가 주인인지 모를 씨앗들을 받아들이고,  무력한 척 수컷들에게 유희거리가 되는 등... 루스에겐 그것이 인간세계에 대한 긍정적인 모습이다.</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ▼ 데이터 영역 — 내용 추가/수정은 이 아래 배열들만 손대면 됩니다 ▼
+   ========================================================= */
+
+// 황국 기본 정보 카드 — TODO: 실제 수치로 교체
+const empireStats = [
+  { value:'1억 4,000만', label:'인구' },
+  { value:'크로넛 (1크로넛 = 2C)', label:'화폐 단위' },
+  { value:'절대 군주정', label:'정치 체제' },
+  { value:'봉건제', label:'지배 구조' },
+];
+
+// 타임라인 — TODO: 실제 크로노스 역사로 교체
+const timelineEvents = [
+  { year:'건국 이전', title:'분열의 대륙, 루카만', desc:'크로노스가 자리한 루카만 대륙은 수많은 소국들이 끊임없이 전쟁을 벌이며 무너지고 다시 세워지기를 반복했다. 드래곤은 이 대륙에서 신성시되는 존재였다.' },
+  { year:'건국 이전', title:'드래곤 족장 세레스, 인간 세계로', desc:'드래곤 족장 세레스는 다른 용족과 달리 인간 세계에 깊은 관심을 가지고 있었다. 모습을 바꿔 인간 도시를 드나들던 그녀는 어느 날 길거리에 버려진 고아 아이 한 명을 발견해 직접 거두어 키우기 시작했다.' },
+  { year:'건국기', title:'레오폴드 1세, 크로노스 왕국 건국', desc:'세레스의 손에서 자란 아이는 드래곤의 문화를 이해하고 그들을 진심으로 존중하는 인간으로 성장했다. 그가 소국을 세우고 드래곤과의 협력을 내세우자, 드래곤을 신성시하는 도시들이 자발적으로 귀속되기 시작했다. 크로노스 왕국의 시작이었다.' },
+  { year:'건국기', title:'세레스와 레오폴드 1세의 결혼', desc:'레오폴드 1세는 세레스에게 청혼했고, 자신을 키워준 양어머니이자 족장인 세레스는 이를 받아들였다. 반대할 이유도, 반대할 수 있는 드래곤도 없었다. 크로노스와 드래곤족의 공식 동맹이 이루어졌다.' },
+  { year:'건국 이후', title:'대륙 정벌 · 황국 선포', desc:'드래곤의 힘을 등에 업은 크로노스는 대륙 정벌에 나섰다. 피비린내 나는 전면전보다는 "드래곤과 함께 온다"는 사실만으로 항복하는 도시가 많았다. 루카만 대륙을 통일하며 크로노스 황국이 선포되었다. 건국된 지 100여 년이 채 안 된 지금도 황국은 전성기를 이어가고 있다.' },
+  { year:'건국 직후', title:'아르델 제국의 침공 · 방어전 승리', desc:'대륙을 막 통일한 직후 아르델 제국이 침공해왔다. 드래곤의 전력을 과소평가한 제국군은 참패했고, 아르델은 배상금을 지불하며 협상으로 마무리했다. 크로노스 측 피해는 미미했으며, 오히려 통일 직후 남아있던 내부 잡음이 이 방어전을 계기로 거의 정리되었다.' },
+  { year:'약 10년 전', title:'초대 황제 레오폴드 1세 서거', desc:'인간으로서 102세라는 장수를 누린 레오폴드 1세가 세상을 떠났다. 세레스(태후)가 황실을 대리하며 황태자 레오폴드 2세에게 점차 권한을 넘겨주고 있다.' },
+  { year:'현재', title:'황위 계승 문제 · 황국의 분열', desc:'황태자 레오폴드 2세가 황위를 이으려면 용족의 수장 자리도 함께 갖춰야 한다. 동시에 황가에 순수 인간이 한 명도 없다는 사실에 인간 귀족과 민심이 동요하기 시작했다. 남부 대공 윌리엄 옥스퍼드를 중심으로 한 인간 강경파와, 용족 원로회, 그리고 공화국이라는 외부 변수까지 — 크로노스는 세 방향의 긴장을 동시에 마주하고 있다.' },
+];
+
+// 황실 인물 — TODO: 실제 황실 인물 데이터로 교체
+// 새 인물 추가: { name, eyebrow, bio } 형식
+// 황실 인물 — { name, eyebrow, bio }
+const imperialFamily = [
+  { name:'세레스 율리우스', img:'세레스', eyebrow:'드래곤 족장 · 크로노스 황국 태후', bio:'나이 미상(성체 드래곤). 드래곤 족장이었던 세레스는 다른 용족과 달리 인간 세계에 깊은 관심을 가지고 있었다. 모습을 바꿔 인간 도시를 드나들던 그녀는 어느 날 길거리에 버려진 고아 아이를 직접 거두어 키웠고, 그 아이가 훗날 크로노스 왕국을 세운 레오폴드 1세다. 자신이 키운 남편이자 첫 아이를 먼저 떠나보낸 뒤, 지금은 황태자 레오폴드 2세가 황제이자 용족 수장 자리를 정식으로 이어받을 때까지 크로노스를 지키는 것이 목표다. 야만적인 드래곤의 면모보다 모든 것을 보듬으려는 성품이 두드러지며 크로노스의 어머니라고 불리기도 한다. 강한 힘보다 뛰어난 언변으로 드래곤 사회에서 족장 자리에 오른 전략가다.' },
+  { name:'레오폴드 율리우스 2세', img:'레오폴드', eyebrow:'크로노스 황국 황태자 (현 황위 대리)', bio:'87세(드래곤 기준 청소년). 반인반용으로 용의 모습으로 변신할 수 있지만 체력 소모가 극심하고, 인간의 모습을 유지하는 것만으로도 상시 체력을 소모한다. 가장 편한 모습은 뿔과 꼬리가 달린 인간 형태다. 황위를 이으려면 용족의 수장 자리도 함께 갖춰야 하며, 동시에 황가에 순수 인간이 한 명도 없다는 사실에 동요하는 민심도 달래야 한다. 진중하고 말이 적으며 무표정이 기본이지만 찡그리기보다 웃는 모습을 더 자주 볼 수 있다. 아버지를 존경했지만 인간의 목숨을 하찮게 여기는 경향이 있다. 취미는 독서로 하루 대부분을 도서관에서 보낸다.' },
+  { name:'세실 율리우스', img:'세실', eyebrow:'크로노스 황국 황녀 · 비룡기사단장', bio:'57세(드래곤 기준 15~16세 청소년). 황가의 막내로, 어머니 세레스를 닮아 인간에 대한 관심이 깊다. 오빠 레오폴드보다 근력은 밀리지만 속도와 반사신경이 월등하며, 비행으로 아르델까지 30분이 채 안 걸리는 속도를 보여준다. 하루에 한 번씩 아르델을 방문하고 돌아오는데 그곳에서 무엇을 하는지 누구에게도 알리지 않으며 합법적인 일이라고만 한다. 원래는 원로 Ruth를 따라 인간 사회를 놀이 삼아 드나들던 것이 시작이었으나, 어느 날 남부로 대량의 무기가 이동하는 것을 목격한 뒤로는 목적이 바뀌었다. 표면적으로는 여전히 "합법적인 개인 용무"라 둘러대지만, 실제로는 그 무기들의 출처와 종착지 — 옥스퍼드 대공과의 연결고리 — 를 홀로 추적하는 중이다. 아직 누구에게도, 심지어 어머니 세레스에게조차 이 사실을 알리지 않았다. 비룡기사단장으로 대륙 정복 전쟁에서 가장 자주 투입된 공중 최대 전력이다. 드래곤 자부심으로 가득해 인간을 걸핏하면 하대하지만, 개개인의 능력을 중시해 자신이 인정한 존재는 고슴도치라도 존대한다.' },
+]
+
+// 대공령 인물 — { name, eyebrow, bio }
+const duchyFamily = [
+  { name:'윌리엄 옥스퍼드', img:'윌리엄', eyebrow:'남부 대공 · 옥스퍼드 가주', bio:'29세. 남부의 유서 깊은 명가 옥스퍼드의 가주. 예로부터 황제에게 충성한 것으로 유명한 가문이지만, 젊고 혈기 넘치는 윌리엄은 새로운 황제가 드래곤이라는 사실이 마음에 들지 않는다. 옥스퍼드 가문은 크로노스 안에서 아르델과의 무역 핵심 중추로, 남부 자원을 아르델에 팔고 공산품을 수입해 북부에 내다팔며 막대한 부를 쌓고 있다. 세금 이야기가 나올 때마다 거대한 도마뱀들 식사에 내가 돈을 내주다니 라며 불만을 표한다. 최근 아르델로부터 군수물자를 대거 구매하고 있으며, 황실에는 마물 방어용이라고 보고해두었다. 귀족 이외에는 친절하지 않으며 이종족에게는 더욱 그렇다. 이종족 노예 수집이 취미로 엄연한 불법이지만 황실은 남부와의 분란을 막기 위해 쉬쉬한다.' },
+]
+
+// 용족 원로회 — { rank, name, img, desc }
+const council = [
+  { rank:'원로', name:'Ruth (루스)', img:'루스', secret:true, desc:'골든 드래곤. 성체 드래곤 중에서도 세레스에 버금가는 연배로, 원로회 안에서는 세레스 다음가는 최고령 축에 속한다. 세레스와는 아주 오래전부터 알고 지낸 오랜 벗으로, 세레스가 인간 세계에 관심을 갖기 시작했을 무렵부터 곁에서 그 변화를 지켜봐 온 몇 안 되는 드래곤이다. 권력 다툼에는 별 관심이 없고 새로운 것에 흥미를 느끼는 성향이라, 긴 잠에서 깨어날 때마다 완전히 뒤바뀌어 있는 인간 세상을 꽤 즐거운 놀이터로 여긴다. 표면적으로는 중립을 표방하지만 실제로는 자주 모습을 바꿔 인간인 척 섞여 들어가 관찰하기를 즐기며, 이 때문에 원로회 내에서는 은근한 친인간파로 분류된다. 세레스가 황실과 원로회 사이에서 균형을 잡을 때 가장 먼저 의견을 구하는 상대이기도 하다.' },
+  { rank:'대원로', name:'Terra (테라)', img:'테라', desc:'블랙 드래곤. 나이는 Ruth보다 아래지만 원로회 내 발언력은 대원로급으로, 용족만의 완전무결한 미래를 꿈꾸는 보수 강경파다. 레어 밖으로는 사건·사고가 터졌을 때만 나서며, 바깥이 안을 건드리는 것도 안이 바깥을 건드리는 것도 철저히 거부한다. "인간의 일은 인간이"라는 원로회의 표면적 모토를 가장 진심으로 믿고 실천하는 인물이자, 그 모토가 지켜지지 않는 현실(세실의 매일 아르델 방문, 세레스의 인간 결혼과 통치 개입 등)에 가장 불만이 많은 원로이기도 하다. 세실과는 안면이 있는 사이지만 그녀가 인간 사회에 개입하는 방식에 동의하지 않아 회의 때마다 언쟁이 잦다. 용족이 과거처럼 세상일에서 완전히 발을 빼야 한다고 공공연히 주장한다.' },
+  { rank:'원로 (비상주)', name:'Rumia (루미아)', img:'루미아', desc:'레드 드래곤. 원로회 세 명 중 가장 젊은 축. 크로노스 출신이지만 태어난 곳에 정착하지 않고 대륙을 떠도는 방랑 드래곤이다. 원로회에 이름은 올라 있으나 회의에 얼굴을 비치는 일이 드물어 "있어도 없는 원로"로 통한다. 다양한 영약과 물약을 조제해 종족을 가리지 않고 도움을 베풀지만, 그 과정에서 스스럼없이 생체 실험도 병행하는 편이라 그녀에게 도움을 받은 이들 사이에서도 평가가 극과 극이다. 모두에게 두루 친절하지만 그 친절함이 특정 종족에 대한 호의는 아니어서, 완전한 중립으로 분류된다. 최근 아르델에서 포션 수요가 폭증한 것을 보고 흥미를 느껴 아르델의 한 광장 한켠에 좌판을 깔고 직접 포션을 팔고 있다 — 원로회 소집 연락이 와도 "장사 중이라 못 감"이라는 답을 보내는 것으로 유명하다.' },
+];
+
+// 지도 핀
+const mapPoints = [
+  { name:'북부 왕도', x:50, y:30, features:['황권 중심지','귀족 의회'], desc:'황실과 귀족 의회가 있는 제국의 공식 수도. 원로회와의 정기 회동을 위한 의전용 회의소도 이곳에 있지만, 정작 원로회의 실질적인 의사결정은 전부 드래곤 레어에서 이뤄진다 — 왕도의 회의소는 사실상 "인간에게 보여주기 위한" 상징적 공간에 가깝다. 세레스 태후가 인간 사회와 접촉하며 지내는 곳이자, 레오폴드 황태자와 세실 황녀가 자란 곳. 세실이 매일 아르델로 떠나는 것도 이 왕도에서부터 시작된다.' },
+  { name:'드래곤 레어', x:50, y:55, features:['용족 거주지','원로회 본거지'], desc:'대륙 중앙에 솟은 거대한 바위산으로, 용족이 집단으로 거주하며 원로회가 실제로 모든 결정을 내리는 진짜 권력의 중심지. 인간은 원칙적으로 출입이 금지되어 있으나, Ruth처럼 인간 사회를 드나드는 원로도 있고 Terra처럼 사건이 아니면 아예 나오지 않는 원로도 있어 내부의 온도차가 크다. Rumia는 이곳 출신이지만 정작 거의 머무르지 않는 것으로 유명하다.' },
+  { name:'남부 대공령', x:50, y:80, features:['대공 실효 지배','인간 강경파 거점'], desc:'남부 대공 윌리엄 옥스퍼드가 실효 지배하는 지역으로, 황자의 혈통에 의문을 품은 인간 강경파의 거점이다. 최근 아르델로부터 대량의 군수물자를 사들이고 있다는 소문이 돌며, 그 물자가 어디로, 왜 흘러들어가는지는 아직 베일에 싸여 있다 — 세실이 홀로 쫓고 있는 바로 그 흐름이다.' },
+];
+
+/* =========================================================
+   ▲ 데이터 영역 끝 ▲
+   ========================================================= */
+
+/* ---- 라이트박스 ---- */
+const lightbox = document.getElementById('image-lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+function openLightbox(src, alt){ lightboxImg.src=src; lightboxImg.alt=alt||''; lightbox.classList.add('open'); }
+function closeLightbox(){ lightbox.classList.remove('open'); }
+lightbox.addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+
+/* ---- 잠긴 기록 (비밀번호 보호) ---- */
+// 캐릭터명 -> 비밀번호. 나중에 다른 캐릭터를 잠그려면 여기에 추가하고
+// council/imperialFamily 등 해당 데이터에 secret:true 만 붙이면 됨.
+const SECRET_PASSWORDS = { 'Ruth (루스)': 'goldwing' };
+// 이미지 파일명 규칙: {img필드}1.png, {img필드}2.png ... (예: 루스1.png ~ 루스3.png. 최대 20장까지 자동 탐색, 없는 번호는 자동으로 숨겨짐)
+let secretTarget = null;
+let secretTargetImg = null;
+const secretPwOverlay = document.getElementById('secret-password-overlay');
+const secretPwInput = document.getElementById('secret-password-input');
+const secretErrorEl = document.getElementById('secret-error');
+const secretContentOverlay = document.getElementById('secret-content-overlay');
+
+function openSecretPrompt(name, img){
+  secretTarget = name;
+  secretTargetImg = img;
+  secretPwInput.value = '';
+  secretErrorEl.style.display = 'none';
+  secretPwOverlay.classList.add('open');
+  setTimeout(()=>secretPwInput.focus(), 50);
+}
+function closeSecretPassword(){ secretPwOverlay.classList.remove('open'); }
+function checkSecretPassword(){
+  if(SECRET_PASSWORDS[secretTarget] && secretPwInput.value === SECRET_PASSWORDS[secretTarget]){
+    closeSecretPassword();
+    openSecretContent(secretTarget, secretTargetImg);
+  } else {
+    secretErrorEl.style.display = 'block';
+  }
+}
+secretPwInput.addEventListener('keydown', e=>{ if(e.key==='Enter') checkSecretPassword(); });
+secretPwOverlay.addEventListener('click', e=>{ if(e.target===secretPwOverlay) closeSecretPassword(); });
+
+function openSecretContent(name, img){
+  document.getElementById('secret-content-title').textContent = `${name} — 숨겨진 기록`;
+  const gallery = document.getElementById('secret-gallery');
+  let html = '';
+  for(let i=1;i<=20;i++){
+    html += `<div class="secret-image"><img src="${img}${i}.png" alt="${name} 숨겨진 이미지 ${i}" onclick="openLightbox(this.src,this.alt)" onerror="this.parentElement.style.display='none';"></div>`;
+  }
+  gallery.innerHTML = html;
+  secretContentOverlay.classList.add('open');
+}
+function closeSecretContent(){ secretContentOverlay.classList.remove('open'); }
+secretContentOverlay.addEventListener('click', e=>{ if(e.target===secretContentOverlay) closeSecretContent(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeSecretPassword(); closeSecretContent(); }
+});
+
+/* ---- 타임라인 ---- */
+function renderTimeline(){
+  const box = document.getElementById('timeline');
+  box.innerHTML = timelineEvents.map(e=>`
+    <div class="timeline-item">
+      <p class="timeline-year">${e.year}</p>
+      <h3 class="timeline-title">${e.title}</h3>
+      <p class="timeline-desc">${e.desc}</p>
+    </div>
+  `).join('');
+  const items = box.querySelectorAll('.timeline-item');
+  if('IntersectionObserver' in window){
+    const obs = new IntersectionObserver(entries=>{
+      entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('visible'); obs.unobserve(en.target); } });
+    }, { threshold:0.15 });
+    items.forEach(item=> obs.observe(item));
+  } else { items.forEach(item=> item.classList.add('visible')); }
+}
+
+/* ---- 황국 기본 정보 ---- */
+function renderNobleChart(){
+  const svg = document.getElementById('noble-chart');
+  const legend = document.getElementById('noble-legend');
+
+  // 파벌 데이터
+  const factions = [
+    { label:'황실파',  seats:24, color:'#c9a227', side:'left'    },
+    { label:'귀족파',  seats:24, color:'#b03838', side:'right'   },
+    { label:'중립파',  seats:32, color:'#7a7060', side:'bottom'  },
+  ];
+  const total = factions.reduce((s,f)=>s+f.seats, 0); // 80
+
+  // 레이아웃 상수
+  const CX = 280, CY = 148;
+  const DOT_R = 5.5, GAP = 14;
+  const ROWS = 4; // 행 수
+
+  // 각 파벌별 점 위치 계산
+  // 황실파: 좌측, 귀족파: 우측, 중립파: 하단 중앙
+  function leftDots(n){
+    const dots = [];
+    const cols = Math.ceil(n / ROWS);
+    let count = 0;
+    for(let c=0;c<cols&&count<n;c++){
+      for(let r=0;r<ROWS&&count<n;r++){
+        dots.push({ x: CX - 70 - c*GAP, y: CY - 40 + r*GAP });
+        count++;
+      }
+    }
+    return dots;
+  }
+  function rightDots(n){
+    const dots = [];
+    const cols = Math.ceil(n / ROWS);
+    let count = 0;
+    for(let c=0;c<cols&&count<n;c++){
+      for(let r=0;r<ROWS&&count<n;r++){
+        dots.push({ x: CX + 70 + c*GAP, y: CY - 40 + r*GAP });
+        count++;
+      }
+    }
+    return dots;
+  }
+  function bottomDots(n){
+    const dots = [];
+    const cols = Math.ceil(n / ROWS);
+    const totalW = (cols-1)*GAP;
+    let count = 0;
+    for(let c=0;c<cols&&count<n;c++){
+      for(let r=0;r<ROWS&&count<n;r++){
+        dots.push({ x: CX - totalW/2 + c*GAP, y: CY + 55 + r*GAP });
+        count++;
+      }
+    }
+    return dots;
+  }
+
+  const allDots = [
+    ...leftDots(24).map(d=>({...d, color:'#c9a227'})),
+    ...rightDots(24).map(d=>({...d, color:'#b03838'})),
+    ...bottomDots(32).map(d=>({...d, color:'#7a7060'})),
+  ];
+
+  // 구분선: 세로(좌우) + 가로(상하)
+  const divV = `<line x1="${CX}" y1="${CY-70}" x2="${CX}" y2="${CY+38}" stroke="var(--ivory-faint)" stroke-width="1" stroke-dasharray="4,3"/>`;
+  const divH = `<line x1="${CX-120}" y1="${CY+40}" x2="${CX+120}" y2="${CY+40}" stroke="var(--ivory-faint)" stroke-width="1" stroke-dasharray="4,3"/>`;
+
+  // 황후·황태자 대표점 (북쪽 상단 중앙)
+  const royal1 = `<circle cx="${CX-10}" cy="${CY-82}" r="7" fill="var(--gold)" stroke="var(--bg-primary)" stroke-width="2"/>`;
+  const royal2 = `<circle cx="${CX+10}" cy="${CY-82}" r="7" fill="var(--gold-deep)" stroke="var(--bg-primary)" stroke-width="2"/>`;
+  const royalLabel = `<text x="${CX}" y="${CY-96}" text-anchor="middle" font-family="var(--font-mono)" font-size="9" fill="var(--gold)">황후 · 황태자</text>`;
+
+  // 라벨
+  const lblLeft   = `<text x="${CX-78}" y="${CY-50}" text-anchor="middle" font-family="var(--font-display)" font-size="11" fill="#c9a227">황실파</text>`;
+  const lblRight  = `<text x="${CX+78}" y="${CY-50}" text-anchor="middle" font-family="var(--font-display)" font-size="11" fill="#b03838">귀족파</text>`;
+  const lblBottom = `<text x="${CX}" y="${CY+108}" text-anchor="middle" font-family="var(--font-display)" font-size="11" fill="#7a7060">중립파</text>`;
+
+  const circles = allDots.map(d=>
+    `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${DOT_R}" fill="${d.color}" opacity="0.85"/>`
+  ).join('');
+
+  svg.innerHTML = divV + divH + circles + royal1 + royal2 + royalLabel + lblLeft + lblRight + lblBottom;
+
+  legend.innerHTML = [
+    { label:'황후', color:'var(--gold)' },
+    { label:'황태자', color:'var(--gold-deep)' },
+    ...factions.map(f=>({ label:`${f.label} (${f.seats}석)`, color:f.color }))
+  ].map(f=>
+    `<span class="noble-legend-item"><span class="noble-legend-dot" style="background:${f.color}"></span>${f.label}</span>`
+  ).join('');
+}
+
+function renderEmpireStats(){
+  document.getElementById('empire-stats').innerHTML = empireStats.map(s=>
+    `<div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`
+  ).join('');
+}
+
+/* ---- 황실 인물 ---- */
+function renderRoyalList(){
+  const list = document.getElementById('royal-list');
+  list.innerHTML = imperialFamily.map((p,i)=>`
+    <div>
+      <div class="royal-item">
+        <div class="royal-image">
+          <span class="img-fallback">${p.img}.png</span>
+          <img src="${p.img}.png" alt="${p.name}"
+            onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));"
+            onclick="openLightbox(this.src,this.alt)"
+            onerror="this.style.display='none';">
+        </div>
+        <div class="royal-info">
+          <p class="royal-eyebrow">${p.eyebrow}</p>
+          <h3 class="royal-name">${p.name}</h3>
+          <div class="royal-divider"></div>
+          <p class="royal-bio">${p.bio}</p>
+        </div>
+      </div>
+      ${i < imperialFamily.length-1 ? '<hr class="royal-divider-line">' : ''}
+    </div>
+  `).join('');
+}
+
+/* ---- 용족 원로회 ---- */
+function renderCouncil(){
+  const ul = document.getElementById('council-list');
+  ul.innerHTML = council.map(c=>`
+    <li class="council-item${c.secret?' is-locked':''}"${c.secret?` onclick="openSecretPrompt('${c.name}','${c.img}')"`:''}>
+      <div class="council-image">
+        <span class="img-fallback">${c.img}.png</span>
+        <img src="${c.img}.png" alt="${c.name}"
+          onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));"
+          onclick="event.stopPropagation(); openLightbox(this.src,this.alt)"
+          onerror="this.style.display='none';">
+      </div>
+      <div class="council-info">
+        <p class="council-rank">${c.rank}</p>
+        <p class="council-name">${c.name}${c.secret?' <span class="council-lock-icon">🔒</span>':''}</p>
+        <p class="council-desc">${c.desc}</p>
+      </div>
+    </li>
+  `).join('');
+}
+
+/* ---- 지도 핀 ---- */
+function renderMapPoints(){
+  const area = document.getElementById('map-area');
+  mapPoints.forEach(p=>{
+    const pin = document.createElement('button');
+    pin.className = 'map-pin';
+    pin.style.left = p.x + '%';
+    pin.style.top = p.y + '%';
+    pin.innerHTML = `<span class="pin-dot"></span><span class="pin-label">${p.name}</span>`;
+    pin.addEventListener('click', ()=>{
+      document.querySelectorAll('.map-pin').forEach(el=> el.classList.remove('active'));
+      pin.classList.add('active');
+      renderRegionDetail(p);
+    });
+    area.appendChild(pin);
+  });
+}
+
+function renderRegionDetail(region){
+  const box = document.getElementById('region-detail');
+  if(!region){ box.className='region-detail empty'; box.textContent='지도에서 지역을 선택하면 이곳에 이미지와 정보가 표시됩니다.'; return; }
+  box.className = 'region-detail';
+  box.innerHTML = `
+    <div class="region-image">
+      <span class="img-fallback">${region.name}.png</span>
+      <img src="${region.name}.png" alt="${region.name}"
+        onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));"
+        onclick="openLightbox(this.src,this.alt)"
+        onerror="this.style.display='none';">
+    </div>
+    <div class="region-info">
+      <h3 class="detail-name">${region.name}</h3>
+      <div class="region-features">${(region.features||[]).map(f=>`<span class="feature-tag">${f}</span>`).join('')}</div>
+      <p class="detail-desc">${region.desc}</p>
+    </div>
+  `;
+}
+
+/* ---- 대공령 인물 ---- */
+function renderDuchyList(){
+  const list = document.getElementById('duchy-list');
+  list.innerHTML = duchyFamily.map((p,i)=>`
+    <div>
+      <div class="royal-item">
+        <div class="royal-image">
+          <span class="img-fallback">${p.img}.png</span>
+          <img src="${p.img}.png" alt="${p.name}"
+            onload="this.previousElementSibling.style.display='none'; this.style.display='block'; requestAnimationFrame(()=>requestAnimationFrame(()=>{this.style.opacity='1';}));"
+            onclick="openLightbox(this.src,this.alt)"
+            onerror="this.style.display='none';">
+        </div>
+        <div class="royal-info">
+          <p class="royal-eyebrow">${p.eyebrow}</p>
+          <h3 class="royal-name">${p.name}</h3>
+          <div class="royal-divider"></div>
+          <p class="royal-bio">${p.bio}</p>
+        </div>
+      </div>
+      ${i < duchyFamily.length-1 ? '<hr class="royal-divider-line">' : ''}
+    </div>
+  `).join('');
+}
+
+/* ---- 탭 전환 ---- */
+const tabBtns = document.querySelectorAll('.tab-btn');
+const panels  = document.querySelectorAll('.tab-panel');
+const underline = document.getElementById('tab-underline');
+const tabsNav   = document.getElementById('tabs');
+
+function setActiveTab(tabName, btn){
+  tabBtns.forEach(b=> b.classList.toggle('active', b===btn));
+  panels.forEach(p=> p.classList.toggle('active', p.id==='panel-'+tabName));
+  moveUnderline(btn);
+}
+function moveUnderline(btn){
+  const navRect = tabsNav.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  underline.style.left  = (btnRect.left - navRect.left + tabsNav.scrollLeft) + 'px';
+  underline.style.width = btnRect.width + 'px';
+}
+tabBtns.forEach(btn=> btn.addEventListener('click', ()=> setActiveTab(btn.dataset.tab, btn)));
+window.addEventListener('resize', ()=>{
+  const active = document.querySelector('.tab-btn.active');
+  if(active) moveUnderline(active);
+});
+
+/* ---- 로딩 화면 ---- */
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(reduceMotion) document.documentElement.classList.add('reduced-motion');
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderTimeline();
+  renderNobleChart();
+  renderEmpireStats();
+  renderRoyalList();
+  renderDuchyList();
+  renderCouncil();
+  renderMapPoints();
+
+  setActiveTab('lore', tabBtns[0]);
+
+  const loadingScreen = document.getElementById('loading-screen');
+  const mainSite = document.getElementById('main-site');
+  const loadDuration = reduceMotion ? 300 : 3200;
+
+  document.body.style.overflow = 'hidden';
+  setTimeout(()=>{
+    loadingScreen.classList.add('fade-out');
+    mainSite.classList.add('visible');
+    document.body.style.overflow = '';
+    setTimeout(()=>{
+      loadingScreen.style.display = 'none';
+      moveUnderline(document.querySelector('.tab-btn.active'));
+    }, 650);
+  }, loadDuration);
+});
+</script>
+</body>
+</html>
