@@ -707,7 +707,9 @@ footer{
 .char-card-image{
   width:100%;
   position:relative;
-  padding-top:125%; /* 4:5 비율 — html2canvas가 aspect-ratio를 지원하지 않아 padding 트릭 사용 */
+  height:400px; /* .char-card 너비가 320px 고정이라 4:5 비율을 px로 직접 지정.
+                   (percentage padding-top 트릭은 html2canvas 캡처 시 높이를
+                   실제보다 작게 계산해 아래 텍스트 전체가 밀리는 버그가 있어 제거) */
   background:var(--bg-primary);
   overflow:hidden;
   border-bottom:2px solid var(--brass);
@@ -748,21 +750,18 @@ footer{
   margin-bottom:18px;
 }
 
-/* 성별 · 종족 · 나이 명판 (grid 대신 table — html2canvas가 grid를 불안정하게 렌더링함) */
+/* 성별 · 종족 · 나이 명판 (float 기반 — html2canvas는 grid/table 모두 높이 계산이 불안정함) */
 .cc-stat-plate{
-  display:table;
-  width:100%;
-  table-layout:fixed;
+  overflow:hidden; /* float 클리어픽스 */
   border:1px solid var(--brass-dim);
   border-radius:3px;
-  border-collapse:collapse;
-  overflow:hidden;
   margin-bottom:18px;
   background:rgba(0,0,0,0.18);
 }
 .cc-stat{
-  display:table-cell;
-  vertical-align:middle;
+  float:left;
+  width:33.333%;
+  box-sizing:border-box;
   padding:10px 8px;
   text-align:center;
   border-right:1px solid var(--brass-dim);
@@ -775,6 +774,7 @@ footer{
   letter-spacing:0.1em;
   color:var(--brass-light);
   margin-bottom:4px;
+  line-height:1.3;
 }
 .cc-stat-value{
   display:block;
@@ -797,16 +797,14 @@ footer{
   width:100%;
 }
 
-/* 좋아하는 것 / 싫어하는 것 (grid 대신 table) */
+/* 좋아하는 것 / 싫어하는 것 (float 기반) */
 .cc-pref-row{
-  display:table;
-  width:100%;
-  table-layout:fixed;
-  border-collapse:collapse;
+  overflow:hidden; /* float 클리어픽스 */
 }
 .cc-pref{
-  display:table-cell;
-  vertical-align:top;
+  float:left;
+  width:50%;
+  box-sizing:border-box;
 }
 .cc-pref-like{ padding-right:7px; }
 .cc-pref-dislike{ padding-left:7px; }
@@ -840,7 +838,8 @@ footer{
   background:rgba(165,70,45,0.08);
 }
 
-/* 캡처(html2canvas) 시 자간이 실제보다 과도하게 벌어지는 버그 방지 */
+/* 캡처(html2canvas) 시 자간이 실제보다 과도하게 벌어지는 버그 방지.
+   (폰트를 시스템 폰트로 바꾸는 처리는 세로 위치가 어긋나는 부작용이 있어 제거) */
 .char-card.capturing,
 .char-card.capturing *{
   letter-spacing:normal !important;
@@ -1304,7 +1303,6 @@ footer{
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 /* 로딩 화면 */
 window.addEventListener('load', ()=>{
@@ -1584,50 +1582,348 @@ function updateCardPreview(){
 [cmName, cmRole, cmBio, cmGender, cmRace, cmAge, cmLikes, cmDislikes].forEach(el=> el?.addEventListener('input', updateCardPreview));
 updateCardPreview();
 
-cmDownloadBtn?.addEventListener('click', ()=>{
-  if(typeof html2canvas === 'undefined'){
-    cmStatus.textContent = '이미지 저장 기능을 불러오지 못했어요. 인터넷 연결을 확인해줘.';
-    return;
+/* ===== 카드 이미지 렌더링 (Canvas 2D 직접 그리기) =====
+   기존에는 html2canvas로 화면(DOM)을 그대로 스크린샷 떴는데, 커스텀 웹폰트의
+   줄 높이를 브라우저와 미묘하게 다르게 계산해서 카드 아래로 갈수록 텍스트가
+   조금씩 밀리는 문제가 있었음. 그래서 좌표를 전부 코드로 직접 지정해서 그리는
+   방식으로 교체 — 이러면 그런 드리프트가 구조적으로 발생할 수 없음. */
+
+const CARD_SCALE = 3;
+const CARD_W = 320 * CARD_SCALE;
+const CARD_IMG_H = 400 * CARD_SCALE;
+const CARD_RADIUS = 6 * CARD_SCALE;
+const CARD_PAD_L = 22 * CARD_SCALE, CARD_PAD_R = 22 * CARD_SCALE;
+const CARD_PAD_T = 22 * CARD_SCALE, CARD_PAD_B = 26 * CARD_SCALE;
+const CARD_CONTENT_W = CARD_W - CARD_PAD_L - CARD_PAD_R;
+
+const CARD_COLORS = {
+  bgPanel:'#1f1811', bgPanel2:'#292018', bgPrimary:'#161109',
+  brass:'#b8823f', brassLight:'#e0a856', brassDim:'#8a6636',
+  verdigrisLight:'#6bb39e', rust:'#a5462d',
+  ivory:'#eee2ca', ivorySoft:'rgba(238,226,202,0.68)', ivoryFaint:'rgba(238,226,202,0.4)',
+  dislikeText:'#e0917c', dislikeBorder:'rgba(165,70,45,0.5)', dislikeBg:'rgba(165,70,45,0.08)',
+  likeBg:'rgba(184,130,63,0.08)',
+};
+
+function crdRoundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  if(ctx.roundRect){ ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function crdMeasureSpaced(ctx, text, spacing){
+  const chars = Array.from(text);
+  let w = 0;
+  chars.forEach((c,i)=>{ w += ctx.measureText(c).width; if(i<chars.length-1) w += spacing; });
+  return w;
+}
+
+function crdFillTextSpaced(ctx, text, x, y, spacing, align){
+  const totalW = crdMeasureSpaced(ctx, text, spacing);
+  let startX = x;
+  if(align==='center') startX = x - totalW/2;
+  else if(align==='right') startX = x - totalW;
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = 'left';
+  let cx = startX;
+  Array.from(text).forEach(ch=>{
+    ctx.fillText(ch, cx, y);
+    cx += ctx.measureText(ch).width + spacing;
+  });
+  ctx.textAlign = prevAlign;
+  return totalW;
+}
+
+// 공백 기준 줄바꿈(word-break:keep-all과 유사). 공백 없는 한 덩어리가 너무 길면 글자 단위로 쪼갬.
+function crdWrapText(ctx, text, maxWidth, spacing){
+  spacing = spacing || 0;
+  const widthOf = (t)=> spacing ? crdMeasureSpaced(ctx, t, spacing) : ctx.measureText(t).width;
+  if(!text) return [''];
+  const tokens = text.split(/(\s+)/);
+  let lines = [], current = '';
+  tokens.forEach(token=>{
+    const test = current + token;
+    if(widthOf(test) > maxWidth && current.trim() !== ''){
+      lines.push(current.replace(/\s+$/, ''));
+      current = token.replace(/^\s+/, '');
+    } else {
+      current = test;
+    }
+  });
+  if(current.trim() !== '' || lines.length===0) lines.push(current.replace(/\s+$/, ''));
+
+  const finalLines = [];
+  lines.forEach(line=>{
+    if(widthOf(line) <= maxWidth || line===''){ finalLines.push(line); return; }
+    let cur = '';
+    for(const ch of line){
+      const t = cur + ch;
+      if(widthOf(t) > maxWidth && cur !== ''){ finalLines.push(cur); cur = ch; }
+      else cur = t;
+    }
+    if(cur) finalLines.push(cur);
+  });
+  return finalLines.length ? finalLines : [''];
+}
+
+// 명시적 줄바꿈(\n, white-space:pre-wrap)을 보존하면서 각 문단을 다시 wrap
+function crdWrapMultiline(ctx, text, maxWidth){
+  const paragraphs = text.split('\n');
+  let all = [];
+  paragraphs.forEach(p=>{
+    if(p === ''){ all.push(''); return; }
+    all = all.concat(crdWrapText(ctx, p, maxWidth));
+  });
+  return all;
+}
+
+const CARD_TAG_STYLE = { fontSize:31.5, padX:30, padY:12, gapX:18, gapY:18, radius:36 };
+
+function crdMeasureTagsHeight(ctx, tags, maxWidth){
+  const { fontSize, padX, padY, gapX, gapY } = CARD_TAG_STYLE;
+  ctx.font = `500 ${fontSize}px 'JetBrains Mono'`;
+  const pillH = fontSize*1.15 + padY*2;
+  let x = 0, rows = 1;
+  tags.forEach(tag=>{
+    const w = ctx.measureText(tag).width + padX*2;
+    if(x !== 0 && x + w > maxWidth){ x = 0; rows++; }
+    x += w + gapX;
+  });
+  return rows*pillH + (rows-1)*gapY;
+}
+
+function crdDrawTags(ctx, tags, x0, y0, maxWidth, style){
+  const { fontSize, padX, padY, gapX, gapY, radius } = CARD_TAG_STYLE;
+  ctx.font = `500 ${fontSize}px 'JetBrains Mono'`;
+  ctx.textBaseline = 'middle';
+  const pillH = fontSize*1.15 + padY*2;
+  let x = x0, y = y0;
+  tags.forEach(tag=>{
+    const w = ctx.measureText(tag).width + padX*2;
+    if(x !== x0 && x + w > x0 + maxWidth){ x = x0; y += pillH + gapY; }
+    crdRoundRectPath(ctx, x, y, w, pillH, radius);
+    ctx.fillStyle = style.bg; ctx.fill();
+    ctx.strokeStyle = style.borderColor; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = style.color; ctx.textAlign = 'left';
+    ctx.fillText(tag, x + padX, y + pillH/2);
+    x += w + gapX;
+  });
+  ctx.textBaseline = 'alphabetic';
+  return y + pillH;
+}
+
+async function renderCharCardCanvas(){
+  if(document.fonts && document.fonts.ready){ await document.fonts.ready; }
+
+  const imgEl = cmPreviewImage.querySelector('img');
+
+  const name = cmName.value.trim() || '이름';
+  const role = cmRole.value.trim() || '직업 혹은 직위';
+  const bio = cmBio.value.trim();
+  const gender = cmGender.value.trim() || '-';
+  const race = cmRace.value.trim() || '-';
+  const age = cmAge.value.trim() || '-';
+  const likesTags = cmLikes.value.split(',').map(t=>t.trim()).filter(Boolean);
+  const dislikesTags = cmDislikes.value.split(',').map(t=>t.trim()).filter(Boolean);
+  const likes = likesTags.length ? likesTags : ['-'];
+  const dislikes = dislikesTags.length ? dislikesTags : ['-'];
+
+  // 측정 전용 임시 캔버스 (폰트 메트릭만 필요하므로 크기는 상관없음)
+  const mcanvas = document.createElement('canvas');
+  mcanvas.width = CARD_W; mcanvas.height = 10;
+  const mctx = mcanvas.getContext('2d');
+
+  // --- 각 블록 높이 미리 측정 ---
+  mctx.font = "700 66px 'Noto Serif KR'";
+  const nameLines = crdWrapText(mctx, name, CARD_CONTENT_W);
+  const nameLineH = 66*1.25;
+  const nameBlockH = nameLines.length * nameLineH;
+
+  mctx.font = "500 34.5px 'JetBrains Mono'";
+  const roleLS = 34.5*0.08;
+  const roleLines = crdWrapText(mctx, role, CARD_CONTENT_W, roleLS);
+  const roleLineH = 34.5*1.3;
+  const roleBlockH = roleLines.length * roleLineH;
+
+  const cellW = CARD_CONTENT_W/3;
+  const cellPadX = 24, cellPadY = 30;
+  const cellInnerW = cellW - cellPadX*2 - 3; // 보더 두께 여유
+  const labelLineH = 28.5*1.3, valueLineH = 40.5*1.4;
+  function measureStatCell(label, value){
+    mctx.font = "500 28.5px 'JetBrains Mono'";
+    const labelLS = 28.5*0.1;
+    const labelLines = crdWrapText(mctx, label, cellInnerW, labelLS);
+    mctx.font = "500 40.5px 'Noto Sans KR'";
+    const valueLines = crdWrapText(mctx, value, cellInnerW);
+    return { labelLines, valueLines };
   }
+  const genderCell = measureStatCell('성별', gender);
+  const raceCell = measureStatCell('종족', race);
+  const ageCell = measureStatCell('나이', age);
+  function statCellHeight(c){ return cellPadY*2 + c.labelLines.length*labelLineH + 12 + c.valueLines.length*valueLineH; }
+  const statPlateH = Math.max(statCellHeight(genderCell), statCellHeight(raceCell), statCellHeight(ageCell));
+
+  let bioLines = [];
+  const bioLineH = 39*1.65;
+  if(bio){
+    mctx.font = "400 39px 'Noto Sans KR'";
+    bioLines = crdWrapMultiline(mctx, bio, CARD_CONTENT_W);
+  }
+  const bioBlockH = bio ? bioLines.length*bioLineH : 0;
+
+  const colGapHalf = 21; // 좌우 각 7px*3
+  const colW = CARD_CONTENT_W/2;
+  const leftUsableW = colW - colGapHalf;
+  const rightUsableW = colW - colGapHalf;
+  const titleLineH = 31.5*1.3, titleMarginBottom = 24;
+  const likesTagsH = crdMeasureTagsHeight(mctx, likes, leftUsableW);
+  const dislikesTagsH = crdMeasureTagsHeight(mctx, dislikes, rightUsableW);
+  const prefBlockH = titleLineH + titleMarginBottom + Math.max(likesTagsH, dislikesTagsH);
+
+  // --- 전체 높이 계산 ---
+  let totalH = CARD_IMG_H + 6 /* border-bottom 2px*3 */ + CARD_PAD_T;
+  totalH += nameBlockH + 12;
+  totalH += roleBlockH + 54;
+  totalH += statPlateH + 54;
+  if(bio) totalH += bioBlockH + 54;
+  totalH += prefBlockH;
+  totalH += CARD_PAD_B;
+  totalH = Math.ceil(totalH);
+
+  // --- 실제 그리기 ---
+  const canvas = document.createElement('canvas');
+  canvas.width = CARD_W; canvas.height = totalH;
+  const ctx = canvas.getContext('2d');
+
+  crdRoundRectPath(ctx, 0, 0, CARD_W, totalH, CARD_RADIUS);
+  const grad = ctx.createLinearGradient(0, 0, CARD_W, totalH);
+  grad.addColorStop(0, CARD_COLORS.bgPanel);
+  grad.addColorStop(1, CARD_COLORS.bgPanel2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+
+  if(imgEl){
+    ctx.drawImage(imgEl, 0, 0, CARD_W, CARD_IMG_H);
+  } else {
+    ctx.fillStyle = CARD_COLORS.bgPrimary;
+    ctx.fillRect(0, 0, CARD_W, CARD_IMG_H);
+    ctx.fillStyle = CARD_COLORS.ivoryFaint;
+    ctx.textAlign = 'center';
+    const fs = 11*CARD_SCALE, ls = fs*0.08;
+    ctx.font = `400 ${fs}px 'JetBrains Mono'`;
+    const cy = CARD_IMG_H/2;
+    crdFillTextSpaced(ctx, '이미지를 업로드하면', CARD_W/2, cy - fs*0.6, ls, 'center');
+    crdFillTextSpaced(ctx, '여기에 표시돼요', CARD_W/2, cy + fs*1.2, ls, 'center');
+  }
+  ctx.fillStyle = CARD_COLORS.brass;
+  ctx.fillRect(0, CARD_IMG_H, CARD_W, 6);
+  ctx.restore();
+
+  crdRoundRectPath(ctx, 1.5, 1.5, CARD_W-3, totalH-3, CARD_RADIUS);
+  ctx.strokeStyle = CARD_COLORS.brassDim;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  let cy = CARD_IMG_H + 6 + CARD_PAD_T;
+
+  ctx.textAlign = 'left';
+  ctx.font = "700 66px 'Noto Serif KR'";
+  ctx.fillStyle = CARD_COLORS.ivory;
+  nameLines.forEach((line,i)=> ctx.fillText(line, CARD_PAD_L, cy + 66*0.85 + i*nameLineH));
+  cy += nameBlockH + 12;
+
+  ctx.font = "500 34.5px 'JetBrains Mono'";
+  ctx.fillStyle = CARD_COLORS.verdigrisLight;
+  roleLines.forEach((line,i)=> crdFillTextSpaced(ctx, line, CARD_PAD_L, cy + 34.5*0.85 + i*roleLineH, roleLS, 'left'));
+  cy += roleBlockH + 54;
+
+  const plateY = cy;
+  crdRoundRectPath(ctx, CARD_PAD_L, plateY, CARD_CONTENT_W, statPlateH, 9);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = CARD_COLORS.brassDim;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  const statCells = [
+    { label:'성별', cell:genderCell },
+    { label:'종족', cell:raceCell },
+    { label:'나이', cell:ageCell },
+  ];
+  statCells.forEach((c, idx)=>{
+    const cellX = CARD_PAD_L + idx*cellW;
+    if(idx < 2){
+      ctx.beginPath();
+      ctx.moveTo(cellX+cellW, plateY);
+      ctx.lineTo(cellX+cellW, plateY+statPlateH);
+      ctx.strokeStyle = CARD_COLORS.brassDim;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    const cx = cellX + cellW/2;
+    let ty = plateY + cellPadY;
+    ctx.font = "500 28.5px 'JetBrains Mono'";
+    ctx.fillStyle = CARD_COLORS.brassLight;
+    const lls = 28.5*0.1;
+    c.cell.labelLines.forEach((l,i)=> crdFillTextSpaced(ctx, l, cx, ty + 28.5*0.85 + i*labelLineH, lls, 'center'));
+    ty += c.cell.labelLines.length*labelLineH + 12;
+    ctx.font = "500 40.5px 'Noto Sans KR'";
+    ctx.fillStyle = CARD_COLORS.ivory;
+    ctx.textAlign = 'center';
+    c.cell.valueLines.forEach((l,i)=> ctx.fillText(l, cx, ty + 40.5*0.85 + i*valueLineH));
+  });
+  cy = plateY + statPlateH + 54;
+
+  if(bio){
+    ctx.font = "400 39px 'Noto Sans KR'";
+    ctx.fillStyle = CARD_COLORS.ivorySoft;
+    ctx.textAlign = 'left';
+    bioLines.forEach((line,i)=> ctx.fillText(line, CARD_PAD_L, cy + 39*0.85 + i*bioLineH));
+    cy += bioBlockH + 54;
+  }
+
+  const prefY = cy;
+  ctx.font = "500 31.5px 'JetBrains Mono'";
+  const titleLS = 31.5*0.06;
+  ctx.fillStyle = CARD_COLORS.brassLight;
+  crdFillTextSpaced(ctx, '+  좋아하는 것', CARD_PAD_L, prefY + 31.5*0.85, titleLS, 'left');
+  ctx.fillStyle = CARD_COLORS.rust;
+  crdFillTextSpaced(ctx, '−  싫어하는 것', CARD_PAD_L + colW + colGapHalf, prefY + 31.5*0.85, titleLS, 'left');
+
+  const tagsY = prefY + titleLineH + titleMarginBottom;
+  crdDrawTags(ctx, likes, CARD_PAD_L, tagsY, leftUsableW, {
+    color: CARD_COLORS.brassLight, borderColor: CARD_COLORS.brassDim, bg: CARD_COLORS.likeBg,
+  });
+  crdDrawTags(ctx, dislikes, CARD_PAD_L + colW + colGapHalf, tagsY, rightUsableW, {
+    color: CARD_COLORS.dislikeText, borderColor: CARD_COLORS.dislikeBorder, bg: CARD_COLORS.dislikeBg,
+  });
+
+  return canvas;
+}
+
+cmDownloadBtn?.addEventListener('click', async ()=>{
   cmDownloadBtn.disabled = true;
   cmStatus.textContent = '카드 이미지를 만드는 중...';
-
-  // 폰트가 다 로드되지 않은 상태로 캡처하면 글자 폭이 달라져서
-  // 줄바꿈이 어긋날 수 있어 폰트 로딩을 먼저 기다림
-  const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-
-  fontsReady.then(()=>{
-    // 자간이 과도하게 벌어지는 캡처 버그 방지: 캡처 직전에만 자간을 정상으로 되돌림
-    charCard.classList.add('capturing');
-
-    // 다음 프레임까지 한 번 더 기다려 레이아웃이 완전히 안정된 뒤 캡처
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=>{
-        html2canvas(charCard, {
-          backgroundColor:null,
-          scale:3,
-          useCORS:true,
-          width:charCard.offsetWidth,
-          height:charCard.offsetHeight,
-          windowWidth:charCard.offsetWidth,
-        }).then((canvas)=>{
-          const link = document.createElement('a');
-          const fileName = (cmName.value.trim() || 'character') + '_card.png';
-          link.download = fileName;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          cmStatus.textContent = '저장 완료!';
-          cmDownloadBtn.disabled = false;
-        }).catch((err)=>{
-          console.error(err);
-          cmStatus.textContent = '저장 중 오류가 발생했어. 다시 시도해줘.';
-          cmDownloadBtn.disabled = false;
-        }).finally(()=>{
-          charCard.classList.remove('capturing');
-        });
-      });
-    });
-  });
+  try {
+    const canvas = await renderCharCardCanvas();
+    const link = document.createElement('a');
+    link.download = (cmName.value.trim() || 'character') + '_card.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    cmStatus.textContent = '저장 완료!';
+  } catch(err){
+    console.error(err);
+    cmStatus.textContent = '저장 중 오류: ' + (err && err.message ? err.message : err);
+  } finally {
+    cmDownloadBtn.disabled = false;
+  }
 });
 </script>
 
