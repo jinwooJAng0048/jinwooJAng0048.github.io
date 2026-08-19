@@ -1,0 +1,2966 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영지 관리 대장</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parchment:#f2e8c9; --parchment-dark:#e6d5a8; --parchment-shadow:#c9a96e;
+  --ink:#2c1a0e; --ink-faded:#5c3d1e; --ink-light:#8b5e3c;
+  --red-ink:#8b1a1a; --gold:#c8960c; --border:#9b7040; --border-dark:#6b4a20;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;}
+body{background:#1a0e06;background-image:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(100,60,20,.05) 2px,rgba(100,60,20,.05) 4px);min-height:100vh;font-family:'Noto Serif KR',serif;color:var(--ink);padding:24px 16px;overflow-x:hidden;}
+.ledger{max-width:980px;margin:0 auto;background:var(--parchment);border:3px solid var(--border-dark);box-shadow:0 0 0 6px var(--border),0 0 0 8px var(--border-dark),0 20px 60px rgba(0,0,0,.7);position:relative;background-image:linear-gradient(160deg,#f7efd8 0%,#f2e8c9 40%,#eadb9f 100%);}
+.ledger::before{content:'';position:absolute;inset:8px;border:1px solid var(--parchment-shadow);pointer-events:none;z-index:1;}
+
+/* 헤더 */
+.title-block{text-align:center;padding:28px 40px 16px;border-bottom:2px solid var(--border);}
+.title-block::after{content:'❧';display:block;color:var(--gold);font-size:20px;margin-top:6px;}
+.title-label{font-family:'IM Fell English',serif;font-size:11px;letter-spacing:4px;color:var(--ink-light);text-transform:uppercase;margin-bottom:6px;}
+.domain-title{font-family:'UnifrakturMaguntia',cursive;font-size:44px;color:var(--ink);line-height:1;outline:none;}
+.domain-title:focus{border-bottom:2px dashed var(--gold);}
+.header-meta{display:flex;justify-content:center;gap:28px;margin-top:10px;flex-wrap:wrap;}
+.meta-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-faded);}
+.meta-item label{font-style:italic;color:var(--ink-light);}
+.meta-item input{background:transparent;border:none;border-bottom:1px solid var(--parchment-shadow);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:130px;text-align:center;outline:none;}
+
+/* 탭 */
+.tabs{display:flex;border-bottom:2px solid var(--border);background:rgba(139,94,60,.08);overflow-x:auto;}
+.tab-btn{flex:none;padding:11px 14px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.tab-btn:hover{background:rgba(200,150,12,.1);color:var(--ink);}
+.tab-btn.active{background:var(--parchment);color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--gold);}
+.tab-content{display:none;padding:20px 24px;}
+
+/* 모바일 세로 드롭다운 탭 메뉴 */
+.mobile-tab-bar{display:none;position:relative;border-bottom:2px solid var(--border);}
+.mobile-tab-current{width:100%;display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:rgba(139,94,60,.1);border:none;font-family:'Noto Serif KR',serif;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;}
+.mobile-tab-arrow{transition:transform .2s;color:var(--ink-light);}
+.mobile-tab-bar.open .mobile-tab-arrow{transform:rotate(180deg);}
+.mobile-tab-menu{display:none;position:absolute;top:100%;left:0;right:0;z-index:70;background:var(--parchment);border:2px solid var(--border-dark);border-top:none;box-shadow:0 14px 34px rgba(0,0,0,.4);max-height:65vh;overflow-y:auto;}
+.mobile-tab-menu.open{display:block;}
+.mobile-tab-item{display:block;width:100%;text-align:left;padding:14px 18px;background:none;border:none;border-bottom:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:14px;color:var(--ink-faded);cursor:pointer;}
+.mobile-tab-item:last-child{border-bottom:none;}
+.mobile-tab-item.active{background:rgba(200,150,12,.15);color:var(--ink);font-weight:700;box-shadow:inset 3px 0 0 var(--gold);}
+.tab-content.active{display:block;}
+
+/* 섹션 제목 */
+.section-title{font-family:'IM Fell English',serif;font-size:17px;color:var(--red-ink);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-title::before{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--parchment-shadow),transparent);}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--parchment-shadow));}
+
+/* 대시보드 */
+.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dash-panel{border:1px solid var(--border);background:rgba(139,94,60,.04);overflow:hidden;}
+.dash-panel.full{grid-column:1/-1;}
+.dash-ph{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:rgba(139,94,60,.10);border-bottom:1px solid var(--border);font-family:'IM Fell English',serif;font-size:13px;color:var(--red-ink);}
+.dash-ph span.cnt{font-size:10px;color:var(--ink-light);font-family:'Noto Serif KR',serif;}
+.dash-pb{padding:10px 12px;}
+
+/* 재정 패널 */
+.finance-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.fin-cell{text-align:center;padding:10px 4px;border:1px solid var(--parchment-shadow);background:rgba(255,255,255,.15);}
+.fin-cell.red{border-color:var(--red-ink);}
+.fin-cell.grn{border-color:#4a7a4a;}
+.fin-cell .fc-lbl{font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;display:block;margin-bottom:4px;}
+.fin-cell .fc-val{font-size:18px;font-weight:700;background:transparent;border:none;width:100%;text-align:center;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed transparent;transition:border-color .2s;color:var(--ink);}
+.fin-cell.red .fc-val{color:var(--red-ink);}
+.fin-cell.grn .fc-val{color:#2e6b2e;}
+.fin-cell .fc-val:focus{border-color:var(--gold);}
+
+/* 미니 빌딩/NPC/퀘스트 */
+.mini-list{display:flex;flex-direction:column;gap:4px;}
+.mini-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--parchment-shadow);font-size:12px;}
+.mini-row .mr-name{flex:1;font-weight:600;}
+.mini-row .mr-sub{font-size:10px;color:var(--ink-light);}
+.status-tag{font-size:10px;padding:1px 5px;border:1px solid currentColor;}
+.s-normal{color:#3a7a3a;} .s-build{color:var(--gold);} .s-bad{color:var(--red-ink);} .s-etc{color:var(--ink-light);}
+.pin-btn{background:none;border:none;cursor:pointer;font-size:13px;opacity:.4;transition:opacity .2s;}
+.pin-btn.pinned{opacity:1;}
+.pin-btn:hover{opacity:1;}
+.mini-npc-icon{width:24px;height:24px;background:rgba(139,94,60,.12);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.mq-badge{font-size:9px;padding:2px 5px;border:1px solid currentColor;white-space:nowrap;}
+.mq-진행중{color:var(--gold);} .mq-완료{color:#3a7a3a;} .mq-대기{color:var(--ink-light);} .mq-실패{color:var(--red-ink);}
+
+/* 자원 미니 */
+.mini-res-row{display:flex;flex-wrap:wrap;gap:6px;}
+.mini-res{display:flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid var(--border);background:rgba(139,94,60,.06);font-size:12px;}
+
+/* 특이사항 */
+.snote-wrap{display:flex;align-items:stretch;margin:5px 0;border-left:3px solid var(--gold);background:rgba(200,150,12,.08);}
+.snote{flex:1;padding:6px 10px;font-size:13px;color:var(--ink-faded);outline:none;min-height:30px;}
+.snote-del{background:none;border:none;border-left:1px solid rgba(200,150,12,.3);color:var(--parchment-shadow);cursor:pointer;padding:0 10px;font-size:12px;transition:color .2s;}
+.snote-del:hover{color:var(--red-ink);}
+
+/* 버튼 공통 */
+.add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 16px;background:none;border:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-faded);cursor:pointer;transition:all .2s;letter-spacing:1px;position:relative;z-index:2;}
+.add-btn:hover{background:rgba(200,150,12,.1);border-color:var(--gold);color:var(--ink);}
+.action-btn{padding:8px 18px;border:1px solid var(--border-dark);background:var(--ink);color:var(--parchment);font-family:'Noto Serif KR',serif;font-size:12px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.action-btn:hover{background:var(--red-ink);}
+.action-btn.sec{background:transparent;color:var(--ink);}
+.action-btn.sec:hover{background:rgba(139,94,60,.15);color:var(--ink);}
+
+/* 테이블 */
+.data-table{width:100%;min-width:600px;border-collapse:collapse;font-size:13px;margin-bottom:12px;}
+.data-table th{background:rgba(139,94,60,.12);border:1px solid var(--border);padding:7px 8px;font-size:10px;letter-spacing:2px;color:var(--ink-faded);text-transform:uppercase;font-weight:600;text-align:left;white-space:nowrap;}
+.data-table td{border:1px solid var(--parchment-shadow);padding:6px 8px;vertical-align:top;}
+.data-table td[contenteditable]:focus{background:rgba(200,150,12,.08);outline:none;}
+.data-table tr:hover td{background:rgba(200,150,12,.04);}
+.table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;}
+.table-scroll .data-table{margin-bottom:0;}
+.tdel{background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:13px;padding:0 4px;}
+.tdel:hover{color:var(--red-ink);}
+.tpin{background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .2s;}
+.tpin.pinned{opacity:1;}
+
+/* 자원 그리드 */
+.resource-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+.res-card{background:rgba(139,94,60,.06);border:1px solid var(--border);padding:10px;text-align:center;position:relative;}
+.res-card .del-btn{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:11px;opacity:0;transition:opacity .2s;}
+.res-card:hover .del-btn{opacity:1;}
+.res-icon{font-size:20px;display:block;margin-bottom:3px;}
+.res-name-lbl{font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;display:block;margin-bottom:4px;}
+.res-val{font-size:20px;font-weight:700;width:100%;background:transparent;border:none;text-align:center;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed transparent;}
+.res-val:focus{border-color:var(--gold);}
+.res-unit{font-size:10px;color:var(--ink-light);display:block;margin-top:2px;}
+
+/* ── 회계 장부 ── */
+.ledger-section{margin-bottom:20px;}
+.ledger-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.acct-box{border:1px solid var(--border);padding:12px;}
+.acct-box.debt-box{border-color:var(--red-ink);}
+.acct-box label{display:block;font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;margin-bottom:6px;}
+.acct-box .big-in{font-size:22px;font-weight:700;width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed var(--parchment-shadow);}
+.acct-box.debt-box .big-in{color:var(--red-ink);}
+.acct-total{grid-column:1/-1;border:2px solid var(--border-dark);padding:12px;background:rgba(44,26,14,.04);text-align:center;}
+.acct-total label{display:block;font-size:9px;letter-spacing:2px;color:var(--ink-light);text-transform:uppercase;margin-bottom:6px;}
+.acct-total .total-num{font-size:28px;font-weight:700;font-family:'Noto Serif KR',serif;}
+.month-pass-btn{width:100%;padding:10px;background:rgba(139,94,60,.1);border:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);cursor:pointer;transition:all .2s;letter-spacing:1px;margin-top:8px;}
+.month-pass-btn:hover{background:rgba(200,150,12,.15);border-color:var(--gold);}
+.ledger-log{margin-top:10px;max-height:180px;overflow-y:auto;}
+.ledger-log-row{font-size:11px;padding:4px 8px;border-left:2px solid var(--gold);margin-bottom:4px;color:var(--ink-faded);background:rgba(200,150,12,.05);}
+
+/* 인벤토리 */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
+.inv-card{border:1px solid var(--border);padding:12px;background:rgba(139,94,60,.04);position:relative;}
+.inv-card .inv-del{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:12px;opacity:0;transition:opacity .2s;}
+.inv-card:hover .inv-del{opacity:1;}
+.inv-name{font-size:14px;font-weight:700;color:var(--ink);width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;border-bottom:1px dashed var(--parchment-shadow);margin-bottom:6px;}
+.inv-type{font-size:10px;letter-spacing:1px;color:var(--ink-light);width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;margin-bottom:6px;}
+.inv-desc{font-size:12px;color:var(--ink-faded);width:100%;background:transparent;border:none;font-family:'Noto Serif KR',serif;outline:none;resize:vertical;min-height:60px;line-height:1.7;}
+
+/* 세계 설정 */
+.world-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border);}
+.world-tab-btn{padding:7px 18px;background:none;border:none;font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-light);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.world-tab-btn.active{color:var(--ink);border-bottom-color:var(--gold);font-weight:700;}
+.world-tab-content{display:none;}
+.world-tab-content.active{display:block;}
+.world-memo{width:100%;min-height:200px;background:rgba(255,255,255,.2);border:1px solid var(--border);padding:12px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);outline:none;resize:vertical;line-height:1.9;}
+.currency-table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+.currency-table th{background:rgba(139,94,60,.12);border:1px solid var(--border);padding:7px 10px;font-size:10px;letter-spacing:2px;color:var(--ink-faded);text-transform:uppercase;}
+.currency-table td{border:1px solid var(--parchment-shadow);padding:6px 8px;font-size:13px;}
+.currency-table td input{background:transparent;border:none;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:100%;outline:none;}
+.currency-ref{background:rgba(200,150,12,.07);border:1px solid var(--gold);padding:12px;font-size:12px;color:var(--ink-faded);line-height:1.9;margin-top:10px;}
+
+/* 하단 바 */
+.bottom-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-top:2px solid var(--border);background:rgba(139,94,60,.06);flex-wrap:wrap;gap:8px;}
+.save-status{font-size:11px;font-style:italic;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--parchment);border:2px solid var(--border-dark);box-shadow:0 0 0 4px var(--border),0 20px 60px rgba(0,0,0,.5);padding:26px;width:340px;max-width:90vw;}
+.modal h3{font-family:'IM Fell English',serif;font-size:18px;color:var(--red-ink);margin-bottom:14px;}
+.modal label{display:block;font-size:10px;letter-spacing:1px;color:var(--ink-light);margin-bottom:3px;margin-top:10px;text-transform:uppercase;}
+.modal input,.modal select{width:100%;background:rgba(255,255,255,.4);border:1px solid var(--border);padding:6px 10px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);outline:none;}
+.modal-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+
+/* NPC portrait */
+.npc-portrait{width:30px;height:30px;background:rgba(139,94,60,.15);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:16px;}
+
+.bld-cat-tabs{display:flex;gap:0;border:1px solid var(--border);overflow:hidden;margin-bottom:14px;flex-wrap:wrap;}
+.bld-cat-select{display:none;}
+@media(max-width:640px){
+  .dashboard,.finance-4,.ledger-grid{grid-template-columns:1fr;}
+  .mil-summary-grid{grid-template-columns:1fr 1fr;}
+  .dash-panel.full{grid-column:1;}
+  .domain-title{font-size:32px;}
+  .tab-content{padding:14px;}
+  .bottom-bar{padding:10px 14px;}
+  .tabs{display:none;}
+  .mobile-tab-bar{display:block;}
+
+  /* 표 → 카드형 전환 (건물/자원/인물/이벤트/부채/수익/화폐/물가 공통) */
+  .table-scroll{overflow-x:visible;}
+  .data-table,.currency-table{min-width:0;width:100%;border:none;}
+  .data-table thead,.currency-table thead{display:none;}
+  .data-table,.data-table tbody,.data-table tr,.data-table td,
+  .currency-table,.currency-table tbody,.currency-table tr,.currency-table td{display:block;width:100%;}
+  .data-table tr,.currency-table tr{position:relative;border:1px solid var(--border-dark);background:rgba(255,255,255,.28);margin-bottom:10px;padding:10px 40px 8px 10px;}
+  .data-table td,.currency-table td{border:none;border-bottom:1px dashed var(--parchment-shadow);padding:7px 2px 7px 92px;position:relative;min-height:18px;}
+  .data-table td:last-of-type,.currency-table td:last-of-type{border-bottom:none;}
+  .data-table td[data-label]::before,.currency-table td[data-label]::before{content:attr(data-label);position:absolute;left:0;top:7px;width:84px;font-size:10px;color:var(--ink-light);font-weight:700;letter-spacing:.3px;}
+  .data-table td:not([data-label]),.currency-table td:not([data-label]){padding-left:6px;}
+  .data-table td:empty,.currency-table td:empty{display:none;}
+  .data-table td:has(.tpin){position:absolute;top:8px;right:38px;padding:0;border:none;width:auto;min-height:0;}
+  .data-table td:has(.tdel),.currency-table td:has(.tdel){position:absolute;top:6px;right:6px;padding:0;border:none;width:auto;min-height:0;}
+  .inv-del{opacity:1!important;}
+
+  .bld-cat-tabs{display:none;}
+  .bld-cat-select{display:block;width:100%;padding:11px 12px;font-family:'Noto Serif KR',serif;font-size:14px;background:var(--parchment);border:1px solid var(--border-dark);color:var(--ink);margin-bottom:14px;-webkit-appearance:none;appearance:none;border-radius:0;}
+}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--parchment-dark);} ::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* 화폐 단위 전환 토글 */
+.currency-toggle{display:flex;gap:0;border:1px solid var(--border);overflow:hidden;}
+.cur-btn{padding:4px 10px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.cur-btn:last-child{border-right:none;}
+.cur-btn.active{background:var(--ink);color:var(--parchment);}
+.cur-btn:hover:not(.active){background:rgba(200,150,12,.12);}
+.cur-unit-label{font-size:10px;color:var(--ink-light);font-style:italic;margin-left:6px;}
+
+/* 부채 상환 버튼 */
+.repay-btn{padding:3px 8px;border:1px solid var(--gold);background:none;font-family:'Noto Serif KR',serif;font-size:11px;color:var(--gold);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.repay-btn:hover{background:rgba(200,150,12,.15);}
+
+/* 건물 수입/지출 칸 */
+.bld-fin-in{background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink);width:70px;text-align:right;outline:none;}
+.bld-fin-in:focus{border-color:var(--gold);}
+.bld-income-col{color:#2e6b2e;}
+.bld-expense-col{color:var(--red-ink);}
+.bld-fin-summary{display:flex;gap:16px;padding:8px 12px;background:rgba(139,94,60,.06);border:1px solid var(--border);margin-top:8px;font-size:13px;flex-wrap:wrap;}
+.bld-fin-summary span{display:flex;align-items:center;gap:6px;}
+
+/* 화폐 단위 테이블 변경 */
+.cur-rate-hint{font-size:10px;color:var(--ink-light);font-style:italic;margin-top:4px;}
+
+/* 건물 카테고리 토글 */
+.bld-cat-btn{padding:6px 14px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.bld-cat-btn:last-child{border-right:none;}
+.bld-cat-btn.active{background:var(--ink);color:var(--parchment);font-weight:700;}
+.bld-cat-btn:hover:not(.active){background:rgba(200,150,12,.12);}
+.bld-category-section{display:none;}
+.bld-category-section.active{display:block;}
+
+/* 건물 카드 */
+.bld-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:14px;}
+.bld-card{border:1px solid var(--border-dark);background:rgba(255,255,255,.25);padding:12px;}
+.bld-card-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.bld-card-name{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--ink);outline:none;word-break:break-all;}
+.bld-card-name:focus{background:rgba(200,150,12,.08);}
+.bld-card-row{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px dashed var(--parchment-shadow);}
+.bld-card-row:last-child{border-bottom:none;}
+.bld-card-row label{flex:0 0 62px;font-size:10px;color:var(--ink-light);font-weight:700;letter-spacing:.3px;}
+.bld-card-row>div,.bld-card-row>select,.bld-card-row>input,.bld-card-row>.bld-card-inline,.bld-card-row>.bld-card-prod{flex:1;min-width:0;font-size:13px;color:var(--ink);}
+.bld-card-row div[contenteditable]{outline:none;}
+.bld-card-row div[contenteditable]:focus{background:rgba(200,150,12,.08);}
+.bld-card-row select{background:transparent;border:1px solid var(--parchment-shadow);font-family:inherit;font-size:12px;padding:3px 4px;color:var(--ink);outline:none;}
+.bld-card-row input[type="number"].bld-size-in{width:44px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:12px;text-align:center;color:var(--ink);outline:none;}
+.bld-card-row.full{flex-direction:column;align-items:stretch;gap:4px;}
+.bld-card-row.full label{flex:none;}
+.bld-card-inline{display:flex;align-items:center;gap:4px;}
+.bld-card-inline input.bld-fin-in{flex:1;min-width:0;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;color:var(--ink);outline:none;}
+.bld-unit{font-size:10px;color:var(--ink-light);white-space:nowrap;}
+.bld-card-prod{display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+
+/* 군사 */
+.mil-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.mil-summary-box{border:1px solid var(--border);padding:12px 10px;text-align:center;background:rgba(139,94,60,.04);}
+.mil-summary-box.total{background:rgba(139,26,26,.06);border-color:var(--red-ink);}
+.mil-label{font-size:10px;color:var(--ink-light);letter-spacing:1px;margin-bottom:4px;}
+.mil-value{font-size:26px;font-weight:700;color:var(--ink);}
+.mil-summary-box.total .mil-value{color:var(--red-ink);}
+.mil-base-setting{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-light);margin-bottom:6px;}
+.mil-base-setting label{font-weight:600;color:var(--ink);}
+.mil-base-setting input{width:56px;background:transparent;border:1px solid var(--parchment-shadow);text-align:center;font-family:inherit;font-size:13px;padding:3px 4px;color:var(--ink);outline:none;}
+.mil-hint{font-style:italic;}
+.mil-building-card{border:1px solid var(--border-dark);background:rgba(255,255,255,.2);margin-bottom:16px;padding:12px;}
+.mil-building-hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.mil-building-hd b{font-size:15px;color:var(--ink);}
+.mil-cap{font-size:12px;padding:3px 8px;border:1px solid var(--border);color:var(--ink-light);}
+.mil-cap.over{color:var(--red-ink);border-color:var(--red-ink);font-weight:700;}
+.mil-empty-hint{padding:20px;text-align:center;color:var(--ink-light);font-size:13px;border:1px dashed var(--border);}
+
+/* 몬스터 위협 */
+.monster-card{border:1px solid #7a4a4a;background:rgba(122,74,74,.06);padding:12px;margin-bottom:12px;}
+.monster-card-hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.monster-card-hd b{font-size:15px;color:var(--ink);}
+.monster-hp-bar{height:10px;background:rgba(0,0,0,.15);border:1px solid var(--border-dark);margin-bottom:8px;overflow:hidden;}
+.monster-hp-fill{height:100%;background:linear-gradient(90deg,#7a4a4a,#a05a5a);transition:width .3s;}
+.monster-meta{display:flex;gap:16px;font-size:12px;color:var(--ink-light);flex-wrap:wrap;margin-bottom:8px;}
+.monster-meta b{color:var(--ink);}
+
+/* 전투 모달 */
+.combat-stats{display:flex;flex-direction:column;gap:6px;margin:14px 0;font-size:13px;}
+.combat-stats>div{display:flex;justify-content:space-between;padding:6px 10px;background:rgba(139,94,60,.06);border:1px solid var(--border);}
+.combat-dice-area{text-align:center;margin-bottom:14px;}
+.combat-dice-result{margin-top:10px;font-size:15px;min-height:24px;color:var(--ink);}
+.combat-damage-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;}
+.combat-damage-row input{width:80px;background:transparent;border:1px solid var(--parchment-shadow);text-align:center;font-family:inherit;font-size:14px;padding:4px;color:var(--ink);outline:none;}
+.combat-hint{font-size:11px;color:var(--ink-light);font-style:italic;margin-bottom:8px;min-height:14px;}
+
+/* 지도 */
+.map-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px;}
+.map-mode-group{display:flex;border:1px solid var(--border);overflow:hidden;}
+.map-mode-btn{padding:6px 12px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-light);cursor:pointer;white-space:nowrap;}
+.map-mode-btn:last-child{border-right:none;}
+.map-mode-btn.active{background:var(--ink);color:var(--parchment);font-weight:700;}
+.map-mode-btn:hover:not(.active){background:rgba(200,150,12,.12);}
+.map-zoom-group{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-faded);}
+.map-zoom-btn{width:24px;height:24px;border:1px solid var(--border);background:none;cursor:pointer;font-size:14px;color:var(--ink-faded);line-height:1;}
+.map-zoom-btn:hover{background:rgba(200,150,12,.12);}
+.map-size-group{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-light);}
+.map-size-group input{width:44px;background:transparent;border:1px solid var(--parchment-shadow);font-family:'Noto Serif KR',serif;font-size:12px;color:var(--ink);text-align:center;padding:2px 4px;outline:none;}
+.map-terrain-palette{display:none;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding:8px;border:1px solid var(--border);background:rgba(139,94,60,.05);}
+.map-terrain-palette.show{display:flex;}
+.terrain-swatch{padding:5px 10px;border:1px solid var(--border);background:var(--parchment);font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-faded);cursor:pointer;}
+.terrain-swatch.active{outline:2px solid var(--gold);color:var(--ink);font-weight:700;}
+.terrain-swatch.t-plain{background:#e8dfc0;}
+.terrain-swatch.t-forest{background:#5e7c4f;color:#f2f2e6;}
+.terrain-swatch.t-mountain{background:#8c7b64;color:#f2f2e6;}
+.terrain-swatch.t-sea{background:#4d7d8c;color:#f2f2e6;}
+.terrain-swatch.t-river{background:#6fa3ad;color:#2c1a0e;}
+.terrain-swatch.t-swamp{background:#6b7a4a;color:#f2f2e6;}
+.terrain-swatch.t-road{background:#5a5248;color:#f2f2e6;}
+.terrain-swatch.t-eraseroad{background:var(--parchment);}
+.map-viewport{position:relative;width:100%;height:min(72vh,680px);min-height:420px;overflow:hidden;border:2px solid var(--border-dark);background:#e8dfc0;touch-action:none;cursor:grab;}
+.map-viewport.mode-terrain{cursor:crosshair;}
+.map-viewport.panning{cursor:grabbing;}
+.map-canvas{position:absolute;top:0;left:0;}
+.map-terrain-layer{position:relative;display:grid;}
+.map-cell{border:1px solid rgba(0,0,0,.08);box-sizing:border-box;}
+.map-cell.t-plain{background:#e8dfc0;}
+.map-cell.t-forest{background:#5e7c4f;}
+.map-cell.t-mountain{background:#8c7b64;}
+.map-cell.t-sea{background:#4d7d8c;}
+.map-cell.t-river{background:#6fa3ad;}
+.map-cell.t-swamp{background:#6b7a4a;}
+.map-cell.road::after{content:'';position:absolute;top:30%;bottom:30%;left:30%;right:30%;background:#5a5248;border-radius:2px;}
+.map-cell.road.road-n::after{top:0;}
+.map-cell.road.road-s::after{bottom:0;}
+.map-cell.road.road-w::after{left:0;}
+.map-cell.road.road-e::after{right:0;}
+.map-cell{position:relative;}
+.map-building-layer{position:absolute;top:0;left:0;pointer-events:none;}
+.map-building{position:absolute;box-sizing:border-box;border:1px solid var(--border-dark);background:var(--parchment);display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--ink);overflow:hidden;cursor:grab;pointer-events:auto;padding:1px;line-height:1.15;box-shadow:1px 1px 3px rgba(0,0,0,.3);}
+.map-building.cat-base{background:#d8c9a3;}
+.map-building.cat-profit{background:#e0c878;}
+.map-building.cat-resource{background:#c3b088;}
+.map-building.cat-frontier{background:#b8c9a0;}
+.map-building.cat-military{background:#c99a9a;}
+.map-building.cat-monster{background:#7a4a4a;color:#f2e6e6;}
+.map-building.dragging{opacity:.6;cursor:grabbing;z-index:50;}
+.map-unplaced-wrap{margin-top:14px;padding:10px;border:1px solid var(--border);background:rgba(139,94,60,.04);}
+.map-unplaced-list{display:flex;flex-wrap:wrap;gap:8px;}
+.map-unplaced-chip{padding:6px 12px;border:1px solid var(--border-dark);background:var(--parchment);font-size:12px;color:var(--ink);cursor:grab;user-select:none;touch-action:none;}
+.map-unplaced-chip:active{cursor:grabbing;}
+.map-unplaced-chip .cnt{font-size:10px;color:var(--ink-light);margin-left:4px;}
+.map-ghost{position:fixed;pointer-events:none;z-index:999;border:2px dashed var(--gold);background:rgba(200,150,12,.25);box-sizing:border-box;}
+.map-tooltip{display:none;position:fixed;z-index:998;background:var(--ink);color:var(--parchment);padding:8px 12px;font-size:12px;border:1px solid var(--gold);max-width:220px;line-height:1.6;pointer-events:none;}
+
+/* 자원 생산 지정 */
+.prod-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border:1px solid var(--border);font-size:11px;background:rgba(139,94,60,.08);margin:2px;}
+.prod-tag-del{background:none;border:none;color:var(--parchment-shadow);cursor:pointer;font-size:11px;padding:0 2px;}
+.prod-tag-del:hover{color:var(--red-ink);}
+.prod-cell{min-width:140px;}
+
+/* 시장 팝업 */
+.market-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;}
+.market-overlay.open{display:flex;}
+.market-modal{background:var(--parchment);border:2px solid var(--border-dark);box-shadow:0 0 0 4px var(--border),0 20px 60px rgba(0,0,0,.5);padding:24px;width:520px;max-width:95vw;max-height:88vh;overflow-y:auto;background-image:linear-gradient(160deg,#f7efd8 0%,#f2e8c9 40%,#eadb9f 100%);}
+.market-modal h3{font-family:'IM Fell English',serif;font-size:20px;color:var(--red-ink);margin-bottom:6px;}
+.market-capital-bar{font-size:13px;color:var(--ink-faded);margin-bottom:14px;padding:6px 10px;border-left:3px solid var(--gold);background:rgba(200,150,12,.08);}
+.market-mode-toggle{display:flex;gap:0;border:1px solid var(--border);overflow:hidden;margin-bottom:14px;width:fit-content;}
+.mkt-mode-btn{padding:6px 20px;background:none;border:none;border-right:1px solid var(--border);font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink-light);cursor:pointer;transition:all .2s;}
+.mkt-mode-btn:last-child{border-right:none;}
+.mkt-mode-btn.active{background:var(--ink);color:var(--parchment);font-weight:700;}
+.market-res-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.mkt-res-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);background:rgba(139,94,60,.04);cursor:pointer;transition:all .2s;}
+.mkt-res-row:hover{background:rgba(200,150,12,.10);border-color:var(--gold);}
+.mkt-res-row.selected{background:rgba(200,150,12,.18);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);}
+.mkt-res-icon{font-size:20px;width:30px;text-align:center;}
+.mkt-res-info{flex:1;}
+.mkt-res-name{font-size:13px;font-weight:700;}
+.mkt-res-stock{font-size:11px;color:var(--ink-light);}
+.mkt-res-price{font-size:12px;color:var(--ink-faded);text-align:right;}
+.mkt-input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.mkt-input-row label{font-size:11px;color:var(--ink-light);letter-spacing:1px;min-width:50px;}
+.mkt-num-in{background:rgba(255,255,255,.4);border:1px solid var(--border);padding:5px 8px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);width:100px;outline:none;}
+.mkt-total-bar{padding:8px 12px;border:1px solid var(--border-dark);background:rgba(44,26,14,.05);font-size:13px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;}
+.mkt-btn{padding:8px 22px;border:1px solid var(--border-dark);background:var(--ink);color:var(--parchment);font-family:'Noto Serif KR',serif;font-size:13px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.mkt-btn:hover{background:var(--red-ink);}
+.mkt-btn.buy{background:#2e6b2e;border-color:#2e6b2e;}
+.mkt-btn.buy:hover{background:#1e4a1e;}
+.mkt-btn.sec{background:transparent;color:var(--ink);border-color:var(--border);}
+.mkt-btn.sec:hover{background:rgba(139,94,60,.15);}
+
+/* 자원 조정 모달 */
+.adj-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
+.adj-overlay.open{display:flex;}
+.adj-modal{background:var(--parchment);border:2px solid var(--border-dark);box-shadow:0 0 0 4px var(--border),0 16px 50px rgba(0,0,0,.45);padding:22px;width:360px;max-width:95vw;}
+.adj-modal h3{font-family:'IM Fell English',serif;font-size:17px;color:var(--red-ink);margin-bottom:12px;}
+.adj-modal label{display:block;font-size:10px;letter-spacing:1px;color:var(--ink-light);margin-bottom:3px;margin-top:10px;text-transform:uppercase;}
+.adj-modal input,.adj-modal select{width:100%;background:rgba(255,255,255,.4);border:1px solid var(--border);padding:6px 10px;font-family:'Noto Serif KR',serif;font-size:13px;color:var(--ink);outline:none;}
+
+/* 임시 거래 로그 */
+.trade-log-wrap{margin-top:10px;}
+.trade-log-row{font-size:11px;padding:4px 8px;border-left:2px solid #5a9a5a;margin-bottom:4px;color:var(--ink-faded);background:rgba(90,154,90,.06);}
+.trade-log-row.minus{border-left-color:var(--red-ink);background:rgba(139,26,26,.05);}
+
+/* 자원 카드 하단 버튼 */
+.res-adj-btn{padding:2px 8px;border:1px solid var(--border);background:none;font-family:'Noto Serif KR',serif;font-size:11px;color:var(--ink-light);cursor:pointer;transition:all .2s;}
+.res-adj-btn:hover{background:rgba(200,150,12,.12);border-color:var(--gold);}
+.res-price-in{font-size:11px;width:100%;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:center;font-family:'Noto Serif KR',serif;outline:none;color:var(--ink-faded);margin-top:3px;}
+.res-price-in:focus{border-color:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- 입장 코드 화면 -->
+<div class="modal-overlay open" id="loginOverlay">
+  <div class="modal" style="text-align:center;">
+    <h3>영지 입장</h3>
+    <label>입장 코드</label>
+    <input type="text" id="loginCode" placeholder="코드를 입력하세요" autocomplete="off" onkeydown="if(event.key==='Enter')attemptLogin()">
+    <div id="loginError" style="color:var(--red-ink);font-size:12px;margin-top:8px;min-height:16px;"></div>
+    <div class="modal-btns" style="justify-content:center;">
+      <button class="action-btn" onclick="attemptLogin()">입장</button>
+    </div>
+  </div>
+</div>
+
+<div class="ledger" id="ledgerRoot" style="display:none;">
+
+<!-- 헤더 -->
+<div class="title-block">
+  <div class="title-label">Domain Ledger · 영지 관리 대장</div>
+  <div class="domain-title" id="domainTitle" contenteditable="true">아르카디아 영지</div>
+  <div class="header-meta">
+    <div class="meta-item"><label>영주</label><input type="text" id="lordName" placeholder="이름"></div>
+    <div class="meta-item"><label>현재 날짜</label><input type="text" id="currentDate" placeholder="건국 N년 N월 N일"></div>
+    <div class="meta-item"><label>영지 등급</label><input type="text" id="domainRank" placeholder="남작령"></div>
+  </div>
+</div>
+
+<!-- 탭 -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('overview')">📜 현황</button>
+  <button class="tab-btn" onclick="switchTab('ledger')">💰 회계</button>
+  <button class="tab-btn" onclick="switchTab('resources')">⚖️ 자원</button>
+  <button class="tab-btn" onclick="switchTab('buildings')">🏰 건물</button>
+  <button class="tab-btn" onclick="switchTab('military')">🛡️ 군사</button>
+  <button class="tab-btn" onclick="switchTab('map')">🗺️ 지도</button>
+  <button class="tab-btn" onclick="switchTab('npc')">👤 인물</button>
+  <button class="tab-btn" onclick="switchTab('quest')">⚔️ 이벤트</button>
+  <button class="tab-btn" onclick="switchTab('inventory')">🎒 인벤토리</button>
+  <button class="tab-btn" onclick="switchTab('world')">🌍 세계설정</button>
+</div>
+
+<!-- 모바일 전용: 세로 드롭다운 탭 메뉴 -->
+<div class="mobile-tab-bar" id="mobileTabBar">
+  <button class="mobile-tab-current" onclick="toggleMobileTabMenu()">
+    <span id="mobileTabCurrentLabel">📜 현황</span><span class="mobile-tab-arrow">▾</span>
+  </button>
+  <div class="mobile-tab-menu" id="mobileTabMenu"></div>
+</div>
+
+<!-- ══ 현황 ══ -->
+<div class="tab-content active" id="tab-overview">
+  <div class="dashboard">
+    <!-- 재정 요약 -->
+    <div class="dash-panel full">
+      <div class="dash-ph">💰 재정 현황
+        <div id="ov-cur-toggle" class="currency-toggle" style="margin-left:auto"></div>
+      </div>
+      <div class="dash-pb">
+        <div class="finance-4">
+          <div class="fin-cell"><span class="fc-lbl" id="ov-lbl-capital">자본 (보유)</span><input class="fc-val" id="ov-capital" readonly></div>
+          <div class="fin-cell red"><span class="fc-lbl">부채 합계</span><input class="fc-val" id="ov-debt" readonly style="color:var(--red-ink)"></div>
+          <div class="fin-cell grn"><span class="fc-lbl" id="ov-lbl-income">월 수입</span><input class="fc-val" id="ov-income" readonly style="color:#2e6b2e"></div>
+          <div class="fin-cell"><span class="fc-lbl" id="ov-lbl-expense">월 지출</span><input class="fc-val" id="ov-expense" readonly></div>
+        </div>
+      </div>
+    </div>
+    <!-- 건물 -->
+    <div class="dash-panel">
+      <div class="dash-ph">🏰 건물 현황 <span class="cnt" id="dash-bc"></span></div>
+      <div class="dash-pb"><div class="mini-list" id="dash-buildings"></div></div>
+    </div>
+    <!-- 인물 -->
+    <div class="dash-panel">
+      <div class="dash-ph">👤 주요 인물 <span class="cnt" id="dash-nc"></span></div>
+      <div class="dash-pb"><div class="mini-list" id="dash-npcs"></div></div>
+    </div>
+    <!-- 이벤트 (진행중만) -->
+    <div class="dash-panel">
+      <div class="dash-ph">⚔️ 진행중 이벤트 <span class="cnt" id="dash-qc"></span></div>
+      <div class="dash-pb"><div class="mini-list" id="dash-quests"></div></div>
+    </div>
+    <!-- 자원 -->
+    <div class="dash-panel">
+      <div class="dash-ph">⚖️ 자원 요약</div>
+      <div class="dash-pb"><div class="mini-res-row" id="dash-resources"></div></div>
+    </div>
+    <!-- 특이사항 -->
+    <div class="dash-panel full">
+      <div class="dash-ph">📌 특이사항
+        <button class="add-btn" style="padding:2px 10px;font-size:11px" onclick="addSpecialNote()">＋ 추가</button>
+      </div>
+      <div class="dash-pb" style="padding:8px 12px"><div id="specialNotes"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 회계 ══ -->
+<div class="tab-content" id="tab-ledger">
+  <!-- 화폐 단위 전환 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--ink-light);letter-spacing:1px">표시 단위 ▶</span>
+    <div id="ledger-cur-toggle" class="currency-toggle"></div>
+    <span class="cur-unit-label" id="ledger-cur-hint">입력 시 은화 기준으로 저장됩니다</span>
+  </div>
+
+  <div class="section-title">자본 / 부채</div>
+  <div class="ledger-grid">
+    <div class="acct-box">
+      <label id="lbl-capital">자본 (보유 자산 합계) — <span id="lbl-capital-unit">은화</span></label>
+      <input class="big-in" type="text" id="capital" placeholder="0" oninput="onCapitalInput(this.value)">
+    </div>
+    <div class="acct-box debt-box">
+      <label id="lbl-debt">부채 합계 — <span id="lbl-debt-unit">은화</span></label>
+      <input class="big-in" type="text" id="debtTotal" placeholder="0" readonly style="color:var(--red-ink);cursor:default">
+    </div>
+    <div class="acct-box">
+      <label>월 수입 — <span id="lbl-income-unit">은화</span> <span style="font-size:9px;color:var(--ink-light)">(건물 합산)</span></label>
+      <input class="big-in" type="text" id="monthIncome" placeholder="0" oninput="onIncomeInput(this.value)">
+    </div>
+    <div class="acct-box">
+      <label>월 지출 — <span id="lbl-expense-unit">은화</span> <span style="font-size:9px;color:var(--ink-light)">(건물 합산)</span></label>
+      <input class="big-in" type="text" id="monthExpense" placeholder="0" oninput="onExpenseInput(this.value)">
+    </div>
+    <div class="acct-total">
+      <label>순 자산 (자본 − 부채)</label>
+      <div class="total-num" id="netAsset">—</div>
+      <div style="font-size:11px;color:var(--ink-light);margin-top:4px" id="netAsset-unit">단위: 은화</div>
+    </div>
+  </div>
+
+  <div class="section-title">수익 항목 상세</div>
+  <div class="table-scroll"><table class="data-table" id="incomeTable">
+    <thead><tr><th>항목명</th><th>월 수익 (은화)</th><th>비고</th><th></th></tr></thead>
+    <tbody id="incomeBody"></tbody>
+  </table></div>
+  <div class="bld-fin-summary" style="margin-bottom:8px">
+    <span>💰 수익 항목 합산 —</span>
+    <span style="color:#2e6b2e">월 수익: <b id="income-item-total">0</b> <span id="income-item-total-unit">은화</span></span>
+    <button class="add-btn" style="padding:3px 10px;font-size:11px;margin-left:auto" onclick="applyIncomeItems()">↳ 월 수입에 반영</button>
+  </div>
+  <button class="add-btn" onclick="addIncomeItem()">＋ 수익 항목 추가</button>
+
+  <div class="section-title" style="margin-top:20px">부채 항목 상세</div>
+  <div class="table-scroll"><table class="data-table" id="debtTable">
+    <thead><tr><th>항목명</th><th>원금 (은화)</th><th>누적 이자 (은화)</th><th>이자(월, 은화)</th><th>만기일</th><th>비고</th><th>상환</th><th></th></tr></thead>
+    <tbody id="debtBody"></tbody>
+  </table></div>
+  <button class="add-btn" onclick="addDebt()">＋ 부채 항목 추가</button>
+
+  <div class="section-title" style="margin-top:20px">월 경과</div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+    <div style="font-size:13px;color:var(--ink-faded)">월 경과 버튼을 누르면 <b>수입−지출</b>이 자본에 반영되고 <b>이자</b>가 각 부채에 가산됩니다.</div>
+  </div>
+  <button class="month-pass-btn" onclick="passMonth()">📅 1달 경과 →</button>
+  <div class="ledger-log" id="ledgerLog"></div>
+</div>
+
+<!-- ══ 자원 ══ -->
+<div class="tab-content" id="tab-resources">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+    <div class="section-title" style="margin-bottom:0;flex:1">보유 자원</div>
+    <button class="action-btn" onclick="openMarket()" style="padding:7px 18px">🏪 시장 열기</button>
+  </div>
+  <div class="resource-grid" id="resourceGrid"></div>
+  <button class="add-btn" onclick="openResModal()">＋ 자원 추가</button>
+
+  <!-- 임시 거래 로그 -->
+  <div class="trade-log-wrap" id="tradeLogWrap" style="margin-top:16px;display:none">
+    <div class="section-title" style="margin-bottom:8px">📋 이번 달 거래 로그 <span style="font-size:10px;color:var(--ink-light);font-weight:400">(월 경과 시 기록 이전 후 초기화)</span></div>
+    <div id="tradeLogList"></div>
+  </div>
+</div>
+
+<!-- ══ 건물 ══ -->
+<div class="tab-content" id="tab-buildings">
+  <div class="section-title">건물 / 시설</div>
+
+  <!-- 카테고리 토글 -->
+  <div class="bld-cat-tabs">
+    <button class="bld-cat-btn active" data-cat="all" onclick="switchBldCat('all',this)">📋 전체</button>
+    <button class="bld-cat-btn" data-cat="base" onclick="switchBldCat('base',this)">🏛️ 거점 시설</button>
+    <button class="bld-cat-btn" data-cat="profit" onclick="switchBldCat('profit',this)">💰 수익 시설</button>
+    <button class="bld-cat-btn" data-cat="resource" onclick="switchBldCat('resource',this)">⛏️ 자원 생산</button>
+    <button class="bld-cat-btn" data-cat="frontier" onclick="switchBldCat('frontier',this)">🌿 개척지</button>
+    <button class="bld-cat-btn" data-cat="military" onclick="switchBldCat('military',this)">🛡️ 군사 시설</button>
+    <button class="bld-cat-btn" data-cat="monster" onclick="switchBldCat('monster',this)">👹 몬스터 소굴</button>
+  </div>
+  <select class="bld-cat-select" id="bldCatSelect" onchange="switchBldCat(this.value)">
+    <option value="all">📋 전체</option>
+    <option value="base">🏛️ 거점 시설</option>
+    <option value="profit">💰 수익 시설</option>
+    <option value="resource">⛏️ 자원 생산</option>
+    <option value="frontier">🌿 개척지</option>
+    <option value="military">🛡️ 군사 시설</option>
+    <option value="monster">👹 몬스터 소굴</option>
+  </select>
+
+  <div id="buildingCardGrid" class="bld-card-grid"></div>
+
+  <div class="bld-fin-summary" style="margin-top:10px">
+    <span>🏰 건물 합산 —</span>
+    <span style="color:#2e6b2e">월 수입: <b id="bld-total-income">0</b> <span id="bld-income-unit">은화</span></span>
+    <span style="color:var(--red-ink)">월 지출: <b id="bld-total-expense">0</b> <span id="bld-expense-unit">은화</span></span>
+    <span>순이익: <b id="bld-total-net">0</b> <span id="bld-net-unit">은화</span></span>
+    <button class="add-btn" style="padding:3px 10px;font-size:11px;margin-left:auto" onclick="applyBuildingFinance()">↳ 회계에 반영 (누적)</button>
+  </div>
+  <button class="add-btn" style="margin-top:10px" onclick="addBuilding()">＋ 건물 추가</button>
+</div>
+
+<!-- ══ 군사 ══ -->
+<div class="tab-content" id="tab-military">
+  <div class="section-title">🛡️ 군사</div>
+
+  <div class="mil-summary-grid">
+    <div class="mil-summary-box total">
+      <div class="mil-label">영지 총 군사력</div>
+      <div class="mil-value" id="milTotalPower">0</div>
+    </div>
+    <div class="mil-summary-box">
+      <div class="mil-label">병력 전투력</div>
+      <div class="mil-value" id="milTroopPower">0</div>
+    </div>
+    <div class="mil-summary-box">
+      <div class="mil-label">인물 전투력</div>
+      <div class="mil-value" id="milNpcPower">0</div>
+    </div>
+    <div class="mil-summary-box">
+      <div class="mil-label">총 병력 / 제한</div>
+      <div class="mil-value" id="milTroopCount" style="font-size:20px">0 / 0</div>
+    </div>
+  </div>
+
+  <div class="mil-base-setting">
+    <label>병사 1인당 기본 전투력</label>
+    <input type="number" id="milBasePower" min="0" value="1" onchange="state.militaryBasePower=parseNum(this.value)||0;calcMilitary();autosave()">
+    <span class="mil-hint">전투력 = 인원 × (기본 전투력 + 보정치) × (숙련도 ÷ 100)</span>
+  </div>
+
+  <div class="section-title" style="font-size:15px;margin-top:22px">🏯 병력 관리 (군사 시설별)</div>
+  <div id="milBuildingList"></div>
+
+  <div class="section-title" style="font-size:15px;margin-top:22px">💰 군사 임금</div>
+  <div class="bld-fin-summary">
+    <span>월 임금 합계: <b id="milWageTotal" style="color:var(--red-ink)">0</b> <span id="milWageUnit"></span></span>
+    <button class="add-btn" style="padding:3px 10px;font-size:11px;margin-left:auto" onclick="applyMilitaryFinance()">↳ 회계에 반영 (누적)</button>
+  </div>
+
+  <div class="section-title" style="font-size:15px;margin-top:22px">⚔️ 전투 참여 인물</div>
+  <select class="bld-cat-select" style="display:block;margin-bottom:10px" id="milAddCombatantSelect" onchange="addMilitaryCombatant(this.value)">
+    <option value="">＋ 전투 참여 인물 선택...</option>
+  </select>
+  <div class="table-scroll"><table class="data-table" id="milCombatantTable">
+    <thead><tr><th>이름</th><th>전투력</th><th></th></tr></thead>
+    <tbody id="milCombatantBody"></tbody>
+  </table></div>
+
+  <div class="section-title" style="font-size:15px;margin-top:22px">👹 몬스터 위협</div>
+  <div id="monsterThreatList"></div>
+</div>
+
+<!-- 전투 모달 -->
+<div class="modal-overlay" id="combatModal">
+  <div class="modal" style="width:400px">
+    <h3 id="combatModalTitle">전투</h3>
+    <div class="combat-stats">
+      <div><span>우리 군사력</span><b id="combatOurPower">0</b></div>
+      <div><span>몬스터 전투력</span><b id="combatMonsterPower">0</b></div>
+      <div><span>몬스터 체력</span><b id="combatMonsterHp">0 / 0</b></div>
+    </div>
+    <div class="combat-dice-area">
+      <button class="action-btn" onclick="rollCombatDice()">🎲 주사위 굴리기</button>
+      <div id="combatDiceResult" class="combat-dice-result"></div>
+    </div>
+    <div class="combat-damage-row">
+      <label>적용할 피해량 (수정 가능)</label>
+      <input type="number" min="0" id="combatDamageInput" value="0">
+    </div>
+    <div id="combatCounterHint" class="combat-hint"></div>
+    <div class="modal-btns">
+      <button class="action-btn sec" onclick="closeCombatModal()">취소</button>
+      <button class="action-btn" onclick="applyCombatDamage()">전투 결과 적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 지도 ══ -->
+<div class="tab-content" id="tab-map">
+  <div class="section-title">영지 지도</div>
+
+  <div class="map-toolbar">
+    <div class="map-mode-group">
+      <button class="map-mode-btn active" data-mode="view" onclick="setMapMode('view')">👁️ 보기</button>
+      <button class="map-mode-btn" data-mode="building" onclick="setMapMode('building')">🏠 건물 배치</button>
+      <button class="map-mode-btn" data-mode="terrain" onclick="setMapMode('terrain')">🎨 지형/도로</button>
+    </div>
+    <div class="map-zoom-group">
+      <button class="map-zoom-btn" onclick="mapZoomStep(-1)">−</button>
+      <span id="mapZoomLabel">100%</span>
+      <button class="map-zoom-btn" onclick="mapZoomStep(1)">＋</button>
+      <button class="map-zoom-btn" style="width:auto;padding:0 8px;font-size:11px" onclick="mapFitToScreen()" title="지도 전체가 보이도록 맞춤">전체보기</button>
+    </div>
+    <div class="map-size-group">
+      <label>가로</label><input type="number" id="mapColsInput" min="12" placeholder="12">
+      <label>세로</label><input type="number" id="mapRowsInput" min="10" placeholder="10">
+      <button class="add-btn" style="padding:4px 10px;font-size:11px" onclick="applyMapSize()">크기 적용</button>
+    </div>
+  </div>
+
+  <div class="map-terrain-palette" id="mapTerrainPalette">
+    <button class="terrain-swatch t-plain active" data-t="plain" onclick="selectPaint('plain',this)">평지</button>
+    <button class="terrain-swatch t-forest" data-t="forest" onclick="selectPaint('forest',this)">숲</button>
+    <button class="terrain-swatch t-mountain" data-t="mountain" onclick="selectPaint('mountain',this)">산</button>
+    <button class="terrain-swatch t-sea" data-t="sea" onclick="selectPaint('sea',this)">바다</button>
+    <button class="terrain-swatch t-river" data-t="river" onclick="selectPaint('river',this)">강</button>
+    <button class="terrain-swatch t-swamp" data-t="swamp" onclick="selectPaint('swamp',this)">늪지대</button>
+    <button class="terrain-swatch t-road" data-t="road" onclick="selectPaint('road',this)">🛣️ 도로 칠하기</button>
+    <button class="terrain-swatch t-eraseroad" data-t="erase-road" onclick="selectPaint('erase-road',this)">도로 지우기</button>
+  </div>
+
+  <div class="map-viewport" id="mapViewport">
+    <div class="map-canvas" id="mapCanvas">
+      <div class="map-terrain-layer" id="mapTerrainLayer"></div>
+      <div class="map-building-layer" id="mapBuildingLayer"></div>
+    </div>
+  </div>
+
+  <div class="map-unplaced-wrap" id="mapUnplacedWrap" style="display:none">
+    <div class="section-title" style="font-size:12px;margin-bottom:8px">🏠 미배치 건물 — 지도로 드래그해서 배치</div>
+    <div class="map-unplaced-list" id="mapUnplacedList"></div>
+  </div>
+
+  <div class="map-tooltip" id="mapTooltip"></div>
+</div>
+
+<!-- ══ 인물 ══ -->
+<div class="tab-content" id="tab-npc">
+  <div class="section-title">인물 / NPC</div>
+  <div class="table-scroll"><table class="data-table">
+    <thead><tr><th>📌</th><th>초상</th><th>이름</th><th>직책/관계</th><th>능력치/특기</th><th>상태/비고</th><th>전투 참여</th><th>전투력</th><th></th></tr></thead>
+    <tbody id="npcBody"></tbody>
+  </table></div>
+  <button class="add-btn" onclick="addNPC()">＋ 인물 추가</button>
+</div>
+
+<!-- ══ 이벤트 ══ -->
+<div class="tab-content" id="tab-quest">
+  <div class="section-title">이벤트 / 퀘스트</div>
+  <div class="table-scroll"><table class="data-table">
+    <thead><tr><th>상태</th><th>제목</th><th>발생일</th><th>내용/조건</th><th>보상/결과</th><th></th></tr></thead>
+    <tbody id="questBody"></tbody>
+  </table></div>
+  <button class="add-btn" onclick="addQuest()">＋ 이벤트 추가</button>
+</div>
+
+<!-- ══ 인벤토리 ══ -->
+<div class="tab-content" id="tab-inventory">
+  <div class="section-title">아이템 / 아티팩트</div>
+  <div class="inv-grid" id="invGrid"></div>
+  <button class="add-btn" onclick="addItem()">＋ 아이템 추가</button>
+</div>
+
+<!-- ══ 세계 설정 ══ -->
+<div class="tab-content" id="tab-world">
+  <div class="world-tabs">
+    <button class="world-tab-btn active" onclick="switchWorldTab('empire',this)">🏛️ 제국 설정</button>
+    <button class="world-tab-btn" onclick="switchWorldTab('kingdom',this)">👑 왕국/세력</button>
+    <button class="world-tab-btn" onclick="switchWorldTab('currency',this)">💱 화폐 / 물가</button>
+    <button class="world-tab-btn" onclick="switchWorldTab('misc',this)">📝 기타 설정</button>
+  </div>
+  <div class="world-tab-content active" id="wt-empire">
+    <textarea class="world-memo" id="world-empire" placeholder="제국의 이름, 지배 체제, 역사, 주요 인물, 특이사항 등을 자유롭게 기록하세요..." oninput="autosave()"></textarea>
+  </div>
+  <div class="world-tab-content" id="wt-kingdom">
+    <textarea class="world-memo" id="world-kingdom" placeholder="왕국/세력의 구도, 동맹, 적대 관계, 중요 거점 등을 기록하세요..." oninput="autosave()"></textarea>
+  </div>
+  <div class="world-tab-content" id="wt-currency">
+    <div class="section-title">화폐 단위</div>
+    <div class="currency-ref" style="margin-bottom:10px">
+      💡 <b>기준: 1 제국 은화</b> — 모든 숫자 계산은 은화 단위로 저장됩니다.<br>
+      아래 표에 각 화폐가 <b>은화 1개와 얼마나 교환</b>되는지 입력하세요.<br>
+      예) 금화 1개 = 은화 10개 → 은화 환산율 <b>10</b> / 동화 10개 = 은화 1개 → 환산율 <b>0.1</b>
+    </div>
+    <table class="currency-table" id="currencyTable">
+      <thead><tr><th>화폐명</th><th>단위 표기</th><th>은화 환산율 (1개 = 은화 N개)</th><th>비고</th><th></th></tr></thead>
+      <tbody id="currencyBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addCurrency()" style="margin-bottom:16px">＋ 화폐 단위 추가</button>
+    <div class="section-title">물가 기준</div>
+    <table class="currency-table" id="priceTable">
+      <thead><tr><th>품목</th><th>가격</th><th>현실 환산</th><th>비고</th><th></th></tr></thead>
+      <tbody id="priceBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addPrice()">＋ 물가 기준 추가</button>
+    <div class="currency-ref" id="currencyRef" style="margin-top:10px"></div>
+  </div>
+  <div class="world-tab-content" id="wt-misc">
+    <textarea class="world-memo" id="world-misc" placeholder="마법 체계, 종족 설정, 지리, 역사 연표 등 기타 세계관 설정을 기록하세요..." oninput="autosave()"></textarea>
+  </div>
+</div>
+
+<!-- 하단 바 -->
+<div class="bottom-bar">
+  <div>
+    <div class="save-status" id="saveStatus">🔴 Firebase 미설정</div>
+    <div id="syncIndicator" style="font-size:10px;color:var(--ink-light);font-style:italic;margin-top:2px"></div>
+  </div>
+  <div class="btn-group">
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadFromFile(event)">
+    <button class="action-btn sec" onclick="document.getElementById('fileInput').click()">📂 JSON 불러오기</button>
+    <button class="action-btn sec" onclick="saveToFile()">💾 JSON 백업</button>
+  </div>
+</div>
+</div><!-- /ledger -->
+
+<!-- 자원 모달 -->
+<div class="modal-overlay" id="resModal">
+  <div class="modal">
+    <h3>자원 추가</h3>
+    <label>아이콘(이모지)</label><input type="text" id="mIcon" value="📦" maxlength="2">
+    <label>자원명</label><input type="text" id="mName" placeholder="자원명">
+    <label>단위</label><input type="text" id="mUnit" placeholder="개">
+    <label>초기값</label><input type="text" id="mValue" value="0">
+    <div class="modal-btns">
+      <button class="action-btn sec" onclick="closeModal('resModal')">취소</button>
+      <button class="action-btn" onclick="confirmRes()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 시장 팝업 -->
+<div class="market-overlay" id="marketOverlay">
+  <div class="market-modal">
+    <h3>🏪 자원 시장</h3>
+    <div class="market-capital-bar">보유 자본: <b id="mkt-capital-display">0</b> <span id="mkt-capital-unit">은화</span></div>
+    <div class="market-mode-toggle">
+      <button class="mkt-mode-btn active" id="mkt-buy-btn" onclick="setMarketMode('buy')">🛒 구매</button>
+      <button class="mkt-mode-btn" id="mkt-sell-btn" onclick="setMarketMode('sell')">💸 판매</button>
+    </div>
+    <div class="market-res-list" id="mkt-res-list"></div>
+    <div id="mkt-input-section" style="display:none">
+      <div class="mkt-input-row">
+        <label>단가</label>
+        <input class="mkt-num-in" type="text" id="mkt-unit-price" readonly style="background:rgba(200,150,12,.08)">
+        <span id="mkt-price-unit" style="font-size:11px;color:var(--ink-light)">은화</span>
+      </div>
+      <div class="mkt-input-row">
+        <label>수량</label>
+        <input class="mkt-num-in" type="number" id="mkt-qty" min="1" value="1" oninput="calcMarketTotal()">
+        <span id="mkt-qty-unit" style="font-size:11px;color:var(--ink-light)"></span>
+      </div>
+      <div class="mkt-total-bar" id="mkt-total-bar">
+        합계: <b id="mkt-total-cost">0</b> <span id="mkt-total-unit">은화</span>
+        <span id="mkt-after-capital" style="color:var(--ink-faded)"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="mkt-btn buy" id="mkt-confirm-btn" onclick="confirmMarket()" style="display:none">✔ 확인</button>
+      <button class="mkt-btn sec" onclick="closeOverlay('marketOverlay')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 자원 수동 조정 모달 -->
+<div class="adj-overlay" id="adjOverlay">
+  <div class="adj-modal">
+    <h3 id="adj-title">자원 조정</h3>
+    <div style="font-size:13px;color:var(--ink-faded);margin-bottom:8px">현재 보유: <b id="adj-current">0</b> <span id="adj-unit"></span></div>
+    <label>조정 방향</label>
+    <select id="adj-dir">
+      <option value="plus">＋ 증가</option>
+      <option value="minus">－ 감소</option>
+    </select>
+    <label>수량</label>
+    <input type="number" id="adj-qty" min="1" value="1">
+    <label>사유</label>
+    <input type="text" id="adj-reason" placeholder="예) 퀘스트 보상, 세금 징수, 소비...">
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="action-btn sec" onclick="closeOverlay('adjOverlay')">취소</button>
+      <button class="action-btn" onclick="confirmAdj()">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 부채 상환 모달 -->
+<div class="modal-overlay" id="repayModal">
+  <div class="modal">
+    <h3>부채 상환</h3>
+    <div id="repay-debt-name" style="font-size:14px;color:var(--ink-faded);margin-bottom:4px"></div>
+    <div id="repay-debt-remain" style="font-size:13px;color:var(--red-ink);margin-bottom:10px"></div>
+    <label>상환 금액 (은화)</label>
+    <input type="text" id="repayAmount" placeholder="0" value="0">
+    <div style="font-size:11px;color:var(--ink-light);margin-top:4px">자본에서 차감되고 해당 부채 원금이 줄어듭니다. 부채가 0 이하가 되면 자동 삭제됩니다.</div>
+    <div class="modal-btns">
+      <button class="action-btn sec" onclick="closeModal('repayModal')">취소</button>
+      <button class="action-btn" onclick="confirmRepay()">상환</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  🔥 FIREBASE 설정
+// ══════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyAO-zMbqf448r9vytYidCAPBXdxvYXmSpg",
+  authDomain:        "foxtail-309da.firebaseapp.com",
+  projectId:         "foxtail-309da",
+  storageBucket:     "foxtail-309da.firebasestorage.app",
+  messagingSenderId: "406019218260",
+  appId:             "1:406019218260:web:c85ba09d6a0f4b19b286c1"
+};
+let DOMAIN_DOC_ID = null;
+
+// ──────────────────────────────────────────────
+//  입장 코드 목록 — 여기에 사람을 추가하면 됨
+//  "코드": { name:"화면에 표시될 이름", docId:"Firestore에 저장될 고유 문서명" }
+// ──────────────────────────────────────────────
+const ACCESS_CODES = {
+  "metro": { name:"메트로", docId:"metro_domain" },
+};
+
+// ──────────────────────────────────────────────
+//  기본 state
+// ──────────────────────────────────────────────
+let state = {
+  domainTitle:'아르카디아 영지', lordName:'', currentDate:'', domainRank:'남작령',
+  capital:'0', debtTotal:'0', monthIncome:'0', monthExpense:'0',
+  buildingIncome:'0', buildingExpense:'0',   // 건물 반영분 별도 추적
+  incomeApplied:'0',                          // 수익항목 반영분 별도 추적
+  debts:[], ledgerHistory:[],
+  incomeItems:[],
+  specialNotes:[], resources:[], buildings:[], npcs:[], quests:[],
+  inventory:[],
+  worldEmpire:'', worldKingdom:'', worldMisc:'',
+  tradeLog:[],   // 이번 달 임시 거래 로그
+  currencies:[
+    {name:'금화',   unit:'제국 금화',  silverRate:'10',  note:'제국 은화 10개 = 제국 금화 1개'},
+    {name:'은화',   unit:'제국 은화',  silverRate:'1',   note:'기준 화폐'},
+    {name:'동화',   unit:'제국 동화',  silverRate:'0.1', note:'제국 은화 1개 = 제국 동화 10개'}
+  ],
+  prices:[
+    {item:'성인 남성 월 임금', price:'5 동화', realValue:'250만원', note:'열심히 일한 기준'},
+    {item:'일반 식사 1끼',     price:'1 닢',   realValue:'약 5만원',  note:''}
+  ],
+  mapGrid:{cols:12, rows:10},
+  mapTerrain:{}, mapRoads:{}, mapPlacements:[],
+  militaryUnits:[], militaryExpense:'0', militaryBasePower:1,
+  _updatedAt:0
+};
+const MAP_MIN_COLS = 12, MAP_MIN_ROWS = 10;
+
+// ──────────────────────────────────────────────
+//  탭 전환
+// ──────────────────────────────────────────────
+const TAB_LIST = ['overview','ledger','resources','buildings','military','map','npc','quest','inventory','world'];
+let mapAutoFitDone = false;
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const idx = TAB_LIST.indexOf(name);
+  const btn = document.querySelectorAll('.tab-btn')[idx];
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+
+  const curLabel = document.getElementById('mobileTabCurrentLabel');
+  if (curLabel) curLabel.textContent = btn.textContent;
+  document.querySelectorAll('.mobile-tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab===name));
+  closeMobileTabMenu();
+
+  if (name==='map' && !mapAutoFitDone) {
+    mapAutoFitDone = true;
+    setTimeout(mapFitToScreen, 0); // 탭이 화면에 표시된 후 크기 계산
+  }
+}
+
+function buildMobileTabMenu() {
+  const menu = document.getElementById('mobileTabMenu');
+  if (!menu) return;
+  const btns = document.querySelectorAll('.tabs .tab-btn');
+  menu.innerHTML = Array.from(btns).map((b,i) =>
+    `<button class="mobile-tab-item${b.classList.contains('active')?' active':''}" data-tab="${TAB_LIST[i]}" onclick="switchTab('${TAB_LIST[i]}')">${b.textContent}</button>`
+  ).join('');
+}
+
+function toggleMobileTabMenu() {
+  const menu = document.getElementById('mobileTabMenu');
+  const bar = document.getElementById('mobileTabBar');
+  if (!menu) return;
+  menu.classList.toggle('open');
+  bar.classList.toggle('open', menu.classList.contains('open'));
+}
+
+function closeMobileTabMenu() {
+  const menu = document.getElementById('mobileTabMenu');
+  const bar = document.getElementById('mobileTabBar');
+  if (menu) menu.classList.remove('open');
+  if (bar) bar.classList.remove('open');
+}
+
+function switchWorldTab(name, el) {
+  document.querySelectorAll('.world-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.world-tab-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('wt-'+name).classList.add('active');
+}
+
+// ──────────────────────────────────────────────
+//  화폐 단위 관리
+// ──────────────────────────────────────────────
+let activeCurrency = null; // null = 은화 기준
+
+function getSilverRate(cur) {
+  // 해당 화폐 1개가 은화 몇 개인지
+  const r = parseFloat(cur.silverRate);
+  return (r && r > 0) ? r : 1;
+}
+
+function silverToDisplay(silverVal) {
+  if (!activeCurrency) return silverVal;
+  const rate = getSilverRate(activeCurrency);
+  return roundTo4(silverVal / rate);
+}
+
+function displayToSilver(displayVal) {
+  if (!activeCurrency) return displayVal;
+  const rate = getSilverRate(activeCurrency);
+  return roundTo4(displayVal * rate);
+}
+
+function roundTo4(n) {
+  return Math.round(n * 10000) / 10000;
+}
+
+function getActiveCurrencyName() {
+  return activeCurrency ? activeCurrency.unit : '은화';
+}
+
+function buildCurrencyToggles() {
+  const curs = state.currencies || [];
+  ['ledger-cur-toggle','ov-cur-toggle'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = curs.map(c => {
+      const isActive = activeCurrency && activeCurrency.name === c.name;
+      const isSilver = !activeCurrency && c.silverRate === '1';
+      return `<button class="cur-btn ${isActive || isSilver ? 'active' : ''}" onclick="setCurrency('${c.name}')">${c.unit}</button>`;
+    }).join('');
+  });
+  // 힌트 업데이트
+  const hint = document.getElementById('ledger-cur-hint');
+  if (hint) hint.textContent = `입력 시 은화로 자동 환산 저장 (현재: ${getActiveCurrencyName()})`;
+  // 단위 라벨 업데이트
+  const unitName = getActiveCurrencyName();
+  ['lbl-capital-unit','lbl-debt-unit','lbl-income-unit','lbl-expense-unit'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = unitName;
+  });
+  const netU = document.getElementById('netAsset-unit');
+  if (netU) netU.textContent = `단위: ${unitName}`;
+  // 현황탭 재정 라벨 단위 업데이트
+  const ovLabels = [
+    ['ov-lbl-capital', `자본 (보유) — ${unitName}`],
+    ['ov-lbl-income',  `월 수입 — ${unitName}`],
+    ['ov-lbl-expense', `월 지출 — ${unitName}`],
+  ];
+  ovLabels.forEach(([id, text]) => { const e = document.getElementById(id); if(e) e.textContent = text; });
+}
+
+function setCurrency(name) {
+  const cur = (state.currencies||[]).find(c => c.name === name);
+  if (!cur) return;
+  activeCurrency = (cur.silverRate === '1') ? null : cur;
+  buildCurrencyToggles();
+  applyFields();
+  calcTotal();
+  renderDebt();
+  renderIncomeItems();
+  calcBuildingFinance();
+  renderDashboard();
+}
+
+// ──────────────────────────────────────────────
+//  회계 계산
+// ──────────────────────────────────────────────
+function calcTotal() {
+  const cap  = parseNum(state.capital);
+  const debt = parseNum(state.debtTotal);
+  const net  = cap - debt;
+  const dispNet = silverToDisplay(net);
+  const el   = document.getElementById('netAsset');
+  if (el) {
+    el.textContent = formatNum(dispNet);
+    el.style.color = net < 0 ? 'var(--red-ink)' : net === 0 ? 'var(--ink)' : '#2e6b2e';
+  }
+  // 현황 탭 동기
+  const setOv = (id, silverVal) => { const e = document.getElementById(id); if(e) e.value = formatNum(silverToDisplay(parseNum(silverVal))); };
+  setOv('ov-capital',  state.capital || '0');
+  setOv('ov-debt',     state.debtTotal || '0');
+  setOv('ov-income',   state.monthIncome || '0');
+  setOv('ov-expense',  state.monthExpense || '0');
+}
+
+// 입력 시 현재 단위 → 은화 환산 저장
+function onCapitalInput(val) {
+  const silver = displayToSilver(parseNum(val));
+  state.capital = String(silver);
+  calcTotal(); autosave();
+}
+function onIncomeInput(val) {
+  const silver = displayToSilver(parseNum(val));
+  state.monthIncome = String(silver);
+  calcTotal(); autosave();
+}
+function onExpenseInput(val) {
+  const silver = displayToSilver(parseNum(val));
+  state.monthExpense = String(silver);
+  calcTotal(); autosave();
+}
+
+function parseNum(s) {
+  if (!s) return 0;
+  return parseFloat(String(s).replace(/[^0-9.\-]/g,'')) || 0;
+}
+function formatNum(n) {
+  if (n === undefined || n === null || isNaN(n)) return '0';
+  // 소수점 4자리까지, 불필요한 0 제거
+  const rounded = Math.round(n * 10000) / 10000;
+  return rounded.toLocaleString('ko-KR', {maximumFractionDigits:4});
+}
+
+function passMonth() {
+  if (!confirm('1달을 경과시키겠습니까?\n수입/지출이 자본에 반영되고 각 부채에 이자가 누적됩니다.\n자원 생산 건물의 산출물이 자원탭에 추가됩니다.\n이번 달 거래 로그는 회계 기록으로 이전됩니다.')) return;
+  collectFields();
+  const income  = parseNum(state.monthIncome);
+  const expense = parseNum(state.monthExpense);
+  let cap = parseNum(state.capital);
+
+  // 수익 항목 합산 반영
+  const incomeItemTotal = (state.incomeItems||[]).reduce((a,it) => a + parseNum(it.amount||'0'), 0);
+  const totalIncome = income + incomeItemTotal;
+  cap += totalIncome - expense;
+
+  // 이자 처리
+  let totalInterest = 0;
+  state.debts = (state.debts||[]).map(d => {
+    const interest = parseNum(d.interest||'0');
+    if (interest > 0) {
+      d.accruedInterest = String(parseNum(d.accruedInterest||'0') + interest);
+      totalInterest += interest;
+    }
+    return d;
+  });
+  if (totalInterest > 0) cap -= totalInterest;
+
+  // 부채 합계 재계산
+  const newDebt = (state.debts||[]).reduce((a,d) => a + parseNum(d.amount) + parseNum(d.accruedInterest||'0'), 0);
+  state.capital   = String(cap);
+  state.debtTotal = String(newDebt);
+
+  // ─ 자원 생산 건물 처리 ─
+  const prodLogs = [];
+  (state.buildings||[]).forEach(b => {
+    if ((b.category||'base')!=='resource') return;
+    if (b.status==='손상'||b.status==='파손'||b.status==='방치됨') return;
+    (b.productions||[]).forEach(p => {
+      const res = (state.resources||[]).find(r=>r.name===p.resName);
+      if (!res) return;
+      const amt = parseFloat(p.amount)||0;
+      res.value = String(parseFloat(res.value||'0') + amt);
+      prodLogs.push(`${b.name} → ${p.resName} +${amt}${p.unit||'개'}`);
+    });
+  });
+
+  // ─ 거래 로그 → ledgerHistory 이전 후 초기화 ─
+  const tradeLogs = state.tradeLog || [];
+  const tradeLogMsgs = tradeLogs.map(l=>l.msg);
+  state.tradeLog = [];
+
+  const logMsg = `[${state.currentDate||'?'}] 월 경과 — 정기수입 ${formatNum(income)}, 수익항목 ${formatNum(incomeItemTotal)}, 지출 ${formatNum(expense)}, 이자 ${formatNum(totalInterest)} → 자본 ${formatNum(cap)} / 부채 ${formatNum(newDebt)} 은화`;
+  const prodMsg = prodLogs.length ? `[${state.currentDate||'?'}] 자원 생산 — ${prodLogs.join(' / ')}` : null;
+  const newHistory = [logMsg];
+  if (prodMsg) newHistory.push(prodMsg);
+  newHistory.push(...tradeLogMsgs);
+  state.ledgerHistory = [...newHistory, ...(state.ledgerHistory||[])].slice(0, 60);
+
+  applyFields();
+  renderResources();
+  renderDebt();
+  renderLedgerLog();
+  calcTotal();
+  renderDashboard();
+  autosave();
+}
+
+// ──────────────────────────────────────────────
+//  렌더
+// ──────────────────────────────────────────────
+function render() {
+  applyFields();
+  (state.buildings||[]).forEach(ensureBuildingId);
+  (state.npcs||[]).forEach(ensureNpcId);
+  renderResources();
+  renderBuildings();
+  renderNPCs();
+  renderQuests();
+  renderSpecialNotes();
+  renderInventory();
+  renderDebt();
+  renderIncomeItems();
+  renderLedgerLog();
+  renderCurrencies();
+  renderPrices();
+  renderWorldMemos();
+  renderDashboard();
+  renderTradeLog();
+  renderMap();
+  renderMilitary();
+  calcTotal();
+  buildCurrencyToggles();
+  calcBuildingFinance();
+}
+
+function renderDashboard() {
+  // 재정 — 단위 변환 적용
+  const setOv = (id, silverVal) => { const e = document.getElementById(id); if(e) e.value = formatNum(silverToDisplay(parseNum(silverVal))); };
+  setOv('ov-capital',  state.capital  || '0');
+  setOv('ov-debt',     state.debtTotal|| '0');
+  setOv('ov-income',   state.monthIncome  || '0');
+  setOv('ov-expense',  state.monthExpense || '0');
+
+  // 건물 (핀된 것만)
+  const dashB = document.getElementById('dash-buildings');
+  const dashBC = document.getElementById('dash-bc');
+  if (dashB) {
+    const pinned = (state.buildings||[]).filter(b => b.pinned);
+    dashB.innerHTML = pinned.map(b => {
+      const sc = b.status==='정상'?'s-normal':b.status==='건설중'?'s-build':['손상','파손','약탈당함','방치됨'].includes(b.status)?'s-bad':'s-etc';
+      return `<div class="mini-row"><span class="mr-name">${b.name}</span><span class="mr-sub">${b.level}</span><span class="status-tag ${sc}">${b.status}</span></div>`;
+    }).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">📌 핀 된 건물 없음</div>';
+    if (dashBC) dashBC.textContent = `핀 ${pinned.length}/${(state.buildings||[]).length}`;
+  }
+
+  // 인물 (핀된 것만)
+  const dashN = document.getElementById('dash-npcs');
+  const dashNC = document.getElementById('dash-nc');
+  if (dashN) {
+    const pinned = (state.npcs||[]).filter(n => n.pinned);
+    dashN.innerHTML = pinned.map(n => `
+      <div class="mini-row">
+        <div class="mini-npc-icon">${n.icon||'👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:6px;align-items:baseline"><span class="mr-name">${n.name}</span><span class="mr-sub">${n.role}</span></div>
+          <div style="font-size:10px;color:var(--ink-faded);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.note||''}</div>
+        </div>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">📌 핀 된 인물 없음</div>';
+    if (dashNC) dashNC.textContent = `핀 ${pinned.length}/${(state.npcs||[]).length}`;
+  }
+
+  // 이벤트 — 진행중만
+  const dashQ = document.getElementById('dash-quests');
+  const dashQC = document.getElementById('dash-qc');
+  if (dashQ) {
+    const active = (state.quests||[]).filter(q => q.status==='진행중');
+    dashQ.innerHTML = active.map(q => `
+      <div class="mini-row">
+        <span class="mq-badge mq-진행중">진행중</span>
+        <span class="mr-name">${q.title}</span>
+        <span class="mr-sub">${q.date}</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">진행중인 이벤트 없음</div>';
+    if (dashQC) dashQC.textContent = `${active.length}건`;
+  }
+
+  // 자원
+  const dashR = document.getElementById('dash-resources');
+  if (dashR) {
+    dashR.innerHTML = (state.resources||[]).map(r => `
+      <div class="mini-res"><span>${r.icon}</span><span style="font-size:10px;color:var(--ink-light)">${r.name}</span><span style="font-weight:700">${r.value}</span></div>
+    `).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic">자원 없음</div>';
+  }
+}
+
+function renderResources() {
+  const grid = document.getElementById('resourceGrid');
+  if (!grid) return;
+  grid.innerHTML = (state.resources||[]).map((r,i) => `
+    <div class="res-card">
+      <button class="del-btn" onclick="delItem('resources',${i})">✕</button>
+      <span class="res-icon">${r.icon}</span>
+      <span class="res-name-lbl">${r.name}</span>
+      <input class="res-val" type="text" value="${r.value}" oninput="state.resources[${i}].value=this.value;renderDashboard();autosave()">
+      <span class="res-unit">${r.unit}</span>
+      <input class="res-price-in" type="text" value="${r.price||''}" placeholder="단가 (은화)"
+        title="시장 단가 (은화 기준)" oninput="state.resources[${i}].price=this.value;autosave()">
+      <div style="display:flex;gap:4px;justify-content:center;margin-top:6px">
+        <button class="res-adj-btn" onclick="openAdj(${i})">± 조정</button>
+      </div>
+    </div>`).join('');
+  renderTradeLog();
+}
+
+function renderTradeLog() {
+  const wrap = document.getElementById('tradeLogWrap');
+  const list = document.getElementById('tradeLogList');
+  if (!list) return;
+  const logs = state.tradeLog || [];
+  if (wrap) wrap.style.display = logs.length ? '' : 'none';
+  list.innerHTML = logs.map(l =>
+    `<div class="trade-log-row ${l.type==='minus'?'minus':''}">${l.msg}</div>`
+  ).join('');
+}
+
+// 건물 카테고리 전환
+let activeBldCat = 'all';
+function switchBldCat(cat, el) {
+  activeBldCat = cat;
+  document.querySelectorAll('.bld-cat-btn').forEach(b=>b.classList.remove('active'));
+  const btn = el || document.querySelector(`.bld-cat-btn[data-cat="${cat}"]`);
+  if (btn) btn.classList.add('active');
+  const sel = document.getElementById('bldCatSelect');
+  if (sel) sel.value = cat;
+  applyBldCatFilter();
+}
+
+const BLD_CAT_LABELS = {base:'거점 시설',profit:'수익 시설',resource:'자원 생산',frontier:'개척지',military:'군사 시설',monster:'몬스터 소굴'};
+
+const BLD_FIELD_CONFIG = {
+  base:     {income:true,  expense:true,  production:false, troopCap:false, monster:false},
+  profit:   {income:true,  expense:true,  production:false, troopCap:false, monster:false},
+  resource: {income:true,  expense:true,  production:true,  troopCap:false, monster:false},
+  frontier: {income:true,  expense:true,  production:true,  troopCap:false, monster:false},
+  military: {income:false, expense:true,  production:false, troopCap:true,  monster:false},
+  monster:  {income:false, expense:true,  production:false, troopCap:false, monster:true, expenseLabel:'월 피해(약탈)'},
+};
+
+function renderBuildings() {
+  const grid = document.getElementById('buildingCardGrid');
+  if (!grid) return;
+  const unit = getActiveCurrencyName();
+  (state.buildings||[]).forEach(ensureBuildingId);
+
+  const catOptHtmlBase = Object.entries(BLD_CAT_LABELS).map(([k,v]) => [k,v]);
+
+  grid.innerHTML = (state.buildings||[]).map((b, idx) => {
+    const cat = b.category || 'base';
+    const cfg = BLD_FIELD_CONFIG[cat] || BLD_FIELD_CONFIG.base;
+    const sc = b.status==='정상'?'s-normal':b.status==='건설중'?'s-build':
+      ['손상','파손','약탈당함','방치됨'].includes((b.status||'').trim())?'s-bad':'s-etc';
+    const dispIncome  = formatNum(silverToDisplay(parseNum(b.income||'0')));
+    const dispExpense = formatNum(silverToDisplay(parseNum(b.expense||'0')));
+    const prods = (b.productions||[]);
+    const prodTags = prods.map((p,pi)=>`
+      <span class="prod-tag">${p.resName} +${p.amount}/${p.unit||'개'}/월
+        <button class="prod-tag-del" onclick="delBldProd(${idx},${pi})">✕</button>
+      </span>`).join('');
+    const catOptHtml = catOptHtmlBase.map(([k,v])=>`<option value="${k}"${cat===k?' selected':''}>${v}</option>`).join('');
+
+    return `
+    <div class="bld-card" data-cat="${cat}">
+      <div class="bld-card-hd">
+        <button class="tpin ${b.pinned?'pinned':''}" onclick="togglePin('buildings',${idx})" title="현황판에 표시">${b.pinned?'📌':'📍'}</button>
+        <div class="bld-card-name" contenteditable="true" oninput="state.buildings[${idx}].name=this.innerText;autosave()">${b.name||''}</div>
+        <button class="tdel" onclick="delItem('buildings',${idx})">✕</button>
+      </div>
+
+      <div class="bld-card-row">
+        <label>분류</label>
+        <select onchange="state.buildings[${idx}].category=this.value;renderBuildings();renderMilitary();autosave()">${catOptHtml}</select>
+      </div>
+      <div class="bld-card-row">
+        <label>등급</label>
+        <div contenteditable="true" oninput="state.buildings[${idx}].level=this.innerText;autosave()">${b.level||''}</div>
+      </div>
+      <div class="bld-card-row">
+        <label>상태</label>
+        <div contenteditable="true" oninput="state.buildings[${idx}].status=this.innerText.trim();autosave()" class="${sc}">${b.status||''}</div>
+      </div>
+      <div class="bld-card-row">
+        <label>크기</label>
+        <div class="bld-card-inline">
+          <input type="number" min="1" class="bld-size-in" value="${b.sizeW||1}" title="가로 칸수" onchange="onBuildingSizeChange(${idx},'sizeW',this.value)">×<input type="number" min="1" class="bld-size-in" value="${b.sizeH||1}" title="세로 칸수" onchange="onBuildingSizeChange(${idx},'sizeH',this.value)">
+        </div>
+      </div>
+      <div class="bld-card-row">
+        <label>수량</label>
+        <input type="number" min="1" class="bld-size-in" value="${b.qty||1}" title="배치 가능 수량" onchange="onBuildingQtyChange(${idx},this.value)">
+      </div>
+      ${cfg.troopCap ? `
+      <div class="bld-card-row">
+        <label>병력 제한</label>
+        <input type="number" min="0" class="bld-size-in" value="${b.troopCap||0}" title="이 건물에 배치 가능한 병력 상한" onchange="state.buildings[${idx}].troopCap=parseInt(this.value)||0;renderMilitary();autosave()">
+      </div>` : ''}
+      ${cfg.monster ? `
+      <div class="bld-card-row">
+        <label>체력</label>
+        <div class="bld-card-inline">
+          <input type="number" min="0" class="bld-size-in" value="${b.monsterHp==null?100:b.monsterHp}" onchange="state.buildings[${idx}].monsterHp=parseInt(this.value)||0;renderMilitary();autosave()">
+          /
+          <input type="number" min="1" class="bld-size-in" value="${b.monsterMaxHp==null?100:b.monsterMaxHp}" onchange="state.buildings[${idx}].monsterMaxHp=parseInt(this.value)||1;renderMilitary();autosave()">
+        </div>
+      </div>
+      <div class="bld-card-row">
+        <label>전투력</label>
+        <input type="number" min="0" class="bld-size-in" value="${b.monsterPower==null?10:b.monsterPower}" onchange="state.buildings[${idx}].monsterPower=parseInt(this.value)||0;renderMilitary();autosave()">
+      </div>` : ''}
+      ${cfg.income ? `
+      <div class="bld-card-row">
+        <label>수입/월</label>
+        <div class="bld-card-inline">
+          <input class="bld-fin-in bld-income-col" type="text" value="${dispIncome}"
+            oninput="state.buildings[${idx}].income=String(displayToSilver(parseNum(this.value)));calcBuildingFinance();autosave()">
+          <span class="bld-unit">${unit}</span>
+        </div>
+      </div>` : ''}
+      ${cfg.expense ? `
+      <div class="bld-card-row">
+        <label>${cfg.expenseLabel||'지출/월'}</label>
+        <div class="bld-card-inline">
+          <input class="bld-fin-in bld-expense-col" type="text" value="${dispExpense}"
+            oninput="state.buildings[${idx}].expense=String(displayToSilver(parseNum(this.value)));calcBuildingFinance();autosave()">
+          <span class="bld-unit">${unit}</span>
+        </div>
+      </div>` : ''}
+      ${cfg.production ? `
+      <div class="bld-card-row full">
+        <label>생산 자원</label>
+        <div class="bld-card-prod">
+          ${prodTags}
+          <button class="add-btn" style="padding:1px 6px;font-size:10px" onclick="openAddProd(${idx})">＋</button>
+        </div>
+      </div>` : ''}
+      <div class="bld-card-row full">
+        <label>효과/비고</label>
+        <div contenteditable="true" oninput="state.buildings[${idx}].note=this.innerText;autosave()">${b.note||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  applyBldCatFilter();
+  calcBuildingFinance();
+}
+
+function applyBldCatFilter() {
+  document.querySelectorAll('#buildingCardGrid .bld-card').forEach(card => {
+    card.style.display = (activeBldCat==='all' || card.dataset.cat===activeBldCat) ? '' : 'none';
+  });
+}
+
+function calcBuildingFinance() {
+  let totalIn = 0, totalOut = 0;
+  (state.buildings||[]).forEach(b => {
+    totalIn  += parseNum(b.income  || '0');
+    totalOut += parseNum(b.expense || '0');
+  });
+  const net = totalIn - totalOut;
+  const unit = getActiveCurrencyName();
+  ['bld-income-unit','bld-expense-unit','bld-net-unit'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=unit;});
+  const ei = document.getElementById('bld-total-income');
+  const eo = document.getElementById('bld-total-expense');
+  const en = document.getElementById('bld-total-net');
+  if (ei) ei.textContent = formatNum(silverToDisplay(totalIn));
+  if (eo) eo.textContent = formatNum(silverToDisplay(totalOut));
+  if (en) { en.textContent = formatNum(silverToDisplay(net)); en.style.color = net < 0 ? 'var(--red-ink)' : net > 0 ? '#2e6b2e' : 'var(--ink)'; }
+}
+
+// ══════════════════════════════════════════════
+//  🛡️ 군사
+// ══════════════════════════════════════════════
+function getMilitaryBuildings() {
+  return (state.buildings||[]).filter(b => b.category==='military');
+}
+
+function unitCombatPower(u) {
+  const base = parseNum(state.militaryBasePower==null ? 1 : state.militaryBasePower);
+  const count = parseNum(u.count||0);
+  const bonus = parseNum(u.bonus||0);
+  const prof = parseNum(u.proficiency==null?50:u.proficiency);
+  return count * (base + bonus) * (prof/100);
+}
+
+function unitWageTotal(u) {
+  return parseNum(u.count||0) * parseNum(u.wage||'0'); // 은화 기준
+}
+
+function addMilitaryUnit(buildingId) {
+  if (!state.militaryUnits) state.militaryUnits = [];
+  state.militaryUnits.push({id:'mu_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), buildingId, name:'새 병종', count:0, weapon:'', armor:'', proficiency:50, bonus:0, wage:'0'});
+  renderMilitary(); autosave();
+}
+
+function delMilitaryUnit(unitId) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  state.militaryUnits = (state.militaryUnits||[]).filter(u=>u.id!==unitId);
+  renderMilitary(); autosave();
+}
+
+function updateMilitaryUnit(unitId, field, value) {
+  const u = (state.militaryUnits||[]).find(uu=>uu.id===unitId);
+  if (!u) return;
+  if (['count','proficiency','bonus'].includes(field)) u[field] = parseNum(value)||0;
+  else u[field] = value;
+  renderMilitary(); autosave();
+}
+
+function addMilitaryCombatant(npcId) {
+  if (!npcId) return;
+  const n = (state.npcs||[]).find(nn=>nn.id===npcId);
+  if (n) n.inCombat = true;
+  document.getElementById('milAddCombatantSelect').value = '';
+  renderMilitary(); renderNPCs(); autosave();
+}
+
+function removeMilitaryCombatant(npcId) {
+  const n = (state.npcs||[]).find(nn=>nn.id===npcId);
+  if (n) n.inCombat = false;
+  renderMilitary(); renderNPCs(); autosave();
+}
+
+function calcMilitary() {
+  const milBuildings = getMilitaryBuildings();
+  const milBuildingIds = new Set(milBuildings.map(b=>b.id));
+  const units = (state.militaryUnits||[]).filter(u=>milBuildingIds.has(u.buildingId));
+
+  let troopPower = 0, troopCount = 0, troopCap = 0, wageTotal = 0;
+  units.forEach(u => { troopPower += unitCombatPower(u); troopCount += parseNum(u.count||0); wageTotal += unitWageTotal(u); });
+  milBuildings.forEach(b => { troopCap += parseInt(b.troopCap)||0; });
+
+  let npcPower = 0;
+  (state.npcs||[]).forEach(n => { if (n.inCombat) npcPower += parseNum(n.combatPower||0); });
+
+  const totalPower = troopPower + npcPower;
+
+  const setTxt = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  setTxt('milTotalPower', formatNum(Math.round(totalPower)));
+  setTxt('milTroopPower', formatNum(Math.round(troopPower)));
+  setTxt('milNpcPower', formatNum(Math.round(npcPower)));
+  setTxt('milTroopCount', `${formatNum(troopCount)} / ${formatNum(troopCap)}`);
+  const unit = getActiveCurrencyName();
+  setTxt('milWageTotal', formatNum(silverToDisplay(wageTotal)));
+  setTxt('milWageUnit', unit);
+
+  return {troopPower, npcPower, totalPower, troopCount, troopCap, wageTotal};
+}
+
+function renderMilitary() {
+  const listEl = document.getElementById('milBuildingList');
+  if (!listEl) return; // 탭 DOM 미존재
+  (state.buildings||[]).forEach(ensureBuildingId);
+  (state.npcs||[]).forEach(ensureNpcId);
+
+  const basePowerInput = document.getElementById('milBasePower');
+  if (basePowerInput && document.activeElement!==basePowerInput) basePowerInput.value = state.militaryBasePower==null?1:state.militaryBasePower;
+
+  const milBuildings = getMilitaryBuildings();
+  const unit = getActiveCurrencyName();
+
+  if (milBuildings.length===0) {
+    listEl.innerHTML = `<div class="mil-empty-hint">🛡️ 건물 탭에서 분류를 "군사 시설"로 설정한 건물을 추가하면 여기서 병력을 관리할 수 있습니다.</div>`;
+  } else {
+    listEl.innerHTML = milBuildings.map(b => {
+      const units = (state.militaryUnits||[]).filter(u=>u.buildingId===b.id);
+      const totalCount = units.reduce((s,u)=>s+parseNum(u.count||0),0);
+      const cap = parseInt(b.troopCap)||0;
+      const over = cap>0 && totalCount>cap;
+      const rows = units.map(u => {
+        const dispWage = formatNum(silverToDisplay(parseNum(u.wage||'0')));
+        const power = unitCombatPower(u);
+        return `<tr>
+          <td data-label="병종명"><input type="text" value="${escapeHtml(u.name||'')}" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','name',this.value)"></td>
+          <td data-label="인원"><input type="number" min="0" value="${u.count||0}" style="width:60px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:right;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','count',this.value)"></td>
+          <td data-label="무기"><input type="text" value="${escapeHtml(u.weapon||'')}" placeholder="예) 롱소드" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','weapon',this.value)"></td>
+          <td data-label="방어구"><input type="text" value="${escapeHtml(u.armor||'')}" placeholder="예) 사슬갑옷" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','armor',this.value)"></td>
+          <td data-label="숙련도(%)"><input type="number" min="0" max="100" value="${u.proficiency==null?50:u.proficiency}" style="width:52px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:right;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','proficiency',this.value)"></td>
+          <td data-label="보정치"><input type="number" value="${u.bonus||0}" title="무기/방어구/장비 수준을 종합한 전투력 보정치" style="width:52px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:right;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','bonus',this.value)"></td>
+          <td data-label="임금/인(${unit})"><input type="text" value="${dispWage}" style="width:60px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:right;font-family:inherit;font-size:13px;outline:none" onchange="updateMilitaryUnit('${u.id}','wage',String(displayToSilver(parseNum(this.value))))"></td>
+          <td data-label="전투력" style="text-align:right;font-weight:700">${formatNum(Math.round(power))}</td>
+          <td><button class="tdel" onclick="delMilitaryUnit('${u.id}')">✕</button></td>
+        </tr>`;
+      }).join('');
+      return `<div class="mil-building-card">
+        <div class="mil-building-hd">
+          <b>🏯 ${escapeHtml(b.name||'')}</b>
+          <span class="mil-cap ${over?'over':''}">${formatNum(totalCount)} / ${formatNum(cap)} 명${over?' ⚠ 초과':''}</span>
+        </div>
+        <div class="table-scroll"><table class="data-table">
+          <thead><tr><th>병종명</th><th>인원</th><th>무기</th><th>방어구</th><th>숙련도(%)</th><th>보정치</th><th>임금/인</th><th>전투력</th><th></th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="9" style="text-align:center;color:var(--ink-light);font-size:12px">등록된 병종이 없습니다.</td></tr>'}</tbody>
+        </table></div>
+        <button class="add-btn" style="margin-top:8px" onclick="addMilitaryUnit('${b.id}')">＋ 병종 추가</button>
+      </div>`;
+    }).join('');
+  }
+
+  // 전투 참여 인물 선택 목록
+  const sel = document.getElementById('milAddCombatantSelect');
+  if (sel) {
+    const available = (state.npcs||[]).filter(n=>!n.inCombat);
+    sel.innerHTML = `<option value="">＋ 전투 참여 인물 선택...</option>` +
+      available.map(n=>`<option value="${n.id}">${escapeHtml(n.name||'이름없음')}</option>`).join('');
+  }
+  const combatants = (state.npcs||[]).filter(n=>n.inCombat);
+  const cbody = document.getElementById('milCombatantBody');
+  if (cbody) {
+    cbody.innerHTML = combatants.length ? combatants.map(n => `
+      <tr>
+        <td data-label="이름">${escapeHtml(n.name||'')}</td>
+        <td data-label="전투력" style="text-align:right;font-weight:700">${formatNum(parseNum(n.combatPower||0))}</td>
+        <td><button class="tdel" onclick="removeMilitaryCombatant('${n.id}')">✕</button></td>
+      </tr>`).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--ink-light);font-size:12px">전투에 참여하는 인물이 없습니다. 인물 탭에서 "전투 참여"를 체크하거나 위 선택창에서 추가하세요.</td></tr>`;
+  }
+
+  calcMilitary();
+  renderMonsterThreats();
+}
+
+function applyMilitaryFinance() {
+  const {wageTotal} = calcMilitary();
+  state.militaryExpense = String(wageTotal);
+  const buildingExpense = parseNum(state.buildingExpense || '0');
+  state.monthExpense = String(buildingExpense + wageTotal);
+  applyFields(); calcTotal(); autosave();
+  alert(`군사 임금 반영 완료!\n월 임금: ${formatNum(silverToDisplay(wageTotal))} ${getActiveCurrencyName()}\n\n※ 건물 지출과 합산되어 월 지출에 적용됩니다.`);
+}
+
+// ── 몬스터 위협 & 전투 ──────────────────────────
+const DICE_MULTIPLIERS = {1:0.5, 2:0.75, 3:1.0, 4:1.25, 5:1.5, 6:2.0};
+let combatTargetBuildingId = null;
+
+function renderMonsterThreats() {
+  const wrap = document.getElementById('monsterThreatList');
+  if (!wrap) return;
+  const monsters = (state.buildings||[]).filter(b=>b.category==='monster');
+  if (monsters.length===0) {
+    wrap.innerHTML = `<div class="mil-empty-hint">현재 활동 중인 몬스터 소굴이 없습니다. 건물 탭에서 분류를 "몬스터 소굴"로 설정해 추가하세요.</div>`;
+    return;
+  }
+  const unit = getActiveCurrencyName();
+  wrap.innerHTML = monsters.map(b => {
+    const hp = b.monsterHp==null?100:b.monsterHp, maxHp = b.monsterMaxHp==null?100:b.monsterMaxHp;
+    const pct = maxHp>0 ? Math.max(0, Math.min(100, hp/maxHp*100)) : 0;
+    const plunder = formatNum(silverToDisplay(parseNum(b.expense||'0')));
+    return `<div class="monster-card">
+      <div class="monster-card-hd">
+        <b>👹 ${escapeHtml(b.name||'')}</b>
+        <button class="add-btn" onclick="openCombatModal('${b.id}')">⚔️ 전투</button>
+      </div>
+      <div class="monster-hp-bar"><div class="monster-hp-fill" style="width:${pct}%"></div></div>
+      <div class="monster-meta">
+        <span>체력 <b>${formatNum(hp)} / ${formatNum(maxHp)}</b></span>
+        <span>전투력 <b>${formatNum(b.monsterPower||0)}</b></span>
+        <span>월 약탈 피해 <b>${plunder} ${unit}</b></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCombatModal(buildingId) {
+  const b = getBuildingById(buildingId);
+  if (!b) return;
+  combatTargetBuildingId = buildingId;
+  const ourPower = calcMilitary().totalPower;
+  document.getElementById('combatModalTitle').textContent = `⚔️ ${b.name||''}과의 전투`;
+  document.getElementById('combatOurPower').textContent = formatNum(Math.round(ourPower));
+  document.getElementById('combatMonsterPower').textContent = formatNum(b.monsterPower||0);
+  document.getElementById('combatMonsterHp').textContent = `${formatNum(b.monsterHp||0)} / ${formatNum(b.monsterMaxHp||0)}`;
+  document.getElementById('combatDiceResult').textContent = '';
+  document.getElementById('combatDamageInput').value = 0;
+  document.getElementById('combatCounterHint').textContent = `참고: 몬스터 전투력 ${formatNum(b.monsterPower||0)} — 필요시 군사 탭에서 병력 피해를 직접 반영하세요 (자동 적용되지 않습니다).`;
+  document.getElementById('combatModal').classList.add('open');
+}
+
+function closeCombatModal() {
+  document.getElementById('combatModal').classList.remove('open');
+  combatTargetBuildingId = null;
+}
+
+function rollCombatDice() {
+  const b = getBuildingById(combatTargetBuildingId);
+  if (!b) return;
+  const roll = Math.floor(Math.random()*6)+1;
+  const mult = DICE_MULTIPLIERS[roll];
+  const ourPower = calcMilitary().totalPower;
+  const damage = Math.round(ourPower*mult);
+  document.getElementById('combatDiceResult').innerHTML = `🎲 <b>${roll}</b>눈 (배율 ${Math.round(mult*100)}%) → 예상 피해 <b>${formatNum(damage)}</b>`;
+  document.getElementById('combatDamageInput').value = damage;
+}
+
+function applyCombatDamage() {
+  const b = getBuildingById(combatTargetBuildingId);
+  if (!b) return;
+  const dmg = Math.max(0, parseInt(document.getElementById('combatDamageInput').value)||0);
+  b.monsterHp = Math.max(0, (b.monsterHp||0) - dmg);
+  const destroyed = b.monsterHp<=0;
+
+  if (!state.quests) state.quests = [];
+  state.quests.unshift({
+    status: destroyed ? '완료' : '진행중',
+    title: `${b.name||'몬스터 소굴'}과의 전투`,
+    date: state.currentDate || '',
+    desc: `피해 ${formatNum(dmg)} 적용 → 남은 체력 ${formatNum(b.monsterHp)}/${formatNum(b.monsterMaxHp||0)}${destroyed?' — 소굴 소탕!':''}`,
+    reward: ''
+  });
+
+  const name = b.name || '몬스터 소굴';
+  if (destroyed) {
+    const idx = state.buildings.indexOf(b);
+    if (idx>-1) {
+      state.mapPlacements = (state.mapPlacements||[]).filter(p=>p.buildingId!==b.id);
+      state.buildings.splice(idx, 1);
+    }
+  }
+
+  closeCombatModal();
+  render();
+  autosave();
+  alert(destroyed ? `${name}을(를) 소탕했습니다!` : `피해 ${formatNum(dmg)}을(를) 입혔습니다.\n남은 체력: ${formatNum(b.monsterHp)}/${formatNum(b.monsterMaxHp||0)}`);
+}
+
+// ══════════════════════════════════════════════
+//  🗺️ 지도
+// ══════════════════════════════════════════════
+let mapMode = 'view';
+let mapPaint = 'plain';
+let mapZoomLevel = 1;
+const MAP_ZOOM_MIN = 0.15, MAP_ZOOM_MAX = 3;
+let mapPan = {x:0,y:0};
+const MAP_CELL_BASE = 32;
+const MAP_TERRAIN_LABELS = {plain:'평지',forest:'숲',mountain:'산',sea:'바다',river:'강',swamp:'늪지대'};
+
+let mapDrag = null;
+let mapPanDrag = null;
+let mapPaintDragging = false;
+let mapActivePointerId = null;
+let mapClickCandidate = null;
+let mapEventsInited = false;
+
+function ensureMapDefaults() {
+  if (!state.mapGrid) state.mapGrid = {cols:MAP_MIN_COLS, rows:MAP_MIN_ROWS};
+  if (state.mapGrid.cols < MAP_MIN_COLS) state.mapGrid.cols = MAP_MIN_COLS;
+  if (state.mapGrid.rows < MAP_MIN_ROWS) state.mapGrid.rows = MAP_MIN_ROWS;
+  if (!state.mapTerrain) state.mapTerrain = {};
+  if (!state.mapRoads) state.mapRoads = {};
+  if (!state.mapPlacements) state.mapPlacements = [];
+}
+
+function ensureBuildingId(b) {
+  if (!b.id) b.id = 'b_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  if (b.sizeW==null) b.sizeW = 1;
+  if (b.sizeH==null) b.sizeH = 1;
+  if (b.qty==null) b.qty = 1;
+  if (b.troopCap==null) b.troopCap = 0;
+  if (b.category==='monster') {
+    if (b.monsterHp==null) b.monsterHp = 100;
+    if (b.monsterMaxHp==null) b.monsterMaxHp = 100;
+    if (b.monsterPower==null) b.monsterPower = 10;
+  }
+  return b.id;
+}
+
+function getBuildingById(id) {
+  return (state.buildings||[]).find(b=>b.id===id);
+}
+
+function ensureNpcId(n) {
+  if (!n.id) n.id = 'n_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  if (n.inCombat==null) n.inCombat = false;
+  if (n.combatPower==null) n.combatPower = '0';
+  return n.id;
+}
+
+function escapeHtml(s) {
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function setMapMode(mode) {
+  mapMode = mode;
+  document.querySelectorAll('.map-mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
+  const pal = document.getElementById('mapTerrainPalette');
+  if (pal) pal.classList.toggle('show', mode==='terrain');
+  const uw = document.getElementById('mapUnplacedWrap');
+  if (uw) uw.style.display = mode==='building' ? '' : 'none';
+  const vp = document.getElementById('mapViewport');
+  if (vp) vp.classList.toggle('mode-terrain', mode==='terrain');
+  hideMapTooltip();
+}
+
+function selectPaint(type, el) {
+  mapPaint = type;
+  document.querySelectorAll('.terrain-swatch').forEach(b=>b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function mapZoomStep(dir) {
+  mapZoomLevel = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, mapZoomLevel * (dir>0 ? 1.25 : 0.8)));
+  renderMap();
+}
+
+function mapFitToScreen() {
+  ensureMapDefaults();
+  const vp = document.getElementById('mapViewport');
+  if (!vp) return;
+  const g = state.mapGrid;
+  const availW = vp.clientWidth - 4, availH = vp.clientHeight - 4;
+  if (availW<=0 || availH<=0) return; // 탭이 안 보이는 상태면 계산 불가
+  let cell = Math.min(availW/g.cols, availH/g.rows);
+  cell = Math.max(6, Math.min(64, cell));
+  mapZoomLevel = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, cell/MAP_CELL_BASE));
+  renderMap();
+}
+
+function applyMapSize() {
+  ensureMapDefaults();
+  let cols = parseInt(document.getElementById('mapColsInput').value)||0;
+  let rows = parseInt(document.getElementById('mapRowsInput').value)||0;
+  if (cols < MAP_MIN_COLS) cols = MAP_MIN_COLS;
+  if (rows < MAP_MIN_ROWS) rows = MAP_MIN_ROWS;
+  state.mapGrid = {cols, rows};
+  document.getElementById('mapColsInput').value = '';
+  document.getElementById('mapRowsInput').value = '';
+  renderMap(); mapFitToScreen(); autosave();
+}
+
+function isRectFree(x, y, w, h, excludePid) {
+  const g = state.mapGrid;
+  if (x<0 || y<0 || x+w>g.cols || y+h>g.rows) return false;
+  return !(state.mapPlacements||[]).some(p=>{
+    if (p.id===excludePid) return false;
+    const b = getBuildingById(p.buildingId);
+    if (!b) return false;
+    const pw=b.sizeW||1, ph=b.sizeH||1;
+    return x < p.x+pw && x+w > p.x && y < p.y+ph && y+h > p.y;
+  });
+}
+
+function findFreeSpot(tx, ty, w, h, excludePid) {
+  if (isRectFree(tx,ty,w,h,excludePid)) return {x:tx,y:ty};
+  const g = state.mapGrid;
+  const maxR = Math.max(g.cols, g.rows);
+  for (let r=1; r<=maxR; r++) {
+    for (let dy=-r; dy<=r; dy++) {
+      for (let dx=-r; dx<=r; dx++) {
+        if (Math.max(Math.abs(dx),Math.abs(dy)) !== r) continue;
+        const nx=tx+dx, ny=ty+dy;
+        if (isRectFree(nx,ny,w,h,excludePid)) return {x:nx,y:ny};
+      }
+    }
+  }
+  return null;
+}
+
+function mapClientToGrid(clientX, clientY) {
+  const vp = document.getElementById('mapViewport');
+  const rect = vp.getBoundingClientRect();
+  const cellSize = MAP_CELL_BASE * mapZoomLevel;
+  const localX = clientX - rect.left - mapPan.x;
+  const localY = clientY - rect.top - mapPan.y;
+  return {gx: Math.floor(localX/cellSize), gy: Math.floor(localY/cellSize), cellSize};
+}
+
+function clampPan() {
+  const vp = document.getElementById('mapViewport');
+  if (!vp) return;
+  const cellSize = MAP_CELL_BASE * mapZoomLevel;
+  const canvasW = state.mapGrid.cols*cellSize, canvasH = state.mapGrid.rows*cellSize;
+  const vw = vp.clientWidth, vh = vp.clientHeight;
+  let minX, maxX, minY, maxY;
+  if (canvasW <= vw) { minX = maxX = (vw-canvasW)/2; } else { minX = vw-canvasW; maxX = 0; }
+  if (canvasH <= vh) { minY = maxY = (vh-canvasH)/2; } else { minY = vh-canvasH; maxY = 0; }
+  mapPan.x = Math.min(maxX, Math.max(minX, mapPan.x));
+  mapPan.y = Math.min(maxY, Math.max(minY, mapPan.y));
+}
+
+function renderMap() {
+  ensureMapDefaults();
+  const layer = document.getElementById('mapTerrainLayer');
+  if (!layer) return; // 지도 탭 DOM 미존재
+  const g = state.mapGrid;
+  const cellSize = MAP_CELL_BASE * mapZoomLevel;
+
+  layer.style.gridTemplateColumns = `repeat(${g.cols}, ${cellSize}px)`;
+  layer.style.gridTemplateRows = `repeat(${g.rows}, ${cellSize}px)`;
+  layer.style.width = (g.cols*cellSize)+'px';
+  layer.style.height = (g.rows*cellSize)+'px';
+
+  let cellsHtml = '';
+  for (let y=0; y<g.rows; y++) {
+    for (let x=0; x<g.cols; x++) {
+      const key = x+','+y;
+      const terrain = state.mapTerrain[key] || 'plain';
+      const road = !!state.mapRoads[key];
+      const shore = getShoreBoxShadow(x, y, terrain);
+      cellsHtml += `<div class="map-cell t-${terrain}${road?' road'+getRoadConnClasses(x,y):''}" data-x="${x}" data-y="${y}"${shore?` style="box-shadow:${shore}"`:''}></div>`;
+    }
+  }
+  layer.innerHTML = cellsHtml;
+
+  const bLayer = document.getElementById('mapBuildingLayer');
+  bLayer.style.width = (g.cols*cellSize)+'px';
+  bLayer.style.height = (g.rows*cellSize)+'px';
+  bLayer.innerHTML = (state.mapPlacements||[]).map(p => {
+    const b = getBuildingById(p.buildingId);
+    if (!b) return '';
+    const w=b.sizeW||1, h=b.sizeH||1;
+    const fs = Math.max(9, Math.min(12, cellSize*0.32));
+    return `<div class="map-building cat-${b.category||'base'}" data-pid="${p.id}"
+      style="left:${p.x*cellSize}px;top:${p.y*cellSize}px;width:${w*cellSize}px;height:${h*cellSize}px;font-size:${fs}px">${escapeHtml(b.name||'')}</div>`;
+  }).join('');
+
+  clampPan();
+  const canvas = document.getElementById('mapCanvas');
+  if (canvas) canvas.style.transform = `translate(${mapPan.x}px,${mapPan.y}px)`;
+  const zl = document.getElementById('mapZoomLabel');
+  if (zl) zl.textContent = Math.round(mapZoomLevel*100)+'%';
+
+  renderMapUnplaced();
+}
+
+function renderMapUnplaced() {
+  const list = document.getElementById('mapUnplacedList');
+  if (!list) return;
+  const chips = [];
+  (state.buildings||[]).forEach(b => {
+    ensureBuildingId(b);
+    const placedCount = (state.mapPlacements||[]).filter(p=>p.buildingId===b.id).length;
+    const remaining = (b.qty||1) - placedCount;
+    if (remaining > 0) {
+      chips.push(`<div class="map-unplaced-chip" data-bid="${b.id}">${escapeHtml(b.name||'이름없음')}<span class="cnt">${b.sizeW||1}×${b.sizeH||1} · 남음 ${remaining}</span></div>`);
+    }
+  });
+  list.innerHTML = chips.join('') || '<div style="font-size:11px;color:var(--ink-light)">모든 건물이 배치되었습니다.</div>';
+}
+
+function onMapViewportPointerDown(e) {
+  hideMapTooltip();
+  if (mapMode==='terrain') {
+    mapPaintDragging = true;
+    mapActivePointerId = e.pointerId;
+    paintCellAtClient(e.clientX, e.clientY);
+    e.preventDefault();
+    return;
+  }
+  if (mapMode==='building') {
+    const bEl = e.target.closest('.map-building');
+    if (bEl) {
+      const pid = bEl.dataset.pid;
+      const p = (state.mapPlacements||[]).find(pp=>pp.id===pid);
+      if (p) {
+        const b = getBuildingById(p.buildingId);
+        startBuildingDrag({type:'move', placementId:p.id, buildingId:p.buildingId, w:b.sizeW||1, h:b.sizeH||1}, e);
+        e.preventDefault();
+        return;
+      }
+    }
+    startPan(e);
+    return;
+  }
+  // 보기 모드
+  const bEl = e.target.closest('.map-building');
+  const cellEl = e.target.closest('.map-cell');
+  mapClickCandidate = {bEl, cellEl, x:e.clientX, y:e.clientY};
+  startPan(e);
+}
+
+function startPan(e) {
+  mapPanDrag = {startX:e.clientX, startY:e.clientY, startPanX:mapPan.x, startPanY:mapPan.y, moved:false};
+  mapActivePointerId = e.pointerId;
+  const vp = document.getElementById('mapViewport');
+  if (vp) vp.classList.add('panning');
+}
+
+function onMapPointerMove(e) {
+  if (mapActivePointerId!==null && e.pointerId!==mapActivePointerId) return;
+  if (mapPaintDragging) { paintCellAtClient(e.clientX, e.clientY); return; }
+  if (mapDrag) { updateGhostPosition(e.clientX, e.clientY); return; }
+  if (mapPanDrag) {
+    const dx = e.clientX-mapPanDrag.startX, dy = e.clientY-mapPanDrag.startY;
+    if (Math.abs(dx)>3 || Math.abs(dy)>3) mapPanDrag.moved = true;
+    if (mapPanDrag.moved) {
+      mapPan.x = mapPanDrag.startPanX+dx;
+      mapPan.y = mapPanDrag.startPanY+dy;
+      clampPan();
+      const canvas = document.getElementById('mapCanvas');
+      if (canvas) canvas.style.transform = `translate(${mapPan.x}px,${mapPan.y}px)`;
+    }
+  }
+}
+
+function onMapPointerUp(e) {
+  if (mapActivePointerId!==null && e.pointerId!==mapActivePointerId) return;
+  if (mapPaintDragging) { mapPaintDragging=false; mapActivePointerId=null; return; }
+  if (mapDrag) { finishBuildingDrag(e.clientX, e.clientY); mapActivePointerId=null; return; }
+  if (mapPanDrag) {
+    const wasMoved = mapPanDrag.moved;
+    const vp = document.getElementById('mapViewport');
+    if (vp) vp.classList.remove('panning');
+    mapPanDrag = null;
+    mapActivePointerId = null;
+    if (!wasMoved && mapMode==='view' && mapClickCandidate) handleMapClick(mapClickCandidate);
+    mapClickCandidate = null;
+  }
+}
+
+function paintCellAtClient(clientX, clientY) {
+  const {gx,gy} = mapClientToGrid(clientX, clientY);
+  const g = state.mapGrid;
+  if (gx<0 || gy<0 || gx>=g.cols || gy>=g.rows) return;
+  const key = gx+','+gy;
+  let changed = false;
+  if (mapPaint==='road') { if (!state.mapRoads[key]) { state.mapRoads[key]=true; changed=true; } }
+  else if (mapPaint==='erase-road') { if (state.mapRoads[key]) { delete state.mapRoads[key]; changed=true; } }
+  else {
+    const cur = state.mapTerrain[key] || 'plain';
+    if (cur!==mapPaint) { if (mapPaint==='plain') delete state.mapTerrain[key]; else state.mapTerrain[key]=mapPaint; changed=true; }
+  }
+  if (changed) { updateCellDom(gx,gy); autosave(); }
+}
+
+function getShoreBoxShadow(x, y, terrain) {
+  const isWater = t => t==='sea' || t==='river';
+  const thisWater = isWater(terrain);
+  const g = state.mapGrid;
+  const neighborTerrain = (nx, ny) => {
+    if (nx<0 || ny<0 || nx>=g.cols || ny>=g.rows) return null; // 맵 바깥 경계는 해안선 표시 안 함
+    return state.mapTerrain[nx+','+ny] || 'plain';
+  };
+  const color = thisWater ? 'rgba(255,255,255,.55)' : '#d8c48a';
+  const dirs = [['n',0,-1,'0 3px 0 0'],['s',0,1,'0 -3px 0 0'],['w',-1,0,'3px 0 0 0'],['e',1,0,'-3px 0 0 0']];
+  const parts = [];
+  for (const [,dx,dy,shadow] of dirs) {
+    const nt = neighborTerrain(x+dx, y+dy);
+    if (nt===null) continue;
+    if (isWater(nt) !== thisWater) parts.push(`inset ${shadow} ${color}`);
+  }
+  return parts.join(', ');
+}
+
+function getRoadConnClasses(x, y) {
+  const g = state.mapGrid;
+  let cls = '';
+  if (y>0 && state.mapRoads[x+','+(y-1)]) cls += ' road-n';
+  if (y<g.rows-1 && state.mapRoads[x+','+(y+1)]) cls += ' road-s';
+  if (x>0 && state.mapRoads[(x-1)+','+y]) cls += ' road-w';
+  if (x<g.cols-1 && state.mapRoads[(x+1)+','+y]) cls += ' road-e';
+  return cls;
+}
+
+function updateCellDom(x, y) {
+  // 도로 연결 모양이 이웃 칸에도 영향을 주므로 상하좌우 이웃까지 함께 갱신
+  const g = state.mapGrid;
+  updateSingleCellDom(x, y);
+  if (y>0) updateSingleCellDom(x, y-1);
+  if (y<g.rows-1) updateSingleCellDom(x, y+1);
+  if (x>0) updateSingleCellDom(x-1, y);
+  if (x<g.cols-1) updateSingleCellDom(x+1, y);
+}
+
+function updateSingleCellDom(x, y) {
+  const layer = document.getElementById('mapTerrainLayer');
+  if (!layer) return;
+  const idx = y*state.mapGrid.cols + x;
+  const cellEl = layer.children[idx];
+  if (!cellEl) return;
+  const key = x+','+y;
+  const terrain = state.mapTerrain[key] || 'plain';
+  const road = !!state.mapRoads[key];
+  cellEl.className = `map-cell t-${terrain}${road?' road'+getRoadConnClasses(x,y):''}`;
+  const shore = getShoreBoxShadow(x, y, terrain);
+  cellEl.style.boxShadow = shore || '';
+}
+
+function startBuildingDrag(info, e) {
+  mapDrag = info;
+  mapActivePointerId = e.pointerId;
+  const cellSize = MAP_CELL_BASE * mapZoomLevel;
+  const ghost = document.createElement('div');
+  ghost.className = 'map-ghost';
+  ghost.style.width = (info.w*cellSize)+'px';
+  ghost.style.height = (info.h*cellSize)+'px';
+  document.body.appendChild(ghost);
+  mapDrag.ghostEl = ghost;
+  updateGhostPosition(e.clientX, e.clientY);
+  if (info.type==='move') {
+    const el = document.querySelector(`.map-building[data-pid="${info.placementId}"]`);
+    if (el) el.classList.add('dragging');
+  }
+}
+
+function updateGhostPosition(clientX, clientY) {
+  if (!mapDrag || !mapDrag.ghostEl) return;
+  const cellSize = MAP_CELL_BASE * mapZoomLevel;
+  mapDrag.ghostEl.style.left = (clientX - (mapDrag.w*cellSize)/2)+'px';
+  mapDrag.ghostEl.style.top = (clientY - (mapDrag.h*cellSize)/2)+'px';
+}
+
+function finishBuildingDrag(clientX, clientY) {
+  const info = mapDrag;
+  mapDrag = null;
+  if (info.ghostEl) info.ghostEl.remove();
+  if (info.type==='move') {
+    const el = document.querySelector(`.map-building[data-pid="${info.placementId}"]`);
+    if (el) el.classList.remove('dragging');
+  }
+  const vp = document.getElementById('mapViewport');
+  const rect = vp.getBoundingClientRect();
+  const inside = clientX>=rect.left && clientX<=rect.right && clientY>=rect.top && clientY<=rect.bottom;
+  if (!inside) { renderMap(); return; }
+  const {gx,gy} = mapClientToGrid(clientX, clientY);
+  const tx = gx - Math.floor(info.w/2);
+  const ty = gy - Math.floor(info.h/2);
+  const excludeId = info.type==='move' ? info.placementId : null;
+  const spot = findFreeSpot(tx, ty, info.w, info.h, excludeId);
+  if (!spot) { alert('배치할 빈 공간이 없습니다.'); renderMap(); return; }
+  if (info.type==='new') {
+    state.mapPlacements.push({id:'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), buildingId:info.buildingId, x:spot.x, y:spot.y});
+  } else {
+    const p = state.mapPlacements.find(pp=>pp.id===info.placementId);
+    if (p) { p.x=spot.x; p.y=spot.y; }
+  }
+  renderMap();
+  autosave();
+}
+
+function handleMapClick(candidate) {
+  if (candidate.bEl) {
+    const pid = candidate.bEl.dataset.pid;
+    const p = (state.mapPlacements||[]).find(pp=>pp.id===pid);
+    const b = p && getBuildingById(p.buildingId);
+    if (b) {
+      showMapTooltip(candidate.x, candidate.y, `
+        <b>${escapeHtml(b.name||'')}</b><br>
+        분류: ${BLD_CAT_LABELS[b.category]||b.category||'-'} · 등급: ${escapeHtml(b.level||'-')}<br>
+        상태: ${escapeHtml(b.status||'-')}<br>
+        수입: ${formatNum(silverToDisplay(parseNum(b.income||'0')))} / 지출: ${formatNum(silverToDisplay(parseNum(b.expense||'0')))}
+        ${b.note?('<br>'+escapeHtml(b.note)):''}
+      `);
+      return;
+    }
+  }
+  if (candidate.cellEl) {
+    const x = candidate.cellEl.dataset.x, y = candidate.cellEl.dataset.y;
+    const key = x+','+y;
+    const terrain = state.mapTerrain[key] || 'plain';
+    const road = !!state.mapRoads[key];
+    showMapTooltip(candidate.x, candidate.y, `${MAP_TERRAIN_LABELS[terrain]||terrain}${road?' · 도로':''}`);
+  }
+}
+
+function showMapTooltip(x, y, html) {
+  const tip = document.getElementById('mapTooltip');
+  if (!tip) return;
+  tip.innerHTML = html;
+  tip.style.left = (x+12)+'px';
+  tip.style.top = (y+12)+'px';
+  tip.style.display = 'block';
+}
+
+function hideMapTooltip() {
+  const tip = document.getElementById('mapTooltip');
+  if (tip) tip.style.display = 'none';
+}
+
+function initMapEvents() {
+  if (mapEventsInited) return;
+  mapEventsInited = true;
+  const vp = document.getElementById('mapViewport');
+  const unplacedList = document.getElementById('mapUnplacedList');
+  if (!vp || !unplacedList) return;
+  vp.addEventListener('pointerdown', onMapViewportPointerDown);
+  window.addEventListener('pointermove', onMapPointerMove);
+  window.addEventListener('pointerup', onMapPointerUp);
+  unplacedList.addEventListener('pointerdown', e => {
+    const chip = e.target.closest('.map-unplaced-chip');
+    if (!chip) return;
+    const bid = chip.dataset.bid;
+    const b = getBuildingById(bid);
+    if (!b) return;
+    startBuildingDrag({type:'new', buildingId:bid, w:b.sizeW||1, h:b.sizeH||1}, e);
+    e.preventDefault();
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!e.target.closest('#mapViewport') && !e.target.closest('#mapTooltip')) hideMapTooltip();
+    if (!e.target.closest('#mobileTabBar')) closeMobileTabMenu();
+  });
+}
+
+// 생산 자원 추가/삭제
+let _prodTargetIdx = -1;
+function openAddProd(bldIdx) {
+  _prodTargetIdx = bldIdx;
+  const resNames = (state.resources||[]).map(r=>r.name);
+  if (resNames.length===0) { alert('자원탭에 자원을 먼저 추가하세요.'); return; }
+  const resName = prompt('생산 자원 선택 (자원명 그대로 입력):\n' + resNames.join(', '));
+  if (!resName) return;
+  const res = (state.resources||[]).find(r=>r.name===resName.trim());
+  if (!res) { alert('해당 자원을 찾을 수 없습니다.'); return; }
+  const amountStr = prompt(`월 생산량 입력 (단위: ${res.unit||'개'}):`, '1');
+  if (!amountStr) return;
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount)||amount<=0) { alert('올바른 수량을 입력하세요.'); return; }
+  if (!state.buildings[bldIdx].productions) state.buildings[bldIdx].productions=[];
+  state.buildings[bldIdx].productions.push({resName:res.name, amount:String(amount), unit:res.unit||'개'});
+  renderBuildings(); autosave();
+}
+function delBldProd(bldIdx, prodIdx) {
+  state.buildings[bldIdx].productions.splice(prodIdx,1);
+  renderBuildings(); autosave();
+}
+
+function applyBuildingFinance() {
+  let totalIn = 0, totalOut = 0;
+  (state.buildings||[]).forEach(b => {
+    totalIn  += parseNum(b.income  || '0');
+    totalOut += parseNum(b.expense || '0');
+  });
+  // 독립 누적: 건물 반영분만 교체 후 전체 월 수입/지출 재계산
+  state.buildingIncome  = String(totalIn);
+  state.buildingExpense = String(totalOut);
+  const incomeApplied = parseNum(state.incomeApplied || '0');
+  const militaryExpense = parseNum(state.militaryExpense || '0');
+  state.monthIncome  = String(totalIn + incomeApplied);
+  state.monthExpense = String(totalOut + militaryExpense);
+  applyFields(); calcTotal(); autosave();
+  alert(`건물 합산 반영 완료!\n월 수입(건물): ${formatNum(silverToDisplay(totalIn))} ${getActiveCurrencyName()}\n월 지출(건물): ${formatNum(silverToDisplay(totalOut))} ${getActiveCurrencyName()}\n\n※ 수익 항목과 합산되어 월 수입에 적용됩니다.`);
+}
+
+function renderNPCs() {
+  const tbody = document.getElementById('npcBody');
+  if (!tbody) return;
+  (state.npcs||[]).forEach(ensureNpcId);
+  tbody.innerHTML = (state.npcs||[]).map((n,i) => `
+    <tr>
+      <td style="text-align:center">
+        <button class="tpin ${n.pinned?'pinned':''}" onclick="togglePin('npcs',${i})" title="현황판에 표시">${n.pinned?'📌':'📍'}</button>
+      </td>
+      <td data-label="초상"><div class="npc-portrait" contenteditable="true" oninput="state.npcs[${i}].icon=this.innerText;autosave()">${n.icon||'👤'}</div></td>
+      <td data-label="이름" contenteditable="true" oninput="state.npcs[${i}].name=this.innerText;autosave();renderMilitary()">${n.name}</td>
+      <td data-label="직책/관계" contenteditable="true" oninput="state.npcs[${i}].role=this.innerText;autosave()">${n.role}</td>
+      <td data-label="능력치/특기" contenteditable="true" oninput="state.npcs[${i}].stats=this.innerText;autosave()">${n.stats}</td>
+      <td data-label="상태/비고" contenteditable="true" oninput="state.npcs[${i}].note=this.innerText;autosave()" style="max-width:200px">${n.note}</td>
+      <td data-label="전투 참여" style="text-align:center">
+        <input type="checkbox" ${n.inCombat?'checked':''} onchange="state.npcs[${i}].inCombat=this.checked;renderMilitary();autosave()">
+      </td>
+      <td data-label="전투력">
+        <input type="number" min="0" value="${n.combatPower||0}" style="width:60px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);text-align:right;font-family:inherit;font-size:13px;outline:none"
+          onchange="state.npcs[${i}].combatPower=parseNum(this.value)||0;renderMilitary();autosave()">
+      </td>
+      <td><button class="tdel" onclick="delItem('npcs',${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderQuests() {
+  const tbody = document.getElementById('questBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.quests||[]).map((q,i) => `
+    <tr>
+      <td data-label="상태">
+        <select onchange="state.quests[${i}].status=this.value;autosave();renderQuests();renderDashboard()"
+          style="background:transparent;border:1px solid currentColor;font-size:11px;padding:2px 4px;font-family:inherit;outline:none;color:${
+            q.status==='진행중'?'var(--gold)':q.status==='완료'?'#3a7a3a':q.status==='실패'?'var(--red-ink)':'var(--ink-light)'}">
+          ${['진행중','완료','대기','실패'].map(s=>`<option${s===q.status?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td data-label="제목" contenteditable="true" oninput="state.quests[${i}].title=this.innerText;autosave()" style="font-weight:600">${q.title}</td>
+      <td data-label="발생일" contenteditable="true" oninput="state.quests[${i}].date=this.innerText;autosave()">${q.date}</td>
+      <td data-label="내용/조건" contenteditable="true" oninput="state.quests[${i}].desc=this.innerText;autosave()">${q.desc}</td>
+      <td data-label="보상/결과" contenteditable="true" oninput="state.quests[${i}].reward=this.innerText;autosave()">${q.reward}</td>
+      <td><button class="tdel" onclick="delItem('quests',${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderSpecialNotes() {
+  const el = document.getElementById('specialNotes');
+  if (!el) return;
+  el.innerHTML = (state.specialNotes||[]).map((n,i) => `
+    <div class="snote-wrap">
+      <div class="snote" contenteditable="true" oninput="state.specialNotes[${i}]=this.innerText;autosave()">${n}</div>
+      <button class="snote-del" onclick="delSpecialNote(${i})" title="삭제">✕</button>
+    </div>`).join('');
+}
+
+function renderInventory() {
+  const grid = document.getElementById('invGrid');
+  if (!grid) return;
+  const arr = state.inventory || [];
+  grid.innerHTML = arr.map((item,i) => `
+    <div class="inv-card">
+      <button class="inv-del" onclick="delInvItem(${i})">✕</button>
+      <input class="inv-name" type="text" value="${item.name||''}" placeholder="아이템명" onchange="getInv()[${i}].name=this.value;autosave()">
+      <input class="inv-type" type="text" value="${item.type||''}" placeholder="종류 (아티팩트 / 도구 / 문서 ...)" onchange="getInv()[${i}].type=this.value;autosave()">
+      <textarea class="inv-desc" placeholder="설명, 효과, 입수 경위 등..." onchange="getInv()[${i}].desc=this.value;autosave()">${item.desc||''}</textarea>
+    </div>`).join('');
+}
+
+function getInv() { if (!state.inventory) state.inventory=[]; return state.inventory; }
+
+function renderDebt() {
+  const tbody = document.getElementById('debtBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.debts||[]).map((d,i) => {
+    const principal = parseNum(d.amount);
+    const accrued   = parseNum(d.accruedInterest||'0');
+    const dispP = formatNum(silverToDisplay(principal));
+    const dispA = formatNum(silverToDisplay(accrued));
+    const unit  = getActiveCurrencyName();
+    return `
+    <tr>
+      <td data-label="항목명" contenteditable="true" oninput="state.debts[${i}].name=this.innerText;autosave()">${d.name||''}</td>
+      <td data-label="원금(${unit})">
+        <input type="text" value="${dispP}" style="width:80px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;outline:none"
+          oninput="state.debts[${i}].amount=String(displayToSilver(parseNum(this.value)));recalcDebt();autosave()">
+        <span style="font-size:10px;color:var(--ink-light)">${unit}</span>
+      </td>
+      <td data-label="누적이자" style="color:var(--red-ink);font-size:12px">${dispA} <span style="font-size:10px;color:var(--ink-light)">${unit}</span></td>
+      <td data-label="이자(월)">
+        <input type="text" value="${formatNum(silverToDisplay(parseNum(d.interest||'0')))}" style="width:70px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;outline:none"
+          oninput="state.debts[${i}].interest=String(displayToSilver(parseNum(this.value)));autosave()">
+        <span style="font-size:10px;color:var(--ink-light)">${unit}</span>
+      </td>
+      <td data-label="만기일" contenteditable="true" oninput="state.debts[${i}].due=this.innerText;autosave()">${d.due||''}</td>
+      <td data-label="비고" contenteditable="true" oninput="state.debts[${i}].note=this.innerText;autosave()">${d.note||''}</td>
+      <td data-label="상환"><button class="repay-btn" onclick="openRepayModal(${i})">상환</button></td>
+      <td><button class="tdel" onclick="delDebt(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function recalcDebt() {
+  const total = (state.debts||[]).reduce((a,d) => a + parseNum(d.amount) + parseNum(d.accruedInterest||'0'), 0);
+  state.debtTotal = String(total);
+  const el = document.getElementById('debtTotal');
+  if (el) el.value = formatNum(silverToDisplay(total));
+  calcTotal();
+}
+
+function renderLedgerLog() {
+  const el = document.getElementById('ledgerLog');
+  if (!el) return;
+  el.innerHTML = (state.ledgerHistory||[]).map(l => `<div class="ledger-log-row">${l}</div>`).join('');
+}
+
+function renderCurrencies() {
+  const tbody = document.getElementById('currencyBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.currencies||[]).map((c,i) => `
+    <tr>
+      <td data-label="화폐명"><input type="text" value="${c.name||''}" onchange="state.currencies[${i}].name=this.value;buildCurrencyToggles();renderCurrencyRef();autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td data-label="단위 표기"><input type="text" value="${c.unit||''}" onchange="state.currencies[${i}].unit=this.value;buildCurrencyToggles();autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td data-label="환산율"><input type="text" value="${c.silverRate||''}" onchange="state.currencies[${i}].silverRate=this.value;buildCurrencyToggles();renderCurrencyRef();autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none" placeholder="예) 10, 1, 0.1"></td>
+      <td data-label="비고"><input type="text" value="${c.note||''}" onchange="state.currencies[${i}].note=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><button class="tdel" onclick="delCurrency(${i})">✕</button></td>
+    </tr>`).join('');
+  renderCurrencyRef();
+  buildCurrencyToggles();
+}
+
+function renderCurrencyRef() {
+  const el = document.getElementById('currencyRef');
+  if (!el) return;
+  const lines = (state.currencies||[]).map(c => {
+    const r = parseFloat(c.silverRate);
+    let rel = '';
+    if (r > 0) {
+      if (r >= 1) rel = `${c.unit} 1개 = 은화 ${r}개`;
+      else rel = `은화 1개 = ${c.unit} ${roundTo4(1/r)}개`;
+    }
+    return `${c.name} (${c.unit}) — ${rel}${c.note ? ' | ' + c.note : ''}`;
+  });
+  el.innerHTML = '<b>화폐 요약 (기준: 1 제국 은화)</b><br>' + lines.join('<br>');
+}
+
+function renderPrices() {
+  const tbody = document.getElementById('priceBody');
+  if (!tbody) return;
+  tbody.innerHTML = (state.prices||[]).map((p,i) => `
+    <tr>
+      <td data-label="품목"><input type="text" value="${p.item||''}" onchange="state.prices[${i}].item=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td data-label="가격"><input type="text" value="${p.price||''}" onchange="state.prices[${i}].price=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td data-label="현실 환산"><input type="text" value="${p.realValue||''}" onchange="state.prices[${i}].realValue=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td data-label="비고"><input type="text" value="${p.note||''}" onchange="state.prices[${i}].note=this.value;autosave()" style="width:100%;background:transparent;border:none;font-family:inherit;font-size:13px;outline:none"></td>
+      <td><button class="tdel" onclick="delPrice(${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderWorldMemos() {
+  const set = (id, key) => { const e = document.getElementById(id); if(e) e.value = state[key]||''; };
+  set('world-empire','worldEmpire');
+  set('world-kingdom','worldKingdom');
+  set('world-misc','worldMisc');
+}
+
+// ──────────────────────────────────────────────
+//  추가/삭제
+// ──────────────────────────────────────────────
+function togglePin(arr, idx) {
+  state[arr][idx].pinned = !state[arr][idx].pinned;
+  if (arr==='buildings') renderBuildings();
+  else if (arr==='npcs') renderNPCs();
+  renderDashboard();
+  autosave();
+}
+
+function delItem(arr, idx) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  if (arr==='buildings') {
+    const b = state.buildings[idx];
+    if (b && b.id) {
+      state.mapPlacements = (state.mapPlacements||[]).filter(p=>p.buildingId!==b.id);
+      state.militaryUnits = (state.militaryUnits||[]).filter(u=>u.buildingId!==b.id);
+    }
+  }
+  state[arr].splice(idx, 1);
+  render();
+  autosave();
+}
+
+function delSpecialNote(idx) { state.specialNotes.splice(idx,1); renderSpecialNotes(); autosave(); }
+function addSpecialNote() { state.specialNotes.push('※ '); renderSpecialNotes(); autosave(); }
+function onBuildingSizeChange(idx, field, val) {
+  let v = parseInt(val)||1; if (v<1) v=1;
+  const b = state.buildings[idx];
+  if (!b) return;
+  ensureBuildingId(b);
+  const changed = b[field] !== v;
+  b[field] = v;
+  if (changed) {
+    // 크기가 바뀌면 기존 지도 배치는 전부 제거 (재배치 필요)
+    state.mapPlacements = (state.mapPlacements||[]).filter(p=>p.buildingId!==b.id);
+  }
+  renderBuildings(); renderMap(); autosave();
+}
+
+function onBuildingQtyChange(idx, val) {
+  let v = parseInt(val)||1; if (v<1) v=1;
+  const b = state.buildings[idx];
+  if (!b) return;
+  ensureBuildingId(b);
+  b.qty = v;
+  const placed = (state.mapPlacements||[]).filter(p=>p.buildingId===b.id);
+  if (placed.length > v) {
+    let toRemove = placed.length - v;
+    state.mapPlacements = (state.mapPlacements||[]).filter(p=>{
+      if (p.buildingId===b.id && toRemove>0) { toRemove--; return false; }
+      return true;
+    });
+  }
+  renderBuildings(); renderMap(); autosave();
+}
+
+function addBuilding() {
+  state.buildings.push({name:'새 건물',category:'base',level:'1등급',status:'건설중',note:'',income:'0',expense:'0',pinned:false,productions:[],sizeW:1,sizeH:1,qty:1,troopCap:0});
+  renderBuildings(); autosave();
+}
+function addDebt() {
+  if(!state.debts) state.debts=[];
+  state.debts.push({name:'새 부채',amount:'0',accruedInterest:'0',interest:'0',due:'',note:''});
+  renderDebt(); autosave();
+}
+function addNPC() { state.npcs.push({icon:'👤',name:'이름',role:'직책',stats:'—',note:'',pinned:false,inCombat:false,combatPower:'0'}); renderNPCs(); autosave(); }
+function addQuest() { state.quests.push({status:'대기',title:'새 이벤트',date:state.currentDate,desc:'',reward:''}); renderQuests(); autosave(); }
+function addItem() { if(!state.inventory) state.inventory=[]; state.inventory.push({name:'',type:'',desc:''}); renderInventory(); autosave(); }
+function delInvItem(idx) { if(!confirm('삭제?')) return; getInv().splice(idx,1); renderInventory(); autosave(); }
+function addIncomeItem() { if(!state.incomeItems) state.incomeItems=[]; state.incomeItems.push({name:'',amount:'0',note:''}); renderIncomeItems(); autosave(); }
+function delIncomeItem(idx) { if(!confirm('삭제?')) return; state.incomeItems.splice(idx,1); renderIncomeItems(); autosave(); }
+
+function renderIncomeItems() {
+  const tbody = document.getElementById('incomeBody');
+  if (!tbody) return;
+  const unit = getActiveCurrencyName();
+  tbody.innerHTML = (state.incomeItems||[]).map((it,i) => `
+    <tr>
+      <td data-label="항목명" contenteditable="true" oninput="state.incomeItems[${i}].name=this.innerText;autosave()">${it.name||''}</td>
+      <td data-label="월 수익(${unit})">
+        <input type="text" value="${formatNum(silverToDisplay(parseNum(it.amount||'0')))}"
+          style="width:80px;background:transparent;border:none;border-bottom:1px dashed var(--parchment-shadow);font-family:inherit;font-size:13px;text-align:right;outline:none"
+          oninput="state.incomeItems[${i}].amount=String(displayToSilver(parseNum(this.value)));calcIncomeItemTotal();autosave()">
+        <span style="font-size:10px;color:var(--ink-light)">${unit}</span>
+      </td>
+      <td data-label="비고" contenteditable="true" oninput="state.incomeItems[${i}].note=this.innerText;autosave()">${it.note||''}</td>
+      <td><button class="tdel" onclick="delIncomeItem(${i})">✕</button></td>
+    </tr>`).join('');
+  calcIncomeItemTotal();
+}
+
+function calcIncomeItemTotal() {
+  const total = (state.incomeItems||[]).reduce((a,it) => a + parseNum(it.amount||'0'), 0);
+  const el = document.getElementById('income-item-total');
+  const unitEl = document.getElementById('income-item-total-unit');
+  if (el) el.textContent = formatNum(silverToDisplay(total));
+  if (unitEl) unitEl.textContent = getActiveCurrencyName();
+}
+
+function applyIncomeItems() {
+  const total = (state.incomeItems||[]).reduce((a,it) => a + parseNum(it.amount||'0'), 0);
+  // 독립 누적: 수익항목 반영분만 교체 후 전체 월 수입 재계산
+  state.incomeApplied = String(total);
+  const buildingIncome = parseNum(state.buildingIncome || '0');
+  state.monthIncome = String(total + buildingIncome);
+  applyFields(); calcTotal(); autosave();
+  alert(`수익 항목 합산 반영 완료!\n월 수입(수익항목): ${formatNum(silverToDisplay(total))} ${getActiveCurrencyName()}\n\n※ 건물 수입과 합산되어 월 수입에 적용됩니다.`);
+}
+function delDebt(idx) { if(!confirm('삭제?')) return; state.debts.splice(idx,1); recalcDebt(); renderDebt(); autosave(); }
+function addCurrency() { state.currencies.push({name:'',unit:'',silverRate:'1',note:''}); renderCurrencies(); autosave(); }
+function delCurrency(idx) { state.currencies.splice(idx,1); renderCurrencies(); autosave(); }
+function addPrice() { state.prices.push({item:'',price:'',realValue:'',note:''}); renderPrices(); autosave(); }
+function delPrice(idx) { state.prices.splice(idx,1); renderPrices(); autosave(); }
+
+// ──────────────────────────────────────────────
+//  자원 모달
+// ──────────────────────────────────────────────
+function openResModal() {
+  // 폼 초기화
+  document.getElementById('mIcon').value = '📦';
+  document.getElementById('mName').value = '';
+  document.getElementById('mUnit').value = '';
+  document.getElementById('mValue').value = '0';
+  document.getElementById('resModal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+
+// ──────────────────────────────────────────────
+//  🏪 시장
+// ──────────────────────────────────────────────
+let mktMode = 'buy';   // 'buy' | 'sell'
+let mktSelIdx = -1;    // 선택된 자원 인덱스
+
+function openMarket() {
+  mktMode = 'buy';
+  mktSelIdx = -1;
+  document.getElementById('mkt-buy-btn').classList.add('active');
+  document.getElementById('mkt-sell-btn').classList.remove('active');
+  document.getElementById('mkt-confirm-btn').style.display='none';
+  document.getElementById('mkt-input-section').style.display='none';
+  renderMarketCapital();
+  renderMarketResList();
+  document.getElementById('marketOverlay').classList.add('open');
+}
+
+function renderMarketCapital() {
+  const unit = getActiveCurrencyName();
+  const cap = silverToDisplay(parseNum(state.capital||'0'));
+  const el = document.getElementById('mkt-capital-display');
+  const uel = document.getElementById('mkt-capital-unit');
+  if (el) el.textContent = formatNum(cap);
+  if (uel) uel.textContent = unit;
+}
+
+function setMarketMode(mode) {
+  mktMode = mode;
+  mktSelIdx = -1;
+  document.getElementById('mkt-buy-btn').classList.toggle('active', mode==='buy');
+  document.getElementById('mkt-sell-btn').classList.toggle('active', mode==='sell');
+  document.getElementById('mkt-confirm-btn').style.display='none';
+  document.getElementById('mkt-confirm-btn').className = `mkt-btn ${mode==='buy'?'buy':''}`;
+  document.getElementById('mkt-confirm-btn').textContent = mode==='buy'?'🛒 구매':'💸 판매';
+  document.getElementById('mkt-input-section').style.display='none';
+  renderMarketResList();
+}
+
+function renderMarketResList() {
+  const el = document.getElementById('mkt-res-list');
+  if (!el) return;
+  const unit = getActiveCurrencyName();
+  el.innerHTML = (state.resources||[]).map((r,i) => {
+    const price = parseNum(r.price||'0');
+    const dispPrice = price>0 ? `단가: ${formatNum(silverToDisplay(price))} ${unit}` : '단가 미설정';
+    return `<div class="mkt-res-row ${mktSelIdx===i?'selected':''}" onclick="selectMarketRes(${i})">
+      <span class="mkt-res-icon">${r.icon}</span>
+      <div class="mkt-res-info">
+        <div class="mkt-res-name">${r.name}</div>
+        <div class="mkt-res-stock">보유: ${r.value} ${r.unit||'개'}</div>
+      </div>
+      <div class="mkt-res-price">${dispPrice}</div>
+    </div>`;
+  }).join('') || '<div style="font-size:12px;color:var(--ink-light);font-style:italic;padding:8px">자원이 없습니다. 자원탭에서 먼저 추가하세요.</div>';
+}
+
+function selectMarketRes(idx) {
+  const r = (state.resources||[])[idx];
+  if (!r) return;
+  const price = parseNum(r.price||'0');
+  if (price<=0) { alert(`"${r.name}"의 단가가 설정되어 있지 않습니다.\n자원탭의 카드에서 단가를 먼저 입력해주세요.`); return; }
+  mktSelIdx = idx;
+  renderMarketResList();
+  const unit = getActiveCurrencyName();
+  document.getElementById('mkt-unit-price').value = formatNum(silverToDisplay(price));
+  document.getElementById('mkt-price-unit').textContent = unit;
+  document.getElementById('mkt-qty-unit').textContent = r.unit||'개';
+  document.getElementById('mkt-qty').value = '1';
+  document.getElementById('mkt-input-section').style.display='';
+  const confirmBtn = document.getElementById('mkt-confirm-btn');
+  confirmBtn.style.display='';
+  confirmBtn.className = `mkt-btn ${mktMode==='buy'?'buy':''}`;
+  confirmBtn.textContent = mktMode==='buy'?'🛒 구매':'💸 판매';
+  calcMarketTotal();
+}
+
+function calcMarketTotal() {
+  if (mktSelIdx<0) return;
+  const r = (state.resources||[])[mktSelIdx];
+  if (!r) return;
+  const price = parseNum(r.price||'0');
+  const qty   = Math.max(0, parseFloat(document.getElementById('mkt-qty').value)||0);
+  const total = price * qty;
+  const unit  = getActiveCurrencyName();
+  const capSilver = parseNum(state.capital||'0');
+  const dispTotal = formatNum(silverToDisplay(total));
+  document.getElementById('mkt-total-cost').textContent = dispTotal;
+  document.getElementById('mkt-total-unit').textContent = unit;
+  if (mktMode==='buy') {
+    const afterCap = silverToDisplay(capSilver - total);
+    document.getElementById('mkt-after-capital').textContent = `거래 후 자본: ${formatNum(afterCap)} ${unit}`;
+    document.getElementById('mkt-after-capital').style.color = capSilver - total < 0 ? 'var(--red-ink)' : 'var(--ink-faded)';
+  } else {
+    const afterCap = silverToDisplay(capSilver + total);
+    document.getElementById('mkt-after-capital').textContent = `거래 후 자본: ${formatNum(afterCap)} ${unit}`;
+    document.getElementById('mkt-after-capital').style.color = '#2e6b2e';
+  }
+}
+
+function confirmMarket() {
+  if (mktSelIdx<0) return;
+  const r = state.resources[mktSelIdx];
+  const price = parseNum(r.price||'0');
+  const qty   = Math.max(0, parseFloat(document.getElementById('mkt-qty').value)||0);
+  if (qty<=0) { alert('수량을 1 이상 입력하세요.'); return; }
+  const totalSilver = price * qty;
+  const capSilver   = parseNum(state.capital||'0');
+  const unit = getActiveCurrencyName();
+
+  if (mktMode==='buy') {
+    if (totalSilver > capSilver) { alert(`자본이 부족합니다.\n필요: ${formatNum(silverToDisplay(totalSilver))} ${unit}\n보유: ${formatNum(silverToDisplay(capSilver))} ${unit}`); return; }
+    const newVal = parseFloat(r.value||'0') + qty;
+    r.value = String(newVal);
+    state.capital = String(capSilver - totalSilver);
+    const msg = `[${state.currentDate||'?'}] 🛒 구매 — ${r.name} ${qty}${r.unit||'개'} (${formatNum(silverToDisplay(totalSilver))} ${unit} 지출)`;
+    pushTradeLog(msg, 'minus');
+  } else {
+    const curVal = parseFloat(r.value||'0');
+    if (qty > curVal) { alert(`보유량이 부족합니다.\n보유: ${curVal}${r.unit||'개'}`); return; }
+    r.value = String(curVal - qty);
+    state.capital = String(capSilver + totalSilver);
+    const msg = `[${state.currentDate||'?'}] 💸 판매 — ${r.name} ${qty}${r.unit||'개'} (${formatNum(silverToDisplay(totalSilver))} ${unit} 수령)`;
+    pushTradeLog(msg, 'plus');
+  }
+  applyFields(); calcTotal(); renderResources(); renderDashboard(); autosave();
+  renderMarketCapital();
+  renderMarketResList();
+  document.getElementById('mkt-input-section').style.display='none';
+  document.getElementById('mkt-confirm-btn').style.display='none';
+  mktSelIdx = -1;
+}
+
+// ──────────────────────────────────────────────
+//  ± 자원 수동 조정
+// ──────────────────────────────────────────────
+let _adjResIdx = -1;
+function openAdj(idx) {
+  _adjResIdx = idx;
+  const r = state.resources[idx];
+  document.getElementById('adj-title').textContent = `${r.icon} ${r.name} 조정`;
+  document.getElementById('adj-current').textContent = r.value;
+  document.getElementById('adj-unit').textContent = r.unit||'개';
+  document.getElementById('adj-dir').value = 'plus';
+  document.getElementById('adj-qty').value = '1';
+  document.getElementById('adj-reason').value = '';
+  document.getElementById('adjOverlay').classList.add('open');
+}
+function confirmAdj() {
+  if (_adjResIdx<0) return;
+  const r = state.resources[_adjResIdx];
+  const dir    = document.getElementById('adj-dir').value;
+  const qty    = parseFloat(document.getElementById('adj-qty').value)||0;
+  const reason = document.getElementById('adj-reason').value.trim()||'사유 없음';
+  if (qty<=0) { alert('수량을 1 이상 입력하세요.'); return; }
+  const cur = parseFloat(r.value||'0');
+  if (dir==='minus' && qty>cur) { alert(`보유량(${cur})보다 많이 감소시킬 수 없습니다.`); return; }
+  r.value = String(dir==='plus' ? cur+qty : cur-qty);
+  const sign = dir==='plus' ? '+' : '-';
+  const msg = `[${state.currentDate||'?'}] ${dir==='plus'?'📥':'📤'} ${r.name} ${sign}${qty}${r.unit||'개'} — ${reason}`;
+  pushTradeLog(msg, dir==='minus'?'minus':'plus');
+  renderResources(); renderDashboard(); autosave();
+  closeOverlay('adjOverlay');
+}
+
+function pushTradeLog(msg, type) {
+  if (!state.tradeLog) state.tradeLog=[];
+  state.tradeLog.push({msg, type, date:Date.now()});
+  renderTradeLog();
+}
+
+document.getElementById('marketOverlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeOverlay('marketOverlay');});
+document.getElementById('adjOverlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeOverlay('adjOverlay');});
+
+let repayTargetIdx = -1;
+function openRepayModal(idx) {
+  repayTargetIdx = idx;
+  const d = state.debts[idx];
+  const principal = parseNum(d.amount);
+  const accrued   = parseNum(d.accruedInterest||'0');
+  const unit = getActiveCurrencyName();
+  document.getElementById('repay-debt-name').textContent = `항목: ${d.name || '(이름 없음)'}`;
+  document.getElementById('repay-debt-remain').innerHTML =
+    `원금: ${formatNum(silverToDisplay(principal))} ${unit} &nbsp;|&nbsp; 누적 이자: <span style="color:var(--red-ink)">${formatNum(silverToDisplay(accrued))} ${unit}</span><br>합계: ${formatNum(silverToDisplay(principal+accrued))} ${unit}`;
+  document.getElementById('repayAmount').value = '0';
+  document.getElementById('repayModal').classList.add('open');
+}
+function confirmRepay() {
+  const idx = repayTargetIdx;
+  if (idx < 0 || idx >= (state.debts||[]).length) return;
+  const amount = parseNum(document.getElementById('repayAmount').value);
+  if (amount <= 0) { alert('상환 금액을 입력하세요.'); return; }
+
+  const curCap = parseNum(state.capital);
+  if (amount > curCap) {
+    if (!confirm(`⚠️ 보유 자본(${formatNum(silverToDisplay(curCap))} ${getActiveCurrencyName()})이 부족합니다.\n최대 상환 가능액으로 진행하시겠습니까?`)) return;
+  }
+
+  const d = state.debts[idx];
+  // 입력이 현재 단위 기준이면 은화로 변환
+  const amountSilver = displayToSilver(amount);
+  const principal   = parseNum(d.amount);
+  const accrued     = parseNum(d.accruedInterest||'0');
+  const totalDebt   = principal + accrued;
+  const actualRepay = Math.min(amountSilver, Math.min(curCap, totalDebt));
+
+  // 누적이자 먼저 차감, 이후 원금 차감
+  let remaining = actualRepay;
+  const newAccrued = Math.max(0, accrued - remaining);
+  remaining = Math.max(0, remaining - accrued);
+  const newPrincipal = Math.max(0, principal - remaining);
+
+  state.capital = String(curCap - actualRepay);
+  d.amount = String(newPrincipal);
+  d.accruedInterest = String(newAccrued);
+
+  const logMsg = `[${state.currentDate||'?'}] 상환 — "${d.name||'부채'}" ${formatNum(silverToDisplay(actualRepay))} ${getActiveCurrencyName()} 상환 → 잔여 원금 ${formatNum(silverToDisplay(newPrincipal))}, 미납이자 ${formatNum(silverToDisplay(newAccrued))} ${getActiveCurrencyName()}`;
+  state.ledgerHistory = [logMsg, ...(state.ledgerHistory||[])].slice(0, 30);
+
+  if (newPrincipal <= 0 && newAccrued <= 0) {
+    state.debts.splice(idx, 1);
+    alert(`"${d.name||'부채'}" 완전 상환 완료! 부채 항목이 삭제되었습니다.`);
+  }
+  recalcDebt();
+  renderDebt();
+  renderLedgerLog();
+  applyFields();
+  calcTotal();
+  autosave();
+  closeModal('repayModal');
+}
+document.getElementById('repayModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal('repayModal'); });
+function confirmRes() {
+  if (!state.resources) state.resources=[];
+  state.resources.push({
+    icon:document.getElementById('mIcon').value||'📦',
+    name:document.getElementById('mName').value||'자원',
+    unit:document.getElementById('mUnit').value||'',
+    value:document.getElementById('mValue').value||'0',
+    price:''
+  });
+  renderResources(); renderDashboard(); autosave(); closeModal('resModal');
+}
+document.getElementById('resModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal('resModal'); });
+
+// ──────────────────────────────────────────────
+//  필드 수집/적용
+// ──────────────────────────────────────────────
+function collectFields() {
+  state.domainTitle  = document.getElementById('domainTitle').innerText;
+  state.lordName     = document.getElementById('lordName').value;
+  state.currentDate  = document.getElementById('currentDate').value;
+  state.domainRank   = document.getElementById('domainRank').value;
+  // capital/debtTotal/monthIncome/monthExpense는 onInput에서 은화 기준으로 이미 state에 저장됨
+  state.worldEmpire  = document.getElementById('world-empire')?.value || state.worldEmpire;
+  state.worldKingdom = document.getElementById('world-kingdom')?.value || state.worldKingdom;
+  state.worldMisc    = document.getElementById('world-misc')?.value    || state.worldMisc;
+}
+
+function applyFields() {
+  document.getElementById('domainTitle').innerText = state.domainTitle||'';
+  document.getElementById('lordName').value = state.lordName||'';
+  document.getElementById('currentDate').value = state.currentDate||'';
+  document.getElementById('domainRank').value = state.domainRank||'';
+  const disp = v => formatNum(silverToDisplay(parseNum(v)));
+  const setV = (id, silverVal) => { const e=document.getElementById(id); if(e) e.value=disp(silverVal); };
+  setV('capital',      state.capital      || '0');
+  setV('debtTotal',    state.debtTotal    || '0');
+  setV('monthIncome',  state.monthIncome  || '0');
+  setV('monthExpense', state.monthExpense || '0');
+  const setTa = (id, k) => { const e=document.getElementById(id); if(e) e.value=state[k]||''; };
+  setTa('world-empire','worldEmpire');
+  setTa('world-kingdom','worldKingdom');
+  setTa('world-misc','worldMisc');
+}
+
+// ──────────────────────────────────────────────
+//  Firebase
+// ──────────────────────────────────────────────
+let db=null, isSyncing=false;
+
+function attemptLogin() {
+  const raw = document.getElementById('loginCode').value.trim();
+  const code = raw.toLowerCase();
+  const entry = ACCESS_CODES[code];
+  const errEl = document.getElementById('loginError');
+  if (!entry) {
+    errEl.textContent = '등록되지 않은 코드입니다.';
+    return;
+  }
+  errEl.textContent = '';
+  DOMAIN_DOC_ID = entry.docId;
+  state.lordName = entry.name;
+
+  document.getElementById('loginOverlay').classList.remove('open');
+  document.getElementById('ledgerRoot').style.display = '';
+
+  render();
+  initMapEvents();
+  buildMobileTabMenu();
+  document.getElementById('lordName').value = entry.name;
+  initFirebase();
+}
+
+async function initFirebase() {
+  const configured = FIREBASE_CONFIG.apiKey !== "";
+  if (!configured) { setStatus('🔴 Firebase 미설정','error'); loadFromLocal(); return; }
+  try {
+    const {initializeApp} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const {getFirestore,doc,setDoc,onSnapshot} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(app);
+    setStatus('🟡 연결 중...','info');
+    let firstLoad = true;
+    const docRef = doc(db,'domains',DOMAIN_DOC_ID);
+    onSnapshot(docRef, snap => {
+      if (!snap.exists()) { pushToFirebase(); return; }
+      const remote = snap.data();
+      const rt = remote._updatedAt||0, lt = state._updatedAt||0;
+      if (firstLoad || (!isSyncing && rt > lt)) {
+        firstLoad=false; state=remote; applyFields(); render();
+        setStatus(`🟢 불러오기 완료`,'ok');
+        document.getElementById('syncIndicator').textContent='';
+      } else if (isSyncing) {
+        firstLoad=false; setStatus('🟢 저장 완료','ok');
+        document.getElementById('syncIndicator').textContent='';
+      } else { firstLoad=false; }
+    }, err => { console.error(err); setStatus('🔴 Firebase 오류','error'); });
+  } catch(e) { console.error(e); setStatus('🔴 Firebase 로드 실패','error'); loadFromLocal(); }
+}
+
+async function pushToFirebase() {
+  if (!db) { saveToLocal(); return; }
+  try {
+    isSyncing=true; collectFields();
+    const {getFirestore,doc,setDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    state._updatedAt=Date.now();
+    await setDoc(doc(db,'domains',DOMAIN_DOC_ID), state);
+    setStatus('🟢 저장 완료','ok');
+  } catch(e) { console.error(e); setStatus('🔴 저장 실패','error'); }
+  finally { setTimeout(()=>{isSyncing=false;},500); }
+  localStorage.setItem(`domainLedger_${DOMAIN_DOC_ID}`, JSON.stringify(state));
+}
+
+function setStatus(msg,type) {
+  const el=document.getElementById('saveStatus'); if(!el) return;
+  el.textContent=msg;
+  el.style.color=type==='error'?'var(--red-ink)':type==='ok'?'#3a7a3a':'var(--gold)';
+}
+
+let autosaveTimer;
+function autosave() {
+  clearTimeout(autosaveTimer);
+  document.getElementById('syncIndicator').textContent='입력 중...';
+  autosaveTimer=setTimeout(()=>pushToFirebase(),1500);
+}
+
+function saveToLocal() {
+  collectFields(); localStorage.setItem(`domainLedger_${DOMAIN_DOC_ID}`, JSON.stringify(state));
+  setStatus('💾 로컬 저장','info');
+}
+
+function loadFromLocal() {
+  const s=localStorage.getItem(`domainLedger_${DOMAIN_DOC_ID}`);
+  if(s){try{state=JSON.parse(s);}catch{}}
+  render();
+}
+
+function saveToFile() {
+  collectFields();
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`${state.domainTitle||'영지'}_${(state.currentDate||'').replace(/\s/g,'_')}.json`; a.click();
+}
+
+function loadFromFile(event) {
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const loaded = JSON.parse(e.target.result);
+      // 구버전 호환: items → inventory, rate → silverRate
+      if (!loaded.inventory && loaded.items) loaded.inventory = loaded.items;
+      if (!loaded.inventory) loaded.inventory = [];
+      if (!loaded.debts) loaded.debts = [];
+      if (!loaded.incomeItems) loaded.incomeItems = [];
+      if (!loaded.ledgerHistory) loaded.ledgerHistory = [];
+      if (!loaded.currencies) loaded.currencies = [];
+      else loaded.currencies = loaded.currencies.map(c => {
+        if (!c.silverRate && c.rate && c.rate !== '—') c.silverRate = c.rate;
+        if (!c.silverRate) c.silverRate = '1';
+        return c;
+      });
+      if (!loaded.prices) loaded.prices = [];
+      if (loaded.buildings) loaded.buildings = loaded.buildings.map(b => ({income:'0',expense:'0',category:'base',productions:[],...b}));
+      // debts 구버전: accruedInterest 없으면 초기화
+      loaded.debts = loaded.debts.map(d => ({accruedInterest:'0',...d}));
+      if (!loaded.tradeLog) loaded.tradeLog = [];
+      if (!loaded.buildingIncome) loaded.buildingIncome = '0';
+      if (!loaded.buildingExpense) loaded.buildingExpense = '0';
+      if (!loaded.incomeApplied) loaded.incomeApplied = '0';
+      if (!loaded.militaryExpense) loaded.militaryExpense = '0';
+      if (loaded.militaryBasePower==null) loaded.militaryBasePower = 1;
+      if (!loaded.militaryUnits) loaded.militaryUnits = [];
+      // 자원에 price 필드 없으면 초기화
+      if (loaded.resources) loaded.resources = loaded.resources.map(r=>({price:'',...r}));
+      delete loaded.items;
+      state = loaded;
+      applyFields(); render(); pushToFirebase();
+      document.getElementById('syncIndicator').textContent=`"${file.name}" 불러오기 완료`;
+    } catch { alert('파일 형식 오류'); }
+  };
+  reader.readAsText(file); event.target.value='';
+}
+
+// 헤더 필드 autosave 연결
+['lordName','currentDate','domainRank'].forEach(id => {
+  document.getElementById(id).addEventListener('input', ()=>autosave());
+});
+document.getElementById('domainTitle').addEventListener('input', ()=>autosave());
+
+// 초기 로드 — 로그인 화면에 포커스만 두고, 실제 데이터 로드는 attemptLogin() 성공 후 진행
+window.addEventListener('load', ()=>{ document.getElementById('loginCode').focus(); });
+</script>
+</body>
+</html>
